@@ -80,6 +80,15 @@ def run_forever(deps: Deps, sqs, queue_url: str, should_stop) -> None:
             handle_message(deps, sqs, queue_url, message)
 
 
+def serve(deps: Deps, sqs, queue_url: str, should_stop) -> None:
+    """Open the door once the model is loaded; close it however the loop ends."""
+    announce_ready(deps.store)
+    try:
+        run_forever(deps, sqs, queue_url, should_stop)
+    finally:
+        announce_stopping(deps.store)
+
+
 def main() -> None:  # pragma: no cover - wiring only, exercised on AWS
     import boto3
     from photoprep_common.store import DynamoStore
@@ -103,9 +112,7 @@ def main() -> None:  # pragma: no cover - wiring only, exercised on AWS
     )
     stopping = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stopping.set())
-    run_forever(
-        deps, boto3.client("sqs", region_name=region), os.environ["QUEUE_URL"], stopping.is_set
-    )
+    serve(deps, boto3.client("sqs", region_name=region), os.environ["QUEUE_URL"], stopping.is_set)
 
 
 if __name__ == "__main__":

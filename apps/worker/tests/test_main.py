@@ -100,3 +100,40 @@ def test_chatty_libraries_are_silenced_even_if_the_root_level_is_debug(world, ca
     logging.getLogger("botocore.hooks").debug("item: 秘密の希望文SECRET")
     logging.getLogger("boto3.resources.action").debug("Response: 秘密の希望文SECRET")
     assert "秘密の希望文SECRET" not in caplog.text
+
+
+class TestServe:
+    """The wiring: open the door once ready, close it when the loop ends (even by an error)."""
+
+    def test_the_door_opens_before_the_first_message_and_closes_at_the_end(self, world):
+        from photoprep_common.service_status import get_status, set_status
+
+        from photoprep_worker.main import serve
+
+        set_status(world.store, accepting=False, reason="warming_up")
+        seen = []
+
+        class OneRound:
+            def receive_message(self, **_):
+                seen.append(get_status(world.store))
+                return {}
+
+        rounds = iter([False, True])
+        serve(world.deps, OneRound(), "q", lambda: next(rounds))
+        assert seen == [{"accepting": True, "reason": "open"}]
+        assert get_status(world.store) == {"accepting": False, "reason": "worker_stopped"}
+
+    def test_the_door_closes_even_when_the_loop_fails(self, world):
+        from photoprep_common.service_status import get_status
+
+        from photoprep_worker.main import serve
+
+        class Broken:
+            def receive_message(self, **_):
+                raise RuntimeError("queue gone")
+
+        try:
+            serve(world.deps, Broken(), "q", lambda: False)
+        except RuntimeError:
+            pass
+        assert get_status(world.store)["accepting"] is False

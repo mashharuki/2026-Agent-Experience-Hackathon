@@ -29,7 +29,8 @@ FROM --platform=linux/amd64 ${PYTHON_IMAGE} AS runtime
 RUN useradd --system --uid 10001 --create-home worker
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build /app/packages /app/packages
-COPY --from=models /models /models
+# The Hugging Face cache files are private to the build user; the runtime user must read them.
+COPY --chmod=a+rX --from=models /models /models
 COPY apps/worker/src /app/apps/worker/src
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONPATH=/app/apps/worker/src \

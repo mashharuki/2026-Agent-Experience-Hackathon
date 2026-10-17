@@ -91,7 +91,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T027 **完了 2026-10-17: テスト先行で実装。API 側の全テストは 171 件（インメモリと DynamoDB[moto] の両方で通しを実行）。T029（ワーカー）と T030（フロント E2E）は各実装の段階で行う。** [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
 - [x] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
 - [x] T029 **完了 2026-10-17: ワーカー側 96 件（モックのBedrock／Decider）。実Deciderでのアダプタ確認は `RUN_REAL_DECIDER=1 uv run pytest -m real_model`（開発Mac・CPU）。** [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
-- [ ] T030 [P] [US1] `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
+- [ ] T030 [P] [US1] （jsdom の画面通しテスト `apps/frontend/src/App.test.tsx` で代替済み。Playwright の導入は未実施） `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
 
 ### Implementation for User Story 1 — API
 
@@ -125,16 +125,16 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### Implementation for User Story 1 — Frontend
 
-- [ ] T052 [P] [US1] `apps/frontend/src/theme.ts`、`App.tsx`: MUI のテーマとアプリ外枠（既存の雛形 CSS を整理）
-- [ ] T053 [P] [US1] `apps/frontend/src/auth/`: Cognito の Authorization Code＋PKCE（公開クライアント、トークンを永続保存しない）
-- [ ] T054 [US1] `apps/frontend/src/api/client.ts`: 認証付き HTTP 処理を生成クライアントへ注入。QueryClient で解析 POST の自動再試行を無効化し、再送時は同じ `Idempotency-Key` を使用。ログアウト時にキャッシュを破棄
-- [ ] T055 [P] [US1] `apps/frontend/src/features/camera/`: Camera API、撮影、EXIF 除去、**写真は端末メモリのみ**（query cache・永続ストレージに入れない）
-- [ ] T056 [US1] `apps/frontend/src/features/jobs/useJobPolling.ts`: 2→3→5 秒間隔、最大 60 秒。時間切れは自動再課金せず「確認待ち」を表示
-- [ ] T057 [US1] `apps/frontend/src/screens/Consult.tsx`: 相談範囲の選択（眉／前髪／まず見てほしい）と任意の希望（200 文字以内）
-- [ ] T058 [US1] `apps/frontend/src/screens/TrialCapture.tsx`: 位置合わせ、最初の撮影、観察可否の確認
-- [ ] T059 [US1] `apps/frontend/src/screens/TryOne.tsx`: 助言一つと「やってみる／別の提案／このままで終える」、実施中の待機と「整えたので確認」
-- [ ] T060 [US1] `apps/frontend/src/screens/Compare.tsx`: 前後の並置、「前が好き／後が好き／差が分からない」、「終える」を主操作に
-- [ ] T061 [US1] `apps/frontend/src/features/session/`: 四画面をつなぐフロー制御（FR-026）
+- [x] T052 **完了 2026-10-17: フロントはモックAPI（`VITE_USE_MOCK_API=true` または API 未設定の既定）で四画面を通せる。モック動作中は常にバナーで明示。ユニット／画面テスト22件、開発サーバーをブラウザ（モバイル幅・ダーク）で通し確認。実カメラはブラウザ枠で許可できず未確認、ライト配色・Cognito 実ログインも未確認。** [P] [US1] `apps/frontend/src/theme.ts`、`App.tsx`: MUI のテーマとアプリ外枠（既存の雛形 CSS を整理）
+- [x] T053 [P] [US1] `apps/frontend/src/auth/`: Cognito の Authorization Code＋PKCE（公開クライアント、トークンを永続保存しない）
+- [x] T054 [US1] `apps/frontend/src/api/client.ts`: 認証付き HTTP 処理を生成クライアントへ注入。QueryClient で解析 POST の自動再試行を無効化し、再送時は同じ `Idempotency-Key` を使用。ログアウト時にキャッシュを破棄
+- [x] T055 [P] [US1] `apps/frontend/src/features/camera/`: Camera API、撮影、EXIF 除去、**写真は端末メモリのみ**（query cache・永続ストレージに入れない）
+- [x] T056 [US1] `apps/frontend/src/features/jobs/useJobPolling.ts`: 2→3→5 秒間隔、最大 60 秒。時間切れは自動再課金せず「確認待ち」を表示
+- [x] T057 **（同意のチェックを含む最小版。同意画面の本実装は T075）** [US1] `apps/frontend/src/screens/Consult.tsx`: 相談範囲の選択（眉／前髪／まず見てほしい）と任意の希望（200 文字以内）
+- [x] T058 [US1] `apps/frontend/src/screens/TrialCapture.tsx`: 位置合わせ、最初の撮影、観察可否の確認
+- [x] T059 [US1] `apps/frontend/src/screens/TryOne.tsx`: 助言一つと「やってみる／別の提案／このままで終える」、実施中の待機と「整えたので確認」
+- [x] T060 [US1] `apps/frontend/src/screens/Compare.tsx`: 前後の並置、「前が好き／後が好き／差が分からない」、「終える」を主操作に
+- [x] T061 **（設計の修正: 2回目の変更は比較画面の「次の一手」から直接始める。「整えたので確認」の解析が次の提案も返すため、2回の変更が3回の解析に収まる）** [US1] `apps/frontend/src/features/session/`: 四画面をつなぐフロー制御（FR-026）
 - [ ] T062 [US1] 初回の実 AWS 通しを実施（**T012 の承認後のみ**）: ワーカー起動 → quickstart シナリオ 1 → 停止。デプロイは `cdk diff` を確認してユーザー承認を得てから行う
 
 **Checkpoint**: US1 が単独で動き、シナリオ 1 を通せる。ただし公開前の条件は Phase 4・5 の完了を含む。

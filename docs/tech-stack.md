@@ -21,9 +21,9 @@
 | 統合ツール | Vite+ | 推奨・未導入 | 既存Vite/Oxlintからの移行を検証。Biomeと二重整形せず、Turboとの実行責務を整理 |
 | パッケージ管理 | pnpm 10.32.1、workspace | 採用・導入済み | `apps/*`、`packages/*`。Pythonの依存はuvで別管理 |
 | モノレポ実行 | Turborepo 2.x | 既存 | `turbo` は導入済み、タスク定義は未整備。Vite Taskとの二重管理を避ける |
-| UI部品 | Material UI、Emotion | 採用・未導入 | フォーム、ボタン、ダイアログ、進行表示、共通テーマ |
+| UI部品 | Material UI、Emotion | 採用・導入済み（四画面で使用。ダーク／ライトは端末設定に追従、ライトは目視未確認） | フォーム、ボタン、進行表示、共通テーマ |
 | 演出 | MUI＋独自CSS | 採用・未導入 | **React Bits は採用しない**（2026-10-17、ユーザー承認。現行MIT＋Commons Clauseは部品の再配布を制限し、公式Rulesが求めるOSI承認の公開リポジトリと衝突し得るため）。撮影・操作を妨げず、`prefers-reduced-motion` を尊重する |
-| サーバー状態管理 | TanStack Query | 採用・導入済み（フロントに依存を追加。利用は未実装） | ジョブのポーリングとキャッシュ。解析POSTの自動再試行を無効化 |
+| サーバー状態管理 | TanStack Query | 採用・導入済み（ジョブのポーリングに使用） | 2→3→5秒・最大60秒。解析POSTは自動再試行しない（`customFetch` と QueryClient の既定）。写真はクエリのキャッシュに入れない |
 | 撮影 | ブラウザCamera API | 採用・未実装 | 写真は端末メモリで保持。同意後のみ解析用S3に送信 |
 | 共通コード | TypeScript | 採用・空パッケージあり | `packages/shared/` はUI共通処理。API境界型を手書きで重複管理しない |
 
@@ -78,7 +78,7 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 現行JS/TSチェック | Biome、Oxlint | 導入済み。Vite+移行時にルール・整形の重複を整理 |
 | 未使用コード・依存 | Knip | 導入済み。`pnpm knip`、設定は `knip.json` |
 | 重複コード | jscpd | 導入済み。`pnpm jscpd` で `apps/`・`packages/` を検査。`.jscpd.json` の閾値5%、レポートは `report/` |
-| フロント単体テスト | Vitest | 推奨・未導入。画面状態、終了操作、APIエラーへの応答 |
+| フロント単体テスト | Vitest、Testing Library（jsdom） | 導入済み・22件（PKCE、ポーリング、モックと契約の一致、画面の通し） | モックAPIの応答は OpenAPI の schema で検証し、仕様とずれたら失敗する。E2E（Playwright）は未導入 |
 | Python | pytest、Ruff | 推奨・未導入。認可、利用枠、重複配送、判断結果の接続 |
 | IaC | Jest、CDK assertions、cdk-nag | 導入済み・17件のテスト（セキュリティ設定・契約とのルート一致・cdk-nag）。デプロイ後の実環境での検証はまだ |
 | E2E | Playwright | 推奨・未導入。撮影から結果・終了までの体験 |

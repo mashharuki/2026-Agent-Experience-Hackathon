@@ -99,7 +99,7 @@ CONSENT_PENDING ──同意──▶ CONSULTING ──撮影──▶ ANALYZING
    │                          │                          ├─ clarify ───────────▶ CONSULTING
    │                          │                          └─ offer_finish ──────▶ DONE
    └────────────── 終える（どの状態からも）──────────────────────────────────────────────▶ DONE
-TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING ─選択─▶ 終える ▶ DONE ／ もう一手 ▶ ANALYZING（phase=before、最新の写真で新しい解析。changesUsed < 2 のときだけ）
+TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING ─選択─▶ 終える ▶ DONE ／ もう一手 ▶ TRYING（直前の「整えたので確認」の解析が次の提案も返していて changesUsed < 2 のときだけ。新しい解析は不要）
 ```
 
 不変条件：
@@ -109,6 +109,8 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 - 終了・取消し後に返った結果は画面へ適用しない（アーキテクチャの終了伝播）。
 
 実装メモ（T027・T032、2026-10-17）:
-- 状態ごとに受け付ける撮影の種類は固定: CONSULTING／CAPTURE_ADJUST／ADVICE_SHOWN（別の提案）／COMPARING（もう一手）は `before`、TRYING は `after` のみ。ANALYZING と DONE では解析を受け付けない。
+- 状態ごとに受け付ける撮影の種類は固定: CONSULTING／CAPTURE_ADJUST／ADVICE_SHOWN（別の提案）は `before`、TRYING は `after` のみ。ANALYZING・COMPARING・DONE では解析を受け付けない。
 - `changesUsed` は本人が「やってみる」を選んだ時点で増える（最大2）。`analysesUsed` は解析の受付時に増える（最大3）。どちらも条件付き更新で原子的に守る。
 - 解析が成功したときの遷移は `states.state_after_job`（助言の種類と撮影の種類、比較可否で決まる。ワーカーが同じ規則を適用する）。
+- 設計の修正（フロント実装中、2026-10-17）: 当初は「もう一手」を比較後の新しい解析（`before`）で始めていたため、2回の変更に解析が4回必要になり、上限の3回を超えた。「整えたので確認」（`after`）の解析が比較可否と**次の提案**を返すようにし、「もう一手」は比較画面に出る次の提案をそのまま「やってみる」（`advice_response: try`、COMPARING から可）で始める。これで2回の変更が3回の解析（前・後・後）に収まる。
+- `after` の解析は、助言の種類が `offer_finish`（変更の上限など）でも、比較できるなら COMPARING に進む（本人は必ず前後を比べられる）。比較できなければ CAPTURE_ADJUST（撮り直し）。

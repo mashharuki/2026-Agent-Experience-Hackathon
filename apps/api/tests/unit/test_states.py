@@ -26,25 +26,24 @@ def test_limits_match_the_spec():
         (State.CAPTURE_ADJUST, "before"),
         (State.ADVICE_SHOWN, "before"),  # "another suggestion"
         (State.TRYING, "after"),  # "I tidied up, please check"
-        (State.COMPARING, "before"),  # one more try starts from the latest photo
     ],
 )
 def test_analysis_allowed_in_state_with_matching_phase(state, phase):
     assert phase_for(state) == phase
-    check_can_request_analysis(state, phase, analyses_used=0, changes_used=0)
+    check_can_request_analysis(state, phase, analyses_used=0)
 
 
-@pytest.mark.parametrize("state", [State.ANALYZING, State.DONE])
+@pytest.mark.parametrize("state", [State.ANALYZING, State.COMPARING, State.DONE])
 def test_analysis_never_allowed_while_analyzing_or_done(state):
     with pytest.raises(AppError) as err:
-        check_can_request_analysis(state, "before", analyses_used=0, changes_used=0)
+        check_can_request_analysis(state, "before", analyses_used=0)
     assert err.value.status == 409
     assert err.value.code == ("session_ended" if state is State.DONE else "conflict")
 
 
 def test_wrong_phase_for_state_is_a_conflict():
     with pytest.raises(AppError) as err:
-        check_can_request_analysis(State.TRYING, "before", analyses_used=1, changes_used=1)
+        check_can_request_analysis(State.TRYING, "before", analyses_used=1)
     assert (err.value.status, err.value.code) == (409, "conflict")
 
 
@@ -54,26 +53,33 @@ def test_no_new_advice_while_trying():
 
 
 def test_analysis_limit_is_three():
-    check_can_request_analysis(
-        State.CONSULTING, "before", analyses_used=MAX_ANALYSES - 1, changes_used=0
-    )
+    check_can_request_analysis(State.CONSULTING, "before", analyses_used=MAX_ANALYSES - 1)
     with pytest.raises(AppError) as err:
-        check_can_request_analysis(
-            State.CONSULTING, "before", analyses_used=MAX_ANALYSES, changes_used=0
-        )
+        check_can_request_analysis(State.CONSULTING, "before", analyses_used=MAX_ANALYSES)
     assert (err.value.status, err.value.code) == (429, "analysis_limit_reached")
 
 
-def test_one_more_try_after_comparing_requires_a_change_left():
-    check_can_request_analysis(State.COMPARING, "before", analyses_used=2, changes_used=1)
+def test_the_comparison_needs_no_new_analysis_for_one_more_try():
+    """The 'after' check already produced the next suggestion, so two changes fit in 3 analyses."""
     with pytest.raises(AppError) as err:
-        check_can_request_analysis(
-            State.COMPARING, "before", analyses_used=2, changes_used=MAX_CHANGES
+        check_can_request_analysis(State.COMPARING, "before", analyses_used=1)
+    assert (err.value.status, err.value.code) == (409, "conflict")
+
+
+def test_one_more_change_from_the_comparison_needs_a_next_suggestion_and_a_change_left():
+    check_can_start_change(State.COMPARING, changes_used=1, last_advice_kind="grooming_tip")
+    for kind in ("clarify", "offer_finish", "capture_setup_tip", None):
+        with pytest.raises(AppError) as err:
+            check_can_start_change(State.COMPARING, changes_used=1, last_advice_kind=kind)
+        assert (err.value.status, err.value.code) == (409, "conflict")
+    with pytest.raises(AppError) as err:
+        check_can_start_change(
+            State.COMPARING, changes_used=MAX_CHANGES, last_advice_kind="grooming_tip"
         )
     assert (err.value.status, err.value.code) == (409, "change_limit_reached")
 
 
-@pytest.mark.parametrize("state", [State.CONSULTING, State.TRYING, State.COMPARING, State.DONE])
+@pytest.mark.parametrize("state", [State.CONSULTING, State.TRYING, State.ANALYZING, State.DONE])
 def test_starting_a_change_only_from_advice(state):
     with pytest.raises(AppError):
         check_can_start_change(state, changes_used=0)
@@ -96,7 +102,8 @@ def test_third_change_is_refused():
         ("grooming_tip", "after", True, State.COMPARING),
         ("clarify", "after", True, State.COMPARING),
         ("grooming_tip", "after", False, State.CAPTURE_ADJUST),  # light changed too much: retake
-        ("offer_finish", "after", True, State.DONE),
+        ("offer_finish", "after", True, State.COMPARING),  # the user still gets to compare
+        ("offer_finish", "after", False, State.CAPTURE_ADJUST),
     ],
 )
 def test_state_after_a_finished_job(kind, phase, comparable, expected):

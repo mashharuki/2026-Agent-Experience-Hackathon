@@ -54,7 +54,11 @@ def finish_job(api, job_id, kind="grooming_tip", comparable=True):
             },
         },
     )
-    api.store.update(f"SESSION#{job['sessionId']}", "META", set={"state": new_state.value})
+    api.store.update(
+        f"SESSION#{job['sessionId']}",
+        "META",
+        set={"state": new_state.value, "lastAdviceKind": kind},
+    )
 
 
 def session_item(api, session_id):
@@ -294,6 +298,55 @@ class TestFeedback:
             == 204
         )
         assert session_item(api, sid)["state"] == "DONE"
+
+    def to_comparison(self, api, next_kind="grooming_tip", changes_used=1):
+        sid = new_session(api)
+        job_id = start_analysis(api, sid, new_upload(api, sid))[1]["jobId"]
+        finish_job(api, job_id)
+        assert (
+            self.feedback(api, sid, {"type": "advice_response", "adviceResponse": "try"})[0] == 204
+        )
+        after = start_analysis(
+            api, sid, new_upload(api, sid, phase="after"), phase="after", idem="c" * 16
+        )
+        assert after[0] == 202, after
+        finish_job(api, after[1]["jobId"], next_kind)
+        assert session_item(api, sid)["state"] == "COMPARING"
+        return sid
+
+    def test_one_more_change_starts_from_the_comparison_without_a_new_analysis(self, api):
+        sid = self.to_comparison(api)
+        sent_before = len(api.queue.sent)
+        status, _, _ = self.feedback(api, sid, {"type": "advice_response", "adviceResponse": "try"})
+        assert status == 204
+        item = session_item(api, sid)
+        assert item["state"] == "TRYING" and item["changesUsed"] == 2
+        assert item["analysesUsed"] == 2  # two changes fit in three analyses
+        assert len(api.queue.sent) == sent_before
+
+    def test_the_second_change_check_is_the_third_and_last_analysis(self, api):
+        sid = self.to_comparison(api)
+        self.feedback(api, sid, {"type": "advice_response", "adviceResponse": "try"})
+        status, body, _ = start_analysis(
+            api, sid, new_upload(api, sid, phase="after"), phase="after", idem="d" * 16
+        )
+        assert status == 202, body
+        assert session_item(api, sid)["analysesUsed"] == 3
+
+    def test_no_second_change_when_the_check_offered_no_next_suggestion(self, api):
+        sid = self.to_comparison(api, next_kind="offer_finish")
+        status, body, _ = self.feedback(
+            api, sid, {"type": "advice_response", "adviceResponse": "try"}
+        )
+        assert (status, body["code"]) == (409, "conflict")
+
+    def test_a_comparison_with_changes_used_up_cannot_start_another(self, api):
+        sid = self.to_comparison(api)
+        api.store.update(f"SESSION#{sid}", "META", set={"changesUsed": 2})
+        status, body, _ = self.feedback(
+            api, sid, {"type": "advice_response", "adviceResponse": "try"}
+        )
+        assert (status, body["code"]) == (409, "change_limit_reached")
 
     def test_cannot_start_a_change_without_advice(self, api):
         sid = new_session(api)

@@ -90,12 +90,16 @@ def record_feedback(c: Container, sub: str, session_id: str, request: dict) -> N
         if state is not State.DONE:
             c.store.update(pk, "META", set={"state": State.DONE.value})
     elif kind == "advice_response" and response == "try":
-        check_can_start_change(state, changes_used=session["changesUsed"])
+        check_can_start_change(
+            state,
+            changes_used=session["changesUsed"],
+            last_advice_kind=session.get("lastAdviceKind"),
+        )
         try:
             c.store.update(
                 pk,
                 "META",
-                expect={"state": State.ADVICE_SHOWN.value},
+                expect={"state": [State.ADVICE_SHOWN.value, State.COMPARING.value]},
                 set={"state": State.TRYING.value},
                 add={"changesUsed": 1},
                 caps={"changesUsed": 2},

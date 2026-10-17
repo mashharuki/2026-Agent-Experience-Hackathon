@@ -108,6 +108,36 @@ class TestComparison:
         assert world.session()["state"] == "CAPTURE_ADJUST"
 
 
+class TestLastChange:
+    def test_after_the_last_change_the_user_still_compares_before_finishing(self, world):
+        world.seed(
+            phase="after",
+            prev_state="TRYING",
+            changes_used=2,
+            baseline={"lighting": "good", "framing": "ok"},
+        )
+        process_job(world.deps, JOB)
+        assert world.job()["result"]["kind"] == "offer_finish"
+        assert world.job()["result"]["comparable"] is True
+        assert world.session()["state"] == "COMPARING"  # not DONE: the comparison screen follows
+
+    def test_the_next_suggestion_comes_with_the_comparison(self, world):
+        world.seed(
+            phase="after",
+            prev_state="TRYING",
+            changes_used=1,
+            baseline={"lighting": "good", "framing": "ok"},
+        )
+        process_job(world.deps, JOB)
+        result = world.job()["result"]
+        assert (result["kind"], result["comparable"]) == ("grooming_tip", True)
+        assert result["text"]  # shown as the optional next step
+        assert (
+            world.session()["state"] == "COMPARING"
+            and world.session()["lastAdviceKind"] == "grooming_tip"
+        )
+
+
 class TestFailures:
     @pytest.mark.parametrize(
         ("break_it", "error_class"),

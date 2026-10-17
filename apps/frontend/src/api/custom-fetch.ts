@@ -1,12 +1,22 @@
 // Hand-written HTTP layer injected into the generated client (never generated).
-// Authentication and Idempotency-Key handling are completed in task T054.
+// - Adds the Cognito access token.
+// - Never retries: analysis POSTs must not be re-sent automatically (cost control).
+// - The fetch implementation can be swapped (the mock API uses this seam).
 
 export type AccessTokenProvider = () => string | undefined;
+export type FetchImplementation = typeof fetch;
 
 let tokenProvider: AccessTokenProvider = () => undefined;
+let fetchImplementation: FetchImplementation = (...args) => fetch(...args);
 
 export function setAccessTokenProvider(provider: AccessTokenProvider): void {
   tokenProvider = provider;
+}
+
+export function setFetchImplementation(
+  implementation: FetchImplementation,
+): void {
+  fetchImplementation = implementation;
 }
 
 export class ApiError extends Error {
@@ -23,7 +33,6 @@ export class ApiError extends Error {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
-// Never retries: analysis POSTs must not be re-sent automatically (cost control).
 export async function customFetch<T>(
   url: string,
   options: RequestInit,
@@ -33,7 +42,10 @@ export async function customFetch<T>(
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  const response = await fetch(`${baseUrl}${url}`, { ...options, headers });
+  const response = await fetchImplementation(`${baseUrl}${url}`, {
+    ...options,
+    headers,
+  });
   const text = await response.text();
   const data = text ? JSON.parse(text) : undefined;
   if (!response.ok) {

@@ -72,9 +72,7 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
         raise AppError(400, "invalid_request")
 
     state = State(session["state"])
-    check_can_request_analysis(
-        state, phase, analyses_used=session["analysesUsed"], changes_used=session["changesUsed"]
-    )
+    check_can_request_analysis(state, phase, analyses_used=session["analysesUsed"])
 
     job_id = c.new_id()
     if not c.store.create_if_absent(

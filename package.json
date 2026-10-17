@@ -9,7 +9,8 @@
     "check": "pnpm exec biome check --write .",
     "knip": "knip",
     "jscpd": "jscpd --config .jscpd.json apps packages",
-    "check:quality": "pnpm run knip && pnpm run jscpd"
+    "check:quality": "pnpm run knip && pnpm run jscpd",
+    "build:lambda": "uv run --project apps/api python apps/api/scripts/build_lambda.py"
   },
   "keywords": [],
   "author": "",

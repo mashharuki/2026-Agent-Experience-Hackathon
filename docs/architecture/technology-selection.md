@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | モデルの課金 | AWSクレジットが適用されるAWS課金経路を使う | 要件確定。イベントクレジットの対象製品は未確認 |
 | 画像理解・説明 | BedrockのAmazon Nova Liteを維持 | クレジット適用確認と品質評価が条件 |
-| フロント | React / TypeScript、VoidZero、TanStack Query、Material UI、React Bits | ユーザー指定。React Bitsの公開条件を確認する |
+| フロント | React / TypeScript、VoidZero、TanStack Query、Material UI | ユーザー指定。React Bitsは2026-10-17にユーザー承認で採用しないと決定（下記） |
 | VoidZeroの具体化 | Vite+を統合ツール候補にする。pnpmは維持 | 推奨案。既存Vite/OxlintもVoidZero製ツール |
 | API契約 | `packages/api-spec/openapi.yaml` を正本にする | ユーザー決定。ファイルは機能仕様確定時に作成 |
 | サーバー | Python 3.12＋Connexion 3のFlaskApp＋boto3 | 推奨案。YAMLからルート・検証を構成 |
@@ -41,9 +41,9 @@
 ### React Bitsと公開ライセンス
 
 確認した現行ライセンスはMIT単独ではなく **MIT＋Commons Clause** で、部品自体の再配布等に制限がある。
-アプリへの組込みは認められているが、ハッカソンのOSIライセンス要件との整合を確認してからソースを取り込む。
-自作コードのライセンスを適用して第三者コードを再ライセンスしない。採用する版・部品の著作権表示と条件を残す。
-提出条件に適合できない場合は、MUIと独自CSSの演出を代替案とする。
+アプリへの組込みは認められているが、部品自体の再配布は制限される。公式Rulesは公開リポジトリにOSI承認ライセンスを求める
+（pass/failの提出条件）ため、**2026-10-17にユーザー承認のうえ React Bits は採用しないと決定**した。演出はMUIと独自CSSで作る。
+経緯と評価は[research R-005](../../specs/001-pre-photo-grooming-assist/research.md)。
 根拠：[React Bitsのライセンス](https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md)、
 [公式ハッカソン規約](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider?tab=rules)。
 

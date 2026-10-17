@@ -21,31 +21,34 @@
 | 統合ツール | Vite+ | 推奨・未導入 | 既存Vite/Oxlintからの移行を検証。Biomeと二重整形せず、Turboとの実行責務を整理 |
 | パッケージ管理 | pnpm 10.32.1、workspace | 採用・導入済み | `apps/*`、`packages/*`。Pythonの依存はuvで別管理 |
 | モノレポ実行 | Turborepo 2.x | 既存 | `turbo` は導入済み、タスク定義は未整備。Vite Taskとの二重管理を避ける |
-| UI部品 | Material UI、Emotion | 採用・未導入 | フォーム、ボタン、ダイアログ、進行表示、共通テーマ |
-| 演出 | React Bits、TypeScript＋CSS版 | 条件付き・未導入 | 現行MIT＋Commons Clauseと応募時の公開条件の整合を確認。撮影・操作を妨げない |
-| サーバー状態管理 | TanStack Query | 採用・未導入 | ジョブのポーリングとキャッシュ。解析POSTの自動再試行を無効化 |
+| UI部品 | Material UI、Emotion | 採用・導入済み（四画面で使用。ダーク／ライトは端末設定に追従、ライトは目視未確認） | フォーム、ボタン、進行表示、共通テーマ |
+| 演出 | MUI＋独自CSS | 採用・未導入 | **React Bits は採用しない**（2026-10-17、ユーザー承認。現行MIT＋Commons Clauseは部品の再配布を制限し、公式Rulesが求めるOSI承認の公開リポジトリと衝突し得るため）。撮影・操作を妨げず、`prefers-reduced-motion` を尊重する |
+| 多言語（日本語・英語） | 自作の最小i18n（辞書2つ＋切替。依存なし） | 採用・導入済み（FR-028、2026-10-17） | `apps/frontend/src/i18n/`。キーの一致と英語への日本語混入をテストで保証。言語を増やす段階でライブラリを再検討。助言文の言語はセッションの `language` に従う（APIとワーカー）。英語の助言の質は未評価 |
+| PWA | 手書きのマニフェストとサービスワーカー（Workboxなし） | 採用・導入済み・実AWSへは未公開（FR-029、2026-10-17） | 静的ファイルだけをキャッシュし、API・S3・Cognito・サインイン戻り・写真は対象外。更新は利用者が承認。ビルドごとにビルドIDを刻印。実機でのホーム画面追加は未確認 |
+| サーバー状態管理 | TanStack Query | 採用・導入済み（ジョブのポーリングに使用） | 2→3→5秒・最大60秒。解析POSTは自動再試行しない（`customFetch` と QueryClient の既定）。写真はクエリのキャッシュに入れない |
 | 撮影 | ブラウザCamera API | 採用・未実装 | 写真は端末メモリで保持。同意後のみ解析用S3に送信 |
 | 共通コード | TypeScript | 採用・空パッケージあり | `packages/shared/` はUI共通処理。API境界型を手書きで重複管理しない |
 
-React Bitsのライセンス確認で適合できない場合の代替はMUI＋独自CSS。
+React Bitsは採用しない。演出はMUI＋独自CSSで作る。ライセンスの経緯は[research R-005](../specs/001-pre-photo-grooming-assist/research.md)を参照。
 Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使う。
 
 ## API契約・バックエンド・AI
 
 | 領域 | 技術・バージョン方針 | 選定状態 | 配置・用途・後続処理の注意 |
 | --- | --- | --- | --- |
-| API契約の正本 | OpenAPI YAML | 採用・未作成 | `packages/api-spec/openapi.yaml`。Pythonから生成する仕様を正本にしない |
+| API契約の正本 | OpenAPI YAML | 採用・作成済み（7操作。`pnpm --filter api-spec check` で検査） | `packages/api-spec/openapi.yaml`。Pythonから生成する仕様を正本にしない |
 | OpenAPIの版 | 3.0.3 | 推奨 | Connexion案との互換性を優先。旧3.1案を引き継がず、3.1専用構文を混在させない |
-| サーバー検証 | Connexion 3＋Flask | 推奨・未導入 | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
+| サーバー検証 | Connexion 3＋Flask | 推奨・apps/apiに導入済み・実API Gateway／Lambdaで受付状態・セッション・アップロード枠・解析受付が動作（2026-10-17、1回） | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
 | API実装言語 | Python 3.12、boto3 | 推奨・未実装 | 旧TypeScript API案を見直した案。認可、署名付きPOST、ジョブ受付・結果取得 |
-| Lambdaアダプター | Mangum | 推奨・未検証 | Connexion全体を包む。HTTP API v2イベントとJWT claimsの引渡しを検証 |
-| フロント向け生成 | Orval | 推奨・未導入 | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
+| Lambdaアダプター | Mangum | 推奨・実Lambdaで動作確認（2026-10-17） | Connexion全体を包む。HTTP API v2イベントとJWT claimsの引渡しを実環境で確認 |
+| フロント向け生成 | Orval | 推奨・導入済み・生成確認済み（`pnpm --filter frontend api:generate`） | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
 | APIドキュメント | Swagger UI | 推奨・未導入 | 同じYAMLから表示。ドキュメント公開設定とAPI認証を区別する |
-| Python依存管理 | uv、lockfile | 推奨・アプリ未作成 | APIとワーカーの依存を分離し、再現可能にする |
-| AIワーカー | Python 3.12、PyTorch CPU | 採用・未実装 | `apps/worker/`。SQSを取得するプロセス。Flaskサーバーは不要 |
-| 判断モデル | Strands Decider 2B | 採用・未検証 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を初期候補とし、revisionを固定。判断で実行ツールを変える |
-| 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・未検証 | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
-| コンテナ | Docker、Amazon ECR | 採用・未実装 | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける |
+| Python依存管理 | uv、lockfile | 推奨・apps/apiで導入済み（apps/workerは未作成） | APIとワーカーの依存を分離し、再現可能にする |
+| 共有Python | `packages/photoprep-common` | 採用・導入済み | APIとワーカーで共通の Store（DynamoDB）・状態規則・ログの許可リスト。依存は boto3 のみ |
+| AIワーカー | Python 3.12、PyTorch CPU | 採用・実装済み・Fargateで実行（`apps/worker`。134件のテスト通過。実AWSで解析を1回通した） | SQSを取得するプロセス。Flaskサーバーは不要。`pillow` で画像検証、`pydantic` でモデル出力を検証 |
+| 判断モデル | Strands Decider 2B | 採用・開発Mac(CPU)で実機確認済み・Fargateは未測定 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`（revision `216d1ccb…` を固定）とベース重み `Qwen/Qwen3.5-2B-Base`（`b1485b2f…`）をビルド時に取得。禁止はDeciderが守らないため通常コードのガードで強制 |
+| 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・実Bedrockで1回の解析を確認（品質は未評価） | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
+| コンテナ | Docker、Amazon ECR | ビルド・ECR登録・Fargateで起動を確認（約6 GB、2026-10-17） | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける。CPU版torchをLinuxで選ぶ設定はロックで確認済み |
 
 自動化の流れは **YAML → Connexionの検証・ルーティング／Orvalのクライアント生成**。
 Connexionはミドルウェアのソースや業務処理を生成するものではない。
@@ -56,16 +59,16 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 領域 | 技術 | 選定状態 | 用途・制約 |
 | --- | --- | --- | --- |
 | リージョン | 東京 `ap-northeast-1` | 採用 | CloudFrontはグローバル。初版でクロスリージョン推論を有効にしない |
-| Web配信 | Amazon S3、CloudFront OAC | 採用・未構築 | 非公開S3からSPAを配信 |
-| 認証 | Amazon Cognito User Pool | 採用・未構築 | Authorization Code＋PKCE、公開クライアント、初版は招待制 |
-| API実行 | API Gateway HTTP API、AWS Lambda | 採用・未構築 | JWT authorizer＋アプリの所有権検証。VPC外Lambda。軽量ZIP配布を推奨 |
-| 状態保存 | DynamoDB On-Demand | 採用・未構築 | セッション、所有者、ジョブ、利用枠。画像は格納しない |
-| 一時画像 | 専用の非公開S3 | 採用・未構築 | 署名付きPOST、サイズ・期限制限、処理後削除と回収処理 |
-| 非同期処理 | SQS Standard、DLQ | 採用・未構築 | job IDのみ送信。重複配送を前提にリース・冪等性を実装 |
-| ワーカー実行 | ECS on Fargate、Linux/x86_64 | 採用・性能未検証 | 初期案4 vCPU/16 GB、同時処理1。デモ前起動・終了後停止 |
-| ネットワーク | VPC、public subnet、IGW | 採用・未構築 | ワーカーはpublic IP、inboundなし。NAT Gateway・ALBを作らない |
-| IaC | AWS CDK v2、TypeScript、cdk-nag | 採用・雛形あり | `apps/cdk/`。CLI/lib/Node/TypeScriptの互換性を確認して固定 |
-| 監視・費用・停止 | CloudWatch、AWS Budgets、EventBridge Scheduler | 採用・未構築 | メタデータ監視、通知、画像回収、ワーカー停止。通知だけを課金制限にしない |
+| Web配信 | Amazon S3、CloudFront OAC | 採用・デプロイ済み（東京、2026-10-17） | 非公開S3からSPAを配信 |
+| 認証 | Amazon Cognito User Pool | 採用・デプロイ済み（東京、2026-10-17） | Authorization Code＋PKCE、公開クライアント、初版は招待制 |
+| API実行 | API Gateway HTTP API、AWS Lambda | 採用・デプロイ済み（東京、2026-10-17） | JWT authorizer＋アプリの所有権検証。VPC外Lambda。軽量ZIP配布を推奨 |
+| 状態保存 | DynamoDB On-Demand | 採用・デプロイ済み（東京、2026-10-17） | セッション、所有者、ジョブ、利用枠。画像は格納しない |
+| 一時画像 | 専用の非公開S3 | 採用・デプロイ済み（東京、2026-10-17） | 署名付きPOST、サイズ・期限制限、処理後削除と回収処理 |
+| 非同期処理 | SQS Standard、DLQ | 採用・デプロイ済み（東京、2026-10-17） | job IDのみ送信。重複配送を前提にリース・冪等性を実装 |
+| ワーカー実行 | ECS on Fargate、Linux/x86_64 | 採用・デプロイ済み・性能は一部実測（受付開始まで124秒、ピークRSS未計測） | 初期案4 vCPU/16 GB、同時処理1。デモ前起動・終了後停止 |
+| ネットワーク | VPC、public subnet、IGW | 採用・デプロイ済み（東京、2026-10-17） | ワーカーはpublic IP、inboundなし。NAT Gateway・ALBを作らない |
+| IaC | AWS CDK v2、TypeScript、cdk-nag 3 | 採用・Identity／Data／Frontend／Api の Construct を定義済み（デプロイ未実施） | `apps/cdk`。aws-cdk-lib 2.273.0＋CLI 2.1145.0＋cdk-nag 3.0.2 の組で synth・jest 通過。cdk-nag 3 は `Validations.of().acknowledge()` を使う。Worker／Operations は US1 で追加 |
+| 監視・費用・停止 | CloudWatch、AWS Budgets、EventBridge Scheduler | 採用・デプロイ済み（東京、2026-10-17） | メタデータ監視、通知、画像回収、ワーカー停止。通知だけを課金制限にしない |
 
 イベントクレジットは適用確認前に費用から差し引かない。BedrockとFargate等の対象製品、
 有効期限、残高を確認し、割引前の使用量制限も維持する。
@@ -77,11 +80,11 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 現行JS/TSチェック | Biome、Oxlint | 導入済み。Vite+移行時にルール・整形の重複を整理 |
 | 未使用コード・依存 | Knip | 導入済み。`pnpm knip`、設定は `knip.json` |
 | 重複コード | jscpd | 導入済み。`pnpm jscpd` で `apps/`・`packages/` を検査。`.jscpd.json` の閾値5%、レポートは `report/` |
-| フロント単体テスト | Vitest | 推奨・未導入。画面状態、終了操作、APIエラーへの応答 |
+| フロント単体テスト | Vitest、Testing Library（jsdom） | 導入済み・22件（PKCE、ポーリング、モックと契約の一致、画面の通し） | モックAPIの応答は OpenAPI の schema で検証し、仕様とずれたら失敗する。E2E（Playwright）は未導入 |
 | Python | pytest、Ruff | 推奨・未導入。認可、利用枠、重複配送、判断結果の接続 |
-| IaC | Jest、CDK assertions、cdk-nag | 雛形・依存あり。既存テストは構成検証済みの証拠ではない |
+| IaC | Jest、CDK assertions、cdk-nag | 導入済み・17件のテスト（セキュリティ設定・契約とのルート一致・cdk-nag）。デプロイ後の実環境での検証はまだ |
 | E2E | Playwright | 推奨・未導入。撮影から結果・終了までの体験 |
-| API契約 | YAML lint、Connexion読込み、Orval再生成差分、契約テスト | 未整備。仕様と実装・生成クライアントの不一致を検出 |
+| API契約 | YAML lint、Connexion読込み、Orval再生成差分、契約テスト | 一部整備（YAML検証・Connexion読込み・operationId重複・認証必須・3.1構文の検査は `check_spec.py`。Orval再生成差分の検査はコミット後に有効。契約テストは未実装）。仕様と実装・生成クライアントの不一致を検出 |
 
 ## Spec Kitでの適用ルール
 

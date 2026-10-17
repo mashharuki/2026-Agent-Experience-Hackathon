@@ -1,0 +1,10 @@
+# Allow-list: the build context is the whole repository, send only what the image needs.
+*
+!packages/photoprep-common/pyproject.toml
+!packages/photoprep-common/src/**
+!apps/worker/pyproject.toml
+!apps/worker/uv.lock
+!apps/worker/src/**
+!apps/worker/scripts/prefetch_models.py
+**/__pycache__
+**/.venv

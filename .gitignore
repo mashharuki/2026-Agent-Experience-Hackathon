@@ -14,3 +14,18 @@ docs/output/
 .serena
 /report/
 .pnpm-store
+# Experiment virtual environments and model caches
+experiments/**/.venv/
+experiments/**/__pycache__/
+
+# Python environments and caches
+**/.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# CDK context cache: holds the AWS account id from local credentials, so it is not published
+apps/cdk/cdk.context.json
+
+# Built Lambda package (scripts/build_lambda.py) and frontend output
+apps/api/build/

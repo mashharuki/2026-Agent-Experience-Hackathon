@@ -1,0 +1,54 @@
+[project]
+name = "photoprep-worker"
+version = "0.1.0"
+description = "SQS worker: Bedrock observation, Strands Decider choice, guarded advice"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "photoprep-common",
+    "boto3>=1.40",
+    "pydantic>=2.8",
+    "pillow>=11",
+    "strands-decider==0.1.0",
+    "torch>=2.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "ruff>=0.14",
+    "moto[dynamodb,s3,sqs]>=5",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+photoprep-common = { path = "../../packages/photoprep-common", editable = true }
+# CPU-only PyTorch for the Linux/x86_64 Fargate image (no CUDA wheels, smaller image).
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = ["real_model: loads the real Decider weights (slow); run with RUN_REAL_DECIDER=1"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "E501"]
+# Japanese user-facing strings: ruff counts full-width characters as two columns.
+"src/photoprep_worker/explain.py" = ["E501"]
+"src/photoprep_worker/observe.py" = ["E501"]
+"src/photoprep_worker/decider.py" = ["E501"]

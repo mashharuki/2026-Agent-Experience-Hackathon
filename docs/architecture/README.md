@@ -30,7 +30,7 @@ CloudFrontはグローバル配信。画像は東京のS3とBedrockで処理し�
 | モノレポ実行 | Turborepo 2.x | `turbo ^2.11.9` 導入済み。`turbo.json` とタスク定義は今後追加 |
 | フロントエンド | React 19、Vite 8、TypeScript | `apps/frontend` に雛形あり。SSR不要のカメラ中心SPA |
 | 開発ツール | VoidZero製ツール。Vite+統合を提案 | Vite/Oxlint導入済み。pnpmを維持し、既存Biome/Turboとの役割重複を移行時に整理 |
-| UI | Material UI＋Emotion、React Bits、ブラウザCamera API | MUIは操作部品、React Bitsは演出。React Bitsは公開条件との整合確認後に取り込む |
+| UI | Material UI＋Emotion、独自CSS、ブラウザCamera API | MUIは操作部品、演出は独自CSS。React Bitsは公開リポジトリのOSI要件と衝突し得るため採用しない（2026-10-17） |
 | サーバー状態 | TanStack Query | ジョブのポーリングとキャッシュ。APIフックはOrvalで生成する方針 |
 | Web配信 | S3非公開バケット＋CloudFront OAC | 静的配信。公開S3 website endpointを使わない |
 | 認証 | Cognito User Pool、OAuth Authorization Code＋PKCE | 公開クライアント・client secretなし。初版は招待制、セルフ登録無効 |

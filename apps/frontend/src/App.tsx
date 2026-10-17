@@ -1,122 +1,118 @@
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  CssBaseline,
+  Stack,
+  ThemeProvider,
+  Typography,
+} from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import heroImg from "./assets/hero.png";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "./assets/vite.svg";
-import "./App.css";
+import { setFetchImplementation } from "./api/custom-fetch";
+import { AuthProvider } from "./auth/AuthProvider";
+import { useAuth } from "./auth/context";
+import { LanguageSwitch } from "./components/LanguageSwitch";
+import { MockBanner } from "./components/MockBanner";
+import { type AppConfig, ConfigContext, loadConfig } from "./config";
+import { SessionFlow } from "./features/session/SessionFlow";
+import { I18nProvider, useI18n } from "./i18n/I18nProvider";
+import { doorFromUrl } from "./mock/doors";
+import { createMockApi } from "./mock/mock-api";
+import { OfflineNotice, UpdateBanner } from "./pwa/PwaNotices";
+import { theme } from "./theme";
 
-function App() {
-  const [count, setCount] = useState(0);
-
+function Header() {
+  const { t } = useI18n();
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <Box component="header" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{ justifyContent: "flex-end", mb: 1 }}>
+        <LanguageSwitch />
+      </Stack>
+      <Typography variant="h1" component="h1">
+        {t("app.title")}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {t("app.tagline")}
+      </Typography>
+    </Box>
   );
 }
 
-export default App;
+function Gate() {
+  const auth = useAuth();
+  const { t } = useI18n();
+  if (auth.status === "loading")
+    return <Typography>{t("gate.loading")}</Typography>;
+  if (auth.status === "error") {
+    return <Alert severity="error">{t("gate.error")}</Alert>;
+  }
+  if (auth.status === "signed-out") {
+    return (
+      <Stack spacing={2}>
+        <Typography>{t("gate.signInPrompt")}</Typography>
+        <Button variant="contained" size="large" onClick={auth.signIn}>
+          {t("gate.signIn")}
+        </Button>
+      </Stack>
+    );
+  }
+  return <SessionFlow />;
+}
+
+export default function App({
+  config: override,
+}: {
+  config?: Partial<AppConfig>;
+}) {
+  const [config] = useState<AppConfig>(() => {
+    const base = { ...loadConfig(), ...override };
+    if (base.mode === "mock") {
+      // All API calls, including the signed photo upload, are answered inside this tab.
+      base.mock ??= createMockApi({
+        door: doorFromUrl(window.location.search),
+      });
+      setFetchImplementation(base.mock.fetch);
+    } else {
+      setFetchImplementation((...args) => fetch(...args));
+    }
+    return base;
+  });
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            refetchOnWindowFocus: false,
+            gcTime: 60_000,
+          },
+          mutations: { retry: false },
+        },
+      }),
+  );
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <I18nProvider>
+        <ConfigContext.Provider value={config}>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <UpdateBanner />
+              <OfflineNotice />
+              {config.mode === "mock" ? (
+                <MockBanner mock={config.mock} />
+              ) : null}
+              <Container maxWidth="sm" sx={{ py: 3 }}>
+                <Header />
+                <Gate />
+              </Container>
+            </AuthProvider>
+          </QueryClientProvider>
+        </ConfigContext.Provider>
+      </I18nProvider>
+    </ThemeProvider>
+  );
+}

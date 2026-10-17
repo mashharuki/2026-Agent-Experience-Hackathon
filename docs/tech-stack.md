@@ -64,7 +64,7 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 非同期処理 | SQS Standard、DLQ | 採用・未構築 | job IDのみ送信。重複配送を前提にリース・冪等性を実装 |
 | ワーカー実行 | ECS on Fargate、Linux/x86_64 | 採用・性能未検証 | 初期案4 vCPU/16 GB、同時処理1。デモ前起動・終了後停止 |
 | ネットワーク | VPC、public subnet、IGW | 採用・未構築 | ワーカーはpublic IP、inboundなし。NAT Gateway・ALBを作らない |
-| IaC | AWS CDK v2、TypeScript、cdk-nag | 採用・雛形あり | `apps/cdk/`。CLI/lib/Node/TypeScriptの互換性を確認して固定 |
+| IaC | AWS CDK v2、TypeScript、cdk-nag 3 | 採用・Identity／Data／Frontend／Api の Construct を定義済み（デプロイ未実施） | `apps/cdk`。aws-cdk-lib 2.273.0＋CLI 2.1145.0＋cdk-nag 3.0.2 の組で synth・jest 通過。cdk-nag 3 は `Validations.of().acknowledge()` を使う。Worker／Operations は US1 で追加 |
 | 監視・費用・停止 | CloudWatch、AWS Budgets、EventBridge Scheduler | 採用・未構築 | メタデータ監視、通知、画像回収、ワーカー停止。通知だけを課金制限にしない |
 
 イベントクレジットは適用確認前に費用から差し引かない。BedrockとFargate等の対象製品、
@@ -79,7 +79,7 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 重複コード | jscpd | 導入済み。`pnpm jscpd` で `apps/`・`packages/` を検査。`.jscpd.json` の閾値5%、レポートは `report/` |
 | フロント単体テスト | Vitest | 推奨・未導入。画面状態、終了操作、APIエラーへの応答 |
 | Python | pytest、Ruff | 推奨・未導入。認可、利用枠、重複配送、判断結果の接続 |
-| IaC | Jest、CDK assertions、cdk-nag | 雛形・依存あり。既存テストは構成検証済みの証拠ではない |
+| IaC | Jest、CDK assertions、cdk-nag | 導入済み・17件のテスト（セキュリティ設定・契約とのルート一致・cdk-nag）。デプロイ後の実環境での検証はまだ |
 | E2E | Playwright | 推奨・未導入。撮影から結果・終了までの体験 |
 | API契約 | YAML lint、Connexion読込み、Orval再生成差分、契約テスト | 一部整備（YAML検証・Connexion読込み・operationId重複・認証必須・3.1構文の検査は `check_spec.py`。Orval再生成差分の検査はコミット後に有効。契約テストは未実装）。仕様と実装・生成クライアントの不一致を検出 |
 

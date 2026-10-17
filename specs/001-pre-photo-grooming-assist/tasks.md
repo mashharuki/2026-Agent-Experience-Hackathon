@@ -36,7 +36,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T004 [P] （ほぼ完了: lint は JS ではなく Python の `openapi-spec-validator`＋Connexion 読込みで `check_spec.py` に実装し、依存の重い JS ツールを避けた。Orval は T019 で導入済み）`packages/api-spec/` に OpenAPI の lint ツールと Orval を導入（lint ツールの選定理由を `research.md` に追記）。`main: index.js` のヒントは本タスクで扱わない
 - [ ] T005 [P] `evaluation/` の構成を作成（`evaluation/dev-examples/`、`evaluation/holdout/`、`evaluation/README.md`）。顔写真・個人データをコミットしないよう `.gitignore` に画像拡張子と `evaluation/holdout/` の実データを追加
 - [ ] T006 [P] `apps/frontend/.env.example`、`apps/api/.env.example`、`apps/worker/.env.example` を**プレースホルダのみ**で作成（認証情報・トークンの値を書かない）
-- [ ] T007 `apps/cdk/package.json` で CDK CLI/lib・Node.js・TypeScript・cdk-nag の互換性を確認して固定し、`pnpm --filter cdk test` と `pnpm --filter cdk cdk synth` が通ることを確認（結果を `docs/tech-stack.md` の備考へ）
+- [x] T007 **完了 2026-10-17: aws-cdk-lib 2.273.0、CDK CLI 2.1145.0、constructs 10.8.1、cdk-nag 3.0.2（aws-cdk-lib ^2.257 が必要）、TypeScript 5.5.4 の組で型検査・jest・synth が通った。** `apps/cdk/package.json` で CDK CLI/lib・Node.js・TypeScript・cdk-nag の互換性を確認して固定し、`pnpm --filter cdk test` と `pnpm --filter cdk cdk synth` が通ることを確認（結果を `docs/tech-stack.md` の備考へ）
 
 ---
 
@@ -66,11 +66,11 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### C. 認証・データ・API 骨格
 
-- [ ] T020 [P] `apps/cdk/lib/constructs/identity.ts`: Cognito User Pool（招待制・セルフ登録無効）、公開クライアント（secret なし）、Authorization Code＋PKCE、スコープ `photoprep/session`
-- [ ] T021 [P] `apps/cdk/lib/constructs/data.ts`: DynamoDB On-Demand（セッション・ジョブ・利用枠・同意・判断記録、TTL）、一時画像用の専用 S3（Block Public Access、SSE-S3、TLS 必須、CORS は SPA origin のみ、1 日 Lifecycle）、SQS Standard＋DLQ（visibility 120 秒、受信 3 回で DLQ）
-- [ ] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
-- [ ] T023 `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
-- [ ] T024 `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
+- [x] T020 [P] `apps/cdk/lib/constructs/identity.ts`: Cognito User Pool（招待制・セルフ登録無効）、公開クライアント（secret なし）、Authorization Code＋PKCE、スコープ `photoprep/session`
+- [x] T021 [P] `apps/cdk/lib/constructs/data.ts`: DynamoDB On-Demand（セッション・ジョブ・利用枠・同意・判断記録、TTL）、一時画像用の専用 S3（Block Public Access、SSE-S3、TLS 必須、CORS は SPA origin のみ、1 日 Lifecycle）、SQS Standard＋DLQ（visibility 120 秒、受信 3 回で DLQ）
+- [x] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
+- [x] T023 **完了 2026-10-17（デプロイなし）: Lambda の配布物は仮（ソースのみ）。実ビルドは T038。** `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
+- [x] T024 **完了 2026-10-17: 17件。cdk-nag 3 は NagSuppressions を廃止し `Validations.of().acknowledge()` を使う（指摘ごとに個別の承認。`lib/nag.ts`）。** `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
 - [x] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logs.py`（標準の `logging` と紛らわしいため改名）: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は `experiments/connexion-mangum/app.py`）
 - [x] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
 

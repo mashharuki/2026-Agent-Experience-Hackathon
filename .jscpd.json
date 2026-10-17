@@ -4,13 +4,15 @@
   "format": [
     "javascript",
     "typescript",
+    "tsx",
+    "jsx",
     "python",
     "json",
-    "html",
+    "markup",
     "css",
     "yaml"
   ],
-  "ignorePattern": ["node_modules", "dist", "*.min.js"],
+  "ignore": ["**/node_modules/**", "**/dist/**", "**/*.min.js"],
   "reporters": ["console", "json"],
   "output": "report",
   "threshold": 5,

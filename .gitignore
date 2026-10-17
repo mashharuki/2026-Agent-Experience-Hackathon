@@ -12,3 +12,5 @@ dist/
 docs/output/
 .superpowers
 .serena
+/report/
+.pnpm-store

@@ -24,6 +24,9 @@ Use the declared package manager, `pnpm@10.32.1`.
 - `pnpm format`: format supported files with Biome, writing changes.
 - `pnpm check`: run Biome checks with automatic fixes; review the resulting diff.
 - `pnpm exec biome check .`: run checks without writing changes.
+- `pnpm knip`: detect unused files, exports, and dependencies using `knip.json`.
+- `pnpm jscpd`: detect duplication in `apps/` and `packages/`; write reports to ignored `report/`.
+- `pnpm check:quality`: run Knip, then jscpd if Knip passes; neither applies code fixes.
 - `git diff --check`: detect whitespace errors in changes.
 - `pnpm --filter frontend dev`: start Vite locally.
 - `pnpm --filter frontend build`: type-check and build the SPA.

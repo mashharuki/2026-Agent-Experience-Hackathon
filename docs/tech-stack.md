@@ -75,6 +75,8 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 対象 | 技術 | 状態・検証内容 |
 | --- | --- | --- |
 | 現行JS/TSチェック | Biome、Oxlint | 導入済み。Vite+移行時にルール・整形の重複を整理 |
+| 未使用コード・依存 | Knip | 導入済み。`pnpm knip`、設定は `knip.json` |
+| 重複コード | jscpd | 導入済み。`pnpm jscpd` で `apps/`・`packages/` を検査。`.jscpd.json` の閾値5%、レポートは `report/` |
 | フロント単体テスト | Vitest | 推奨・未導入。画面状態、終了操作、APIエラーへの応答 |
 | Python | pytest、Ruff | 推奨・未導入。認可、利用枠、重複配送、判断結果の接続 |
 | IaC | Jest、CDK assertions、cdk-nag | 雛形・依存あり。既存テストは構成検証済みの証拠ではない |

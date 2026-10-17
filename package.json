@@ -7,7 +7,9 @@
   "scripts": {
     "format": "pnpm exec biome format --write .",
     "check": "pnpm exec biome check --write .",
-    "knip": "knip"
+    "knip": "knip",
+    "jscpd": "jscpd --config .jscpd.json apps packages",
+    "check:quality": "pnpm run knip && pnpm run jscpd"
   },
   "keywords": [],
   "author": "",

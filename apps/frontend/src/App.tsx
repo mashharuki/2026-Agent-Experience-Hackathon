@@ -13,30 +13,47 @@ import { useState } from "react";
 import { setFetchImplementation } from "./api/custom-fetch";
 import { AuthProvider } from "./auth/AuthProvider";
 import { useAuth } from "./auth/context";
+import { LanguageSwitch } from "./components/LanguageSwitch";
 import { MockBanner } from "./components/MockBanner";
 import { type AppConfig, ConfigContext, loadConfig } from "./config";
 import { SessionFlow } from "./features/session/SessionFlow";
+import { I18nProvider, useI18n } from "./i18n/I18nProvider";
 import { doorFromUrl } from "./mock/doors";
 import { createMockApi } from "./mock/mock-api";
+import { OfflineNotice, UpdateBanner } from "./pwa/PwaNotices";
 import { theme } from "./theme";
+
+function Header() {
+  const { t } = useI18n();
+  return (
+    <Box component="header" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{ justifyContent: "flex-end", mb: 1 }}>
+        <LanguageSwitch />
+      </Stack>
+      <Typography variant="h1" component="h1">
+        {t("app.title")}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {t("app.tagline")}
+      </Typography>
+    </Box>
+  );
+}
 
 function Gate() {
   const auth = useAuth();
+  const { t } = useI18n();
   if (auth.status === "loading")
-    return <Typography>確認しています…</Typography>;
+    return <Typography>{t("gate.loading")}</Typography>;
   if (auth.status === "error") {
-    return (
-      <Alert severity="error">
-        ログインできませんでした。もう一度お試しください。
-      </Alert>
-    );
+    return <Alert severity="error">{t("gate.error")}</Alert>;
   }
   if (auth.status === "signed-out") {
     return (
       <Stack spacing={2}>
-        <Typography>はじめるにはログインが必要です（招待制）。</Typography>
+        <Typography>{t("gate.signInPrompt")}</Typography>
         <Button variant="contained" size="large" onClick={auth.signIn}>
-          ログイン
+          {t("gate.signIn")}
         </Button>
       </Stack>
     );
@@ -79,24 +96,23 @@ export default function App({
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ConfigContext.Provider value={config}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            {config.mode === "mock" ? <MockBanner mock={config.mock} /> : null}
-            <Container maxWidth="sm" sx={{ py: 3 }}>
-              <Box component="header" sx={{ mb: 2 }}>
-                <Typography variant="h1" component="h1">
-                  撮る前のひと手間
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  撮影前に、眉か前髪を一つだけ整えて試せます。
-                </Typography>
-              </Box>
-              <Gate />
-            </Container>
-          </AuthProvider>
-        </QueryClientProvider>
-      </ConfigContext.Provider>
+      <I18nProvider>
+        <ConfigContext.Provider value={config}>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <UpdateBanner />
+              <OfflineNotice />
+              {config.mode === "mock" ? (
+                <MockBanner mock={config.mock} />
+              ) : null}
+              <Container maxWidth="sm" sx={{ py: 3 }}>
+                <Header />
+                <Gate />
+              </Container>
+            </AuthProvider>
+          </QueryClientProvider>
+        </ConfigContext.Provider>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

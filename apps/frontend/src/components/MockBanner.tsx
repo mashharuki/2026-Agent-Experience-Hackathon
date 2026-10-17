@@ -1,17 +1,20 @@
 import { Alert, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
+import type { MessageKey } from "../i18n/ja";
 import { DOORS } from "../mock/doors";
 import type { MockApi, MockScenario } from "../mock/mock-api";
 
-const LABELS: Record<MockScenario, string> = {
-  normal: "通常",
-  backlight: "逆光（撮り直しの案内）",
-  vague: "あいまい（確認の質問）",
-  error: "解析の失敗",
+const LABELS: Record<MockScenario, MessageKey> = {
+  normal: "mock.scenario.normal",
+  backlight: "mock.scenario.backlight",
+  vague: "mock.scenario.vague",
+  error: "mock.scenario.error",
 };
 
 /** Always visible in mock mode: the user must never mistake replayed results for real analysis. */
 export function MockBanner({ mock }: { mock?: MockApi }) {
+  const { t } = useI18n();
   // The mock itself is not reactive, so the selects keep their own copy of the choice.
   const [scenario, setScenario] = useState<MockScenario>(
     mock?.scenario ?? "normal",
@@ -31,8 +34,7 @@ export function MockBanner({ mock }: { mock?: MockApi }) {
     >
       <Stack spacing={1}>
         <Typography variant="body2">
-          <strong>モック動作中。</strong>
-          AWS上のAPIにはつながっていません。写真はこの端末の外へ送られず、助言は固定の再生データです。実際の解析ではありません。
+          <strong>{t("mock.title")}</strong> {t("mock.notice")}
         </Typography>
         {mock ? (
           <Stack
@@ -45,7 +47,7 @@ export function MockBanner({ mock }: { mock?: MockApi }) {
               component="label"
               htmlFor="mock-scenario"
             >
-              モックの状況
+              {t("mock.scenario")}
             </Typography>
             <Select
               id="mock-scenario"
@@ -55,16 +57,16 @@ export function MockBanner({ mock }: { mock?: MockApi }) {
                 mock.setScenario(event.target.value as MockScenario);
                 setScenario(event.target.value as MockScenario);
               }}
-              inputProps={{ "aria-label": "モックの状況" }}
+              inputProps={{ "aria-label": t("mock.scenario") }}
             >
               {(Object.keys(LABELS) as MockScenario[]).map((key) => (
                 <MenuItem key={key} value={key}>
-                  {LABELS[key]}
+                  {t(LABELS[key])}
                 </MenuItem>
               ))}
             </Select>
             <Typography variant="caption" component="label" htmlFor="mock-door">
-              受付
+              {t("mock.door")}
             </Typography>
             <Select
               id="mock-door"
@@ -74,11 +76,11 @@ export function MockBanner({ mock }: { mock?: MockApi }) {
                 mock.setDoor(DOORS[event.target.value].door);
                 setDoorKey(event.target.value);
               }}
-              inputProps={{ "aria-label": "受付の状態" }}
+              inputProps={{ "aria-label": t("mock.doorState") }}
             >
               {Object.entries(DOORS).map(([key, { label }]) => (
                 <MenuItem key={key} value={key}>
-                  {label}
+                  {t(label)}
                 </MenuItem>
               ))}
             </Select>

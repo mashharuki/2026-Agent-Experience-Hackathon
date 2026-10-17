@@ -3,6 +3,7 @@ import { PhotoCapture } from "../components/PhotoCapture";
 import { Waiting } from "../components/Waiting";
 import type { Photo } from "../features/session/photos";
 import type { AnalysisRun } from "../features/session/useAnalysis";
+import { useI18n } from "../i18n/I18nProvider";
 
 /** Screen 2: take the first photo. If it cannot be read, one capture tip is shown here. */
 export function TrialCapture({
@@ -24,10 +25,11 @@ export function TrialCapture({
   onFinish: () => void;
   onRecheck: () => void;
 }) {
+  const { t } = useI18n();
   const busy = run.status === "uploading" || run.status === "waiting";
   return (
     <Stack spacing={2}>
-      <Typography>顔が枠に入るように合わせて撮影してください。</Typography>
+      <Typography>{t("capture.instruction")}</Typography>
       {notice ? <Alert severity="info">{notice}</Alert> : null}
       {run.status === "failed" ? (
         <Alert severity="error">{run.message}</Alert>
@@ -35,32 +37,32 @@ export function TrialCapture({
       {run.status === "timeout" ? (
         <Alert
           severity="warning"
-          action={<Button onClick={onRecheck}>もう一度確認</Button>}
+          action={<Button onClick={onRecheck}>{t("door.recheck")}</Button>}
         >
-          結果の確認に時間がかかっています。
+          {t("run.timeout")}
         </Alert>
       ) : null}
 
       {photo ? (
         <>
-          <img className="photo" src={photo.url} alt="撮影した写真" />
+          <img className="photo" src={photo.url} alt={t("capture.photoAlt")} />
           {busy ? (
             <Waiting
               text={
                 run.status === "uploading"
-                  ? "写真を送っています"
-                  : "解析しています"
+                  ? t("run.uploading")
+                  : t("run.analysing")
               }
             />
           ) : null}
           <Stack spacing={1}>
             {run.status === "idle" ? (
               <Button variant="contained" size="large" onClick={onSend}>
-                この写真で相談する
+                {t("capture.send")}
               </Button>
             ) : null}
             <Button variant="outlined" onClick={onRetake} disabled={busy}>
-              撮り直す
+              {t("capture.retake")}
             </Button>
           </Stack>
         </>
@@ -68,7 +70,7 @@ export function TrialCapture({
         <PhotoCapture onCaptured={onCaptured} />
       )}
       <Button color="inherit" onClick={onFinish} disabled={busy}>
-        このままで終える
+        {t("capture.finish")}
       </Button>
     </Stack>
   );

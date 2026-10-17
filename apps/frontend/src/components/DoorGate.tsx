@@ -2,25 +2,17 @@ import { Alert, Button, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import type { ServiceStatus } from "../api/generated/model";
 import { useGetServiceStatus } from "../api/generated/photoprep";
+import { useI18n } from "../i18n/I18nProvider";
+import type { MessageKey } from "../i18n/ja";
 import { Waiting } from "./Waiting";
 
-const REASON_TEXT: Record<ServiceStatus["reason"], string> = {
-  open: "",
-  worker_stopped:
-    "いまは停止しています。しばらくしてからもう一度お試しください。",
-  warming_up: "準備中です。",
-  quota_exhausted: "本日の利用枠に達しました。明日またお試しください。",
-  maintenance: "メンテナンス中です。しばらくしてからもう一度お試しください。",
+const REASON_KEY: Record<ServiceStatus["reason"], MessageKey | undefined> = {
+  open: undefined,
+  worker_stopped: "door.worker_stopped",
+  warming_up: "door.warming_up",
+  quota_exhausted: "door.quota_exhausted",
+  maintenance: "door.maintenance",
 };
-
-function reopenText(iso?: string): string {
-  if (!iso) return "";
-  const time = new Date(iso).toLocaleTimeString("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${time}ごろに再開できる見込みです。`;
-}
 
 /**
  * Asked as soon as the first screen opens (FR-027). Until the service says it is accepting
@@ -28,21 +20,20 @@ function reopenText(iso?: string): string {
  * fails, the app behaves as if the service were closed.
  */
 export function DoorGate({ children }: { children: ReactNode }) {
+  const { t, language } = useI18n();
   const status = useGetServiceStatus({
     query: { retry: false, staleTime: 0, gcTime: 0 },
   });
 
-  if (status.isPending) return <Waiting text="受付の状態を確認しています" />;
+  if (status.isPending) return <Waiting text={t("door.checking")} />;
 
   const door = status.data?.data as ServiceStatus | undefined;
   if (status.isError || !door) {
     return (
       <Stack spacing={2}>
-        <Alert severity="warning">
-          受付の状態を確認できませんでした。通信の状態を確かめて、もう一度お試しください。
-        </Alert>
+        <Alert severity="warning">{t("door.checkFailed")}</Alert>
         <Button variant="outlined" onClick={() => status.refetch()}>
-          もう一度確認
+          {t("door.recheck")}
         </Button>
       </Stack>
     );
@@ -51,9 +42,22 @@ export function DoorGate({ children }: { children: ReactNode }) {
     return (
       <Stack spacing={2}>
         <Alert severity="info">
-          <Typography>{REASON_TEXT[door.reason]}</Typography>
+          <Typography>
+            {REASON_KEY[door.reason]
+              ? t(REASON_KEY[door.reason] as MessageKey)
+              : ""}
+          </Typography>
           {door.reason === "warming_up" ? (
-            <Typography>{reopenText(door.expectedReopenAt)}</Typography>
+            <Typography>
+              {door.expectedReopenAt
+                ? t("door.reopen", {
+                    time: new Date(door.expectedReopenAt).toLocaleTimeString(
+                      language === "ja" ? "ja-JP" : "en-US",
+                      { hour: "2-digit", minute: "2-digit" },
+                    ),
+                  })
+                : ""}
+            </Typography>
           ) : null}
         </Alert>
         <Button
@@ -61,7 +65,7 @@ export function DoorGate({ children }: { children: ReactNode }) {
           onClick={() => status.refetch()}
           disabled={status.isFetching}
         >
-          もう一度確認
+          {t("door.recheck")}
         </Button>
       </Stack>
     );

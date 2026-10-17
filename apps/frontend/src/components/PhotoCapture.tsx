@@ -4,6 +4,7 @@ import { useConfig } from "../config";
 import { captureFrame } from "../features/camera/capture";
 import { createTestImage } from "../features/camera/testImage";
 import { useCamera } from "../features/camera/useCamera";
+import { useI18n } from "../i18n/I18nProvider";
 
 /** Live preview + shutter. Photos are held in memory by the caller and never stored. */
 export function PhotoCapture({
@@ -12,6 +13,7 @@ export function PhotoCapture({
   onCaptured: (photo: Blob) => void;
 }) {
   const config = useConfig();
+  const { t } = useI18n();
   const { videoRef, status, start } = useCamera();
   const [busy, setBusy] = useState(false);
 
@@ -36,15 +38,13 @@ export function PhotoCapture({
         className="preview"
         playsInline
         muted
-        aria-label="カメラのプレビュー"
+        aria-label={t("camera.preview")}
       />
       {status === "denied" ? (
-        <Alert severity="info">
-          カメラの使用が許可されていません。ブラウザの設定で許可してください。
-        </Alert>
+        <Alert severity="info">{t("camera.denied")}</Alert>
       ) : null}
       {status === "unavailable" ? (
-        <Alert severity="info">カメラを使えませんでした。</Alert>
+        <Alert severity="info">{t("camera.unavailable")}</Alert>
       ) : null}
       <Button
         variant="contained"
@@ -52,14 +52,16 @@ export function PhotoCapture({
         onClick={shoot}
         disabled={status !== "ready" || busy}
       >
-        撮影する
+        {t("camera.shoot")}
       </Button>
       {config.mode === "mock" ? (
         <Button
           variant="outlined"
-          onClick={async () => onCaptured(await createTestImage("モック"))}
+          onClick={async () =>
+            onCaptured(await createTestImage(t("camera.testImageLabel")))
+          }
         >
-          テスト用の画像を使う
+          {t("camera.testImage")}
         </Button>
       ) : null}
     </Stack>

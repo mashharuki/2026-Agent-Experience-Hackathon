@@ -85,6 +85,60 @@ export function plan(outputs: Outputs): Step[] {
       ],
     },
     {
+      name: "upload-static",
+      command: "aws",
+      args: [
+        "s3",
+        "sync",
+        "dist/icons",
+        `${bucket}/icons`,
+        "--cache-control",
+        "public,max-age=86400",
+      ],
+    },
+    {
+      name: "upload-favicon",
+      command: "aws",
+      args: [
+        "s3",
+        "cp",
+        "dist/favicon.svg",
+        `${bucket}/favicon.svg`,
+        "--cache-control",
+        "public,max-age=86400",
+        "--content-type",
+        "image/svg+xml",
+      ],
+    },
+    {
+      name: "upload-service-worker",
+      command: "aws",
+      args: [
+        "s3",
+        "cp",
+        "dist/sw.js",
+        `${bucket}/sw.js`,
+        "--cache-control",
+        "no-cache",
+        "--content-type",
+        "text/javascript; charset=utf-8",
+      ],
+    },
+    {
+      name: "upload-manifest",
+      command: "aws",
+      args: [
+        "s3",
+        "cp",
+        "dist/manifest.webmanifest",
+        `${bucket}/manifest.webmanifest`,
+        "--cache-control",
+        "no-cache",
+        "--content-type",
+        "application/manifest+json",
+      ],
+    },
+    {
       name: "upload-index",
       command: "aws",
       args: [
@@ -108,6 +162,9 @@ export function plan(outputs: Outputs): Step[] {
         outputs.distributionId,
         "--paths",
         "/index.html",
+        "/sw.js",
+        "/manifest.webmanifest",
+        "/favicon.svg",
       ],
     },
   ];
@@ -131,6 +188,18 @@ export function verifyBuild(distDir: string, outputs: Outputs): void {
   }
   if (!text.includes(outputs.clientId)) {
     throw new Error("the build does not contain the Cognito client id");
+  }
+  const worker = join(distDir, "sw.js");
+  if (
+    !existsSync(worker) ||
+    readFileSync(worker, "utf8").includes("__BUILD_ID__")
+  ) {
+    throw new Error(
+      "the service worker is missing or was not stamped with a build id (browsers would never update it)",
+    );
+  }
+  if (!existsSync(join(distDir, "manifest.webmanifest"))) {
+    throw new Error("the web app manifest is missing from the build");
   }
 }
 

@@ -2,6 +2,15 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
+Object.defineProperty(navigator, "languages", {
+  value: ["ja-JP"],
+  configurable: true,
+});
+Object.defineProperty(navigator, "language", {
+  value: "ja-JP",
+  configurable: true,
+});
+
 afterEach(() => {
   cleanup();
   sessionStorage.clear();

@@ -70,6 +70,10 @@ describe("the plan", () => {
     expect(steps.map((s) => s.name)).toEqual([
       "build",
       "upload-assets",
+      "upload-static",
+      "upload-favicon",
+      "upload-service-worker",
+      "upload-manifest",
       "upload-index",
       "invalidate",
     ]);
@@ -90,6 +94,35 @@ describe("the plan", () => {
     expect(index).toContain("no-cache");
   });
 
+  it("never caches the service worker or the manifest, so a new version is noticed", () => {
+    const worker = text.find((t) => t.includes("dist/sw.js")) ?? "";
+    expect(worker).toContain("no-cache");
+    expect(worker).toContain("text/javascript");
+    const manifest = text.find((t) => t.includes("manifest.webmanifest")) ?? "";
+    expect(manifest).toContain("no-cache");
+    expect(manifest).toContain("application/manifest+json");
+  });
+
+  it("uploads the icons and favicon with a day of caching", () => {
+    const icons = text.find((t) => t.includes("dist/icons")) ?? "";
+    expect(icons).toContain("max-age=86400");
+    const favicon = text.find((t) => t.includes("dist/favicon.svg")) ?? "";
+    expect(favicon).toContain("image/svg+xml");
+  });
+
+  it("puts the entry page last, after everything it refers to is in place", () => {
+    const names = steps.map((s) => s.name);
+    expect(names.indexOf("upload-index")).toBe(names.indexOf("invalidate") - 1);
+  });
+
+  it("refreshes the entry page, the service worker and the manifest on the CDN", () => {
+    const invalidation =
+      text.find((t) => t.includes("create-invalidation")) ?? "";
+    for (const path of ["/index.html", "/sw.js", "/manifest.webmanifest"]) {
+      expect(invalidation).toContain(path);
+    }
+  });
+
   it("does not delete anything it did not upload", () => {
     for (const line of text) expect(line).not.toContain("--delete");
   });
@@ -102,6 +135,8 @@ describe("checking the build before uploading it", () => {
     mkdirSync(join(dir, "assets"));
     writeFileSync(join(dir, "index.html"), "<html></html>");
     writeFileSync(join(dir, "assets", "index-abc.js"), js);
+    writeFileSync(join(dir, "sw.js"), 'const BUILD_ID = "0123456789ab";');
+    writeFileSync(join(dir, "manifest.webmanifest"), "{}");
     return dir;
   };
 
@@ -111,6 +146,27 @@ describe("checking the build before uploading it", () => {
     );
     expect(() => verifyBuild(dir, outputs)).not.toThrow();
     rmSync(dir, { recursive: true });
+  });
+
+  it("refuses a service worker that was not stamped with a build id", () => {
+    const dir = make(
+      `const a="${outputs.apiUrl}";const c="${outputs.clientId}";`,
+    );
+    writeFileSync(join(dir, "sw.js"), 'const BUILD_ID = "__BUILD_ID__";');
+    expect(() => verifyBuild(dir, outputs)).toThrow(/service worker/i);
+    rmSync(dir, { recursive: true });
+  });
+
+  it("refuses a build without a service worker or a manifest", () => {
+    const base = `const a="${outputs.apiUrl}";const c="${outputs.clientId}";`;
+    const noWorker = make(base);
+    rmSync(join(noWorker, "sw.js"));
+    expect(() => verifyBuild(noWorker, outputs)).toThrow(/service worker/i);
+    const noManifest = make(base);
+    rmSync(join(noManifest, "manifest.webmanifest"));
+    expect(() => verifyBuild(noManifest, outputs)).toThrow(/manifest/i);
+    rmSync(noWorker, { recursive: true });
+    rmSync(noManifest, { recursive: true });
   });
 
   it("refuses a build that would run in mock mode (no API address inside)", () => {

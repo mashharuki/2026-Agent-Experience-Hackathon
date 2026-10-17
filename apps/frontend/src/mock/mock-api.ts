@@ -36,6 +36,7 @@ interface SessionItem {
   analysesUsed: number;
   expiresAt: string;
   lastAdviceKind?: string;
+  language: MockLanguage;
 }
 interface JobItem {
   id: string;
@@ -48,36 +49,41 @@ interface JobItem {
 
 const NOW = () => new Date();
 
-const ADVICE: Record<string, Advice> = {
-  tip: {
-    kind: "grooming_tip",
-    basis: "observation",
-    text: "（モックの助言）眉ブラシで、毛の流れを整えてみましょう。形は変えず、流れだけをそろえます。",
-  },
-  backlight: {
-    kind: "capture_setup_tip",
-    basis: "observation",
-    text: "（モックの助言）光が後ろにあるようです。窓や照明が顔の正面に来る向きにして、もう一度撮ってみましょう。",
-  },
-  vague: {
-    kind: "clarify",
-    basis: "user_request",
-    text: "（モックの助言）眉のどの部分が気になりますか？気になる箇所を教えてください。",
-  },
+type MockLanguage = "ja" | "en";
+
+const SHAPES: Record<string, Omit<Advice, "text">> = {
+  tip: { kind: "grooming_tip", basis: "observation" },
+  backlight: { kind: "capture_setup_tip", basis: "observation" },
+  vague: { kind: "clarify", basis: "user_request" },
   // The "after" check also returns the next suggestion, so a second change needs no extra analysis.
-  next: {
-    kind: "grooming_tip",
-    basis: "observation",
-    comparable: true,
-    text: "（モックの助言）次の一手：前髪を指でそっと整えて、分け目をそろえてみましょう。",
+  next: { kind: "grooming_tip", basis: "observation", comparable: true },
+  last: { kind: "offer_finish", basis: "observation", comparable: true },
+};
+
+const TEXTS: Record<MockLanguage, Record<string, string>> = {
+  ja: {
+    tip: "（モックの助言）眉ブラシで、毛の流れを整えてみましょう。形は変えず、流れだけをそろえます。",
+    backlight:
+      "（モックの助言）光が後ろにあるようです。窓や照明が顔の正面に来る向きにして、もう一度撮ってみましょう。",
+    vague:
+      "（モックの助言）眉のどの部分が気になりますか？気になる箇所を教えてください。",
+    next: "（モックの助言）次の一手：前髪を指でそっと整えて、分け目をそろえてみましょう。",
+    last: "（モックの結果）試せる回数はここまでです。前後を見比べて選べます。",
   },
-  last: {
-    kind: "offer_finish",
-    basis: "observation",
-    comparable: true,
-    text: "（モックの結果）試せる回数はここまでです。前後を見比べて選べます。",
+  en: {
+    tip: "(Mock advice) Brush your brows to even out the direction of the hairs. Keep the shape and only align the flow.",
+    backlight:
+      "(Mock advice) The light seems to be behind you. Turn so a window or lamp is in front of your face and take the photo again.",
+    vague:
+      "(Mock advice) Which part of your brows bothers you? Please tell me which spot.",
+    next: "(Mock advice) Next step: gently tidy your bangs with your fingers and even out the parting.",
+    last: "(Mock result) That is all the changes you can try. Compare before and after and choose.",
   },
 };
+
+function advice(key: string, language: MockLanguage): Advice {
+  return { ...SHAPES[key], text: TEXTS[language][key] } as Advice;
+}
 
 const PHASE_BY_STATE: Record<string, string> = {
   CONSULTING: "before",
@@ -117,17 +123,23 @@ export function createMockApi(
   const jobs = new Map<string, JobItem>();
   const idempotent = new Map<string, string>();
   const calls: MockCall[] = [];
+  /** The language each created session asked for (what the real API stores). */
+  const sessionLanguages: string[] = [];
   const feedback: MockFeedback[] = [];
 
   function resultFor(session: SessionItem, phase: string): JobItem["result"] {
     if (scenario === "error") return { error: "model_error" };
     if (phase === "after")
-      return session.changesUsed >= 2 ? ADVICE.last : ADVICE.next;
+      return advice(
+        session.changesUsed >= 2 ? "last" : "next",
+        session.language,
+      );
     // "backlight" fails the first photo only; "vague" asks first, then proceeds.
     if (scenario === "backlight" && session.analysesUsed === 1)
-      return ADVICE.backlight;
-    if (scenario === "vague" && session.analysesUsed === 1) return ADVICE.vague;
-    return ADVICE.tip;
+      return advice("backlight", session.language);
+    if (scenario === "vague" && session.analysesUsed === 1)
+      return advice("vague", session.language);
+    return advice("tip", session.language);
   }
 
   function settle(job: JobItem): void {
@@ -188,10 +200,13 @@ export function createMockApi(
         changesUsed: 0,
         analysesUsed: 0,
         expiresAt: new Date(NOW().getTime() + 24 * 3600 * 1000).toISOString(),
+        language: body?.language === "en" ? "en" : "ja",
       };
       const sessionId = id("sess");
       sessions.set(sessionId, session);
-      return respond(201, { sessionId, ...session } as Session);
+      sessionLanguages.push(session.language);
+      const { language: _language, ...visible } = session;
+      return respond(201, { sessionId, ...visible } as Session);
     }
     if (parts[0] === "sessions" && parts[1]) {
       const sessionId = parts[1];
@@ -318,6 +333,7 @@ export function createMockApi(
   return {
     fetch: mockFetch,
     calls,
+    sessionLanguages,
     feedback,
     setScenario: (next: MockScenario) => {
       scenario = next;

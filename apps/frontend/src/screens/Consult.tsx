@@ -13,11 +13,13 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import type { Scope } from "../api/generated/model";
+import { useI18n } from "../i18n/I18nProvider";
+import type { MessageKey } from "../i18n/ja";
 
-const OPTIONS: { value: Scope; label: string }[] = [
-  { value: "brow", label: "眉" },
-  { value: "bangs", label: "前髪" },
-  { value: "look_first", label: "まず見てほしい" },
+const OPTIONS: { value: Scope; key: MessageKey }[] = [
+  { value: "brow", key: "consult.brow" },
+  { value: "bangs", key: "consult.bangs" },
+  { value: "look_first", key: "consult.lookFirst" },
 ];
 
 export interface ConsultResult {
@@ -38,6 +40,7 @@ export function Consult({
   busy: boolean;
   error?: string;
 }) {
+  const { t } = useI18n();
   const [scope, setScope] = useState<Scope | "">("");
   const [wish, setWish] = useState("");
   const [consent, setConsent] = useState(false);
@@ -45,7 +48,7 @@ export function Consult({
   return (
     <Stack spacing={3} component="form" onSubmit={(e) => e.preventDefault()}>
       <FormControl>
-        <FormLabel id="scope-label">どこを見ますか？</FormLabel>
+        <FormLabel id="scope-label">{t("consult.scopeLabel")}</FormLabel>
         <RadioGroup
           aria-labelledby="scope-label"
           value={scope}
@@ -56,15 +59,15 @@ export function Consult({
               key={option.value}
               value={option.value}
               control={<Radio />}
-              label={option.label}
+              label={t(option.key)}
             />
           ))}
         </RadioGroup>
       </FormControl>
 
       <TextField
-        label="希望（任意）"
-        helperText="例：眉の形は変えたくないが、毛の流れは整えたい（200文字まで）"
+        label={t("consult.wishLabel")}
+        helperText={t("consult.wishHelp")}
         value={wish}
         onChange={(event) => setWish(event.target.value)}
         slotProps={{ htmlInput: { maxLength: 200 } }}
@@ -74,7 +77,7 @@ export function Consult({
 
       <Alert severity="info" icon={false}>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          撮影した写真は、助言をつくるためにクラウド（AWS）に送られて解析されます。処理が終わるとすぐ削除し、失敗しても24時間以内に削除されます。比べるための写真は、この端末の中にだけ残ります。
+          {t("consult.consentText")}
         </Typography>
         <FormControlLabel
           control={
@@ -83,7 +86,7 @@ export function Consult({
               onChange={(event) => setConsent(event.target.checked)}
             />
           }
-          label="クラウドで解析されることに同意します"
+          label={t("consult.consentCheck")}
         />
       </Alert>
 
@@ -98,10 +101,10 @@ export function Consult({
           scope && onSubmit({ scope, wish: wish.trim() || undefined })
         }
       >
-        撮影へ進む
+        {t("consult.submit")}
       </Button>
       <Button color="inherit" onClick={onDecline} disabled={busy}>
-        同意しない（終了する）
+        {t("consult.decline")}
       </Button>
     </Stack>
   );

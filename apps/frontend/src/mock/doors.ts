@@ -1,13 +1,14 @@
+import type { MessageKey } from "../i18n/ja";
 import type { MockDoor } from "./mock-api";
 
-export const DOORS: Record<string, { label: string; door: MockDoor }> = {
-  open: { label: "受付中", door: { accepting: true, reason: "open" } },
+export const DOORS: Record<string, { label: MessageKey; door: MockDoor }> = {
+  open: { label: "mock.door.open", door: { accepting: true, reason: "open" } },
   stopped: {
-    label: "停止中",
+    label: "mock.door.stopped",
     door: { accepting: false, reason: "worker_stopped" },
   },
   warming: {
-    label: "準備中",
+    label: "mock.door.warming",
     door: {
       accepting: false,
       reason: "warming_up",
@@ -15,7 +16,7 @@ export const DOORS: Record<string, { label: string; door: MockDoor }> = {
     },
   },
   quota: {
-    label: "利用枠切れ",
+    label: "mock.door.quota",
     door: { accepting: false, reason: "quota_exhausted" },
   },
 };

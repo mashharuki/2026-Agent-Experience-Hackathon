@@ -14,6 +14,8 @@ import {
 import { unwrap } from "../../api/unwrap";
 import { DoorGate } from "../../components/DoorGate";
 import { CONSENT_VERSION } from "../../config";
+import { useI18n } from "../../i18n/I18nProvider";
+import type { MessageKey } from "../../i18n/ja";
 import { Compare } from "../../screens/Compare";
 import { Consult, type ConsultResult } from "../../screens/Consult";
 import { Done } from "../../screens/Done";
@@ -25,12 +27,12 @@ import { type Phase, useAnalysis } from "./useAnalysis";
 
 type Screen = "consult" | "capture" | "advice" | "compare" | "done";
 
-const HEADINGS: Record<Screen, string> = {
-  consult: "相談する",
-  capture: "試し撮り",
-  advice: "一つ試す",
-  compare: "比べて選ぶ",
-  done: "おつかれさまでした",
+const HEADINGS: Record<Screen, MessageKey> = {
+  consult: "heading.consult",
+  capture: "heading.capture",
+  advice: "heading.advice",
+  compare: "heading.compare",
+  done: "heading.done",
 };
 const MAX_CHANGES = 2;
 
@@ -39,6 +41,7 @@ const MAX_CHANGES = 2;
  * in this component's memory (never in the query cache or web storage).
  */
 export function SessionFlow() {
+  const { t, language } = useI18n();
   const [screen, setScreen] = useState<Screen>("consult");
   const [step, setStep] = useState<TryStep>("advice");
   const [sessionId, setSessionId] = useState<string | undefined>();
@@ -115,10 +118,7 @@ export function SessionFlow() {
         setNextAdvice(result.kind === "grooming_tip" ? result : undefined);
         setScreen("compare");
       } else {
-        setNotice(
-          result.text ??
-            "前の写真と条件が違うため、比べられません。撮り直してください。",
-        );
+        setNotice(result.text ?? t("try.notComparable"));
         replaceAfter(undefined);
       }
       return;
@@ -138,7 +138,7 @@ export function SessionFlow() {
       replaceBefore(undefined);
       setScreen((s) => (s === "advice" ? "advice" : "capture"));
     }
-  }, [run, reset, finish, endOnServer, replaceBefore, replaceAfter]);
+  }, [run, reset, finish, endOnServer, replaceBefore, replaceAfter, t]);
 
   const send = async (feedback: FeedbackRequest): Promise<boolean> => {
     if (!sessionId) return false;
@@ -148,7 +148,7 @@ export function SessionFlow() {
       await recordFeedback(sessionId, feedback);
       return true;
     } catch (e) {
-      setError(messageFor(e));
+      setError(messageFor(e, t));
       return false;
     } finally {
       setBusy(false);
@@ -165,6 +165,7 @@ export function SessionFlow() {
             consentVersion: CONSENT_VERSION,
             scope: result.scope,
             wish: result.wish,
+            language,
           },
           {
             headers: {
@@ -176,7 +177,7 @@ export function SessionFlow() {
       setSessionId(created.sessionId);
       setScreen("capture");
     } catch (e) {
-      setError(messageFor(e));
+      setError(messageFor(e, t));
     } finally {
       setBusy(false);
     }
@@ -203,7 +204,7 @@ export function SessionFlow() {
         ref={headingRef}
         sx={{ mb: 2, outline: "none" }}
       >
-        {HEADINGS[screen]}
+        {t(HEADINGS[screen])}
       </Typography>
 
       {screen === "consult" ? (

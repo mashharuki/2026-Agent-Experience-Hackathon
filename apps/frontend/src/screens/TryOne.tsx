@@ -11,6 +11,7 @@ import { PhotoCapture } from "../components/PhotoCapture";
 import { Waiting } from "../components/Waiting";
 import type { Photo } from "../features/session/photos";
 import type { AnalysisRun } from "../features/session/useAnalysis";
+import { useI18n } from "../i18n/I18nProvider";
 
 export type TryStep = "advice" | "trying" | "recheck";
 
@@ -46,6 +47,7 @@ export function TryOne({
   onRetakeAfter: () => void;
   onRecheck: () => void;
 }) {
+  const { t } = useI18n();
   const working = run.status === "uploading" || run.status === "waiting";
   return (
     <Stack spacing={2}>
@@ -58,7 +60,7 @@ export function TryOne({
       ) : null}
       {step !== "advice" ? (
         <Alert severity="info" icon={false}>
-          整えたら、同じ位置と光でもう一度撮影してください。整えている間は、新しい提案は出しません。
+          {t("try.trying")}
         </Alert>
       ) : null}
       {notice ? <Alert severity="info">{notice}</Alert> : null}
@@ -68,15 +70,15 @@ export function TryOne({
       {run.status === "timeout" ? (
         <Alert
           severity="warning"
-          action={<Button onClick={onRecheck}>もう一度確認</Button>}
+          action={<Button onClick={onRecheck}>{t("door.recheck")}</Button>}
         >
-          結果の確認に時間がかかっています。
+          {t("run.timeout")}
         </Alert>
       ) : null}
       {working ? (
         <Waiting
           text={
-            run.status === "uploading" ? "写真を送っています" : "解析しています"
+            run.status === "uploading" ? t("run.uploading") : t("run.analysing")
           }
         />
       ) : null}
@@ -89,14 +91,14 @@ export function TryOne({
             onClick={onTry}
             disabled={busy || working}
           >
-            やってみる
+            {t("try.do")}
           </Button>
           <Button
             variant="outlined"
             onClick={onAnother}
             disabled={busy || working}
           >
-            別の提案
+            {t("try.another")}
           </Button>
         </Stack>
       ) : null}
@@ -108,18 +110,22 @@ export function TryOne({
           onClick={onStartRecheck}
           disabled={busy}
         >
-          整えたので確認
+          {t("try.check")}
         </Button>
       ) : null}
 
       {step === "recheck" ? (
         afterPhoto ? (
           <>
-            <img className="photo" src={afterPhoto.url} alt="整えた後の写真" />
+            <img
+              className="photo"
+              src={afterPhoto.url}
+              alt={t("try.afterAlt")}
+            />
             <Stack spacing={1}>
               {run.status === "idle" ? (
                 <Button variant="contained" size="large" onClick={onSendAfter}>
-                  この写真で確認する
+                  {t("try.sendAfter")}
                 </Button>
               ) : null}
               <Button
@@ -127,7 +133,7 @@ export function TryOne({
                 onClick={onRetakeAfter}
                 disabled={working}
               >
-                撮り直す
+                {t("capture.retake")}
               </Button>
             </Stack>
           </>
@@ -137,7 +143,7 @@ export function TryOne({
       ) : null}
 
       <Button color="inherit" onClick={onFinish} disabled={busy || working}>
-        このままで終える
+        {t("capture.finish")}
       </Button>
     </Stack>
   );

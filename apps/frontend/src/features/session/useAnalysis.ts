@@ -10,6 +10,7 @@ import {
 import { unwrap } from "../../api/unwrap";
 import { uploadPhoto } from "../../api/upload";
 import { useConfig } from "../../config";
+import { useI18n } from "../../i18n/I18nProvider";
 import { shouldKeepPolling } from "../jobs/pollSchedule";
 import { messageFor } from "./errors";
 
@@ -30,6 +31,7 @@ export type AnalysisRun =
  */
 export function useAnalysis(sessionId: string | undefined) {
   const config = useConfig();
+  const { t } = useI18n();
   const [run, setRun] = useState<AnalysisRun>({ status: "idle" });
   const [jobId, setJobId] = useState<string | undefined>();
   const startedAt = useRef(0);
@@ -58,14 +60,14 @@ export function useAnalysis(sessionId: string | undefined) {
     } else if (["FAILED", "UNKNOWN", "CANCELLED"].includes(current.status)) {
       setRun({
         status: "failed",
-        message: "解析がうまくいきませんでした。撮り直してお試しください。",
+        message: t("run.failed"),
       });
     } else if (
       !shouldKeepPolling(current.status, Date.now() - startedAt.current)
     ) {
       setRun({ status: "timeout" });
     }
-  }, [jobId, current]);
+  }, [jobId, current, t]);
 
   const start = useCallback(
     async (phase: Phase, photo: Blob) => {
@@ -102,12 +104,12 @@ export function useAnalysis(sessionId: string | undefined) {
           status: "failed",
           message:
             error instanceof ApiError
-              ? messageFor(error)
-              : "写真を送れませんでした。もう一度お試しください。",
+              ? messageFor(error, t)
+              : t("run.uploadFailed"),
         });
       }
     },
-    [sessionId, config],
+    [sessionId, config, t],
   );
 
   const reset = useCallback(() => {

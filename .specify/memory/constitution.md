@@ -1,50 +1,123 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: 未制定（テンプレート） → 1.0.0
+- Modified principles: 未記入の原則を以下の3原則として初制定
+  I. ハッカソンの概要・規約への準拠
+  II. 低コストとサーバーレスを優先する設計
+  III. Cognito認証と基本的なセキュリティ
+- Added sections: 公式要件と参照元、設計・検証の進め方、Governance
+- Removed sections: 未使用の第4・第5原則のテンプレート枠
+- Follow-up: 計画時に予算上限、想定利用量、画像保持期間、Decider実行環境を具体化する。
+  参加者本人の応募資格は提出前に確認する。これらは原則の未確定を意味しない。
+- Dependent templates/commands: 変更なし。実行時に本憲章を参照する。
+-->
+
+# 2026-Agent-Experience-Hackathon Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. ハッカソンの概要・規約への準拠
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+設計、実装、公開、応募は、公式の概要・規約および適用される利用条件に必ず準拠する。
+機能の魅力や開発速度を理由に応募必須条件を省略しない。
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- AWS上で動作するエージェントを作り、生成処理にAmazon Bedrockを使用する。
+- Strands Decider 2Bに少なくとも一つの意味のある判断を任せ、結果を実際の動作に接続する。
+  呼び出すだけの実装や、固定値を実モデルの判断として見せるデモは不可とする。
+- 記事、公開コード、再利用可能な判断パターン、公開デモ動画を開発成果物に含める。
+- 利用するコード・モデル・画像・音楽等の権利と利用条件を確認し、必要な表示を行う。
+- 設計時と応募直前に公式情報を再確認する。要件の不一致や不明点は記録し、
+  応募適合性に影響する事項を推測で「準拠済み」と扱わない。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+規約は参加の前提条件であり、審査上の加点要素と区別する。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. 低コストとサーバーレスを優先する設計
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+AWSのマネージドサービス、従量課金、必要な時だけ実行する構成を第一候補にする。
+サービス数と運用作業を必要最小限にし、使っていない時間の固定費を抑える。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- 技術選定では、想定利用量、リクエスト当たりの費用、待機時の費用、推論費用、
+  保存・転送・ログの費用を比較する。無料枠や受賞クレジットだけを根拠に採用しない。
+- 画像解析・生成は利用者の操作など必要なタイミングで実行し、重複呼び出し、
+  再試行、出力トークン数、同時実行数に上限を設ける。
+- 常時稼働や非サーバーレス構成を採用する場合は、代替案、採用理由、費用、
+  停止・削除方法を計画に記録する。Deciderの配置も実測と制約確認を踏まえて決める。
+- 有料環境での継続検証・公開前に、予算上限、使用量の制限、費用通知、
+  超過時の停止手順を定める。通知と実際の利用制限を区別する。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+完全なサーバーレス化そのものを目的にせず、応募要件、動作品質、セキュリティを満たす
+選択肢の中で、費用と運用負担を抑える。
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### III. Cognito認証と基本的なセキュリティ
+
+公開するアプリの利用者認証にはAmazon Cognitoを使用する。
+認証画面だけでなく、画像処理・推論APIや利用者データへのアクセスをサーバー側で保護する。
+
+- APIで認証トークンの正当性と有効期限を検証し、他人の画像・セッションへアクセスできない
+  認可を実装する。未認証で有料推論を呼び出せる公開経路を設けない。
+- AWS権限は用途ごとの最小権限とする。秘密鍵、AWS認証情報、トークンをコード、
+  ブラウザ配布物、公開リポジトリ、ログへ含めない。
+- 通信を暗号化し、保存する画像は非公開・暗号化を前提とする。
+  クラウド解析の用途を撮影前に説明して同意を得る。不要な画像を永続保存しない。
+- 保存が必要なデータは目的、保持期間、削除方法を仕様に定める。
+  顔画像、画像を復元できるデータ、認証情報を通常の診断ログに出力しない。
+- 入力サイズ、リクエスト頻度、再試行を制限し、誤操作や不正利用による負荷・課金を抑える。
+
+ハッカソン向けの小規模構成でも、認証、認可、秘密情報と顔画像の保護を省略しない。
+ローカルのモック検証は、公開環境の保護が完成した証拠として扱わない。
+
+## 公式要件と参照元
+
+確認日：2026-10-17。Rulesに表示された最終更新日：2026-10-09。
+
+- [公式概要](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider)
+- [公式規約（Rules）](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider?tab=rules)
+
+以下は開発・提出時の確認項目であり、規約全文の代わりではない。
+
+1. AWS上の動作、Bedrockの生成処理、Deciderの意味のある判断を実演する。
+2. AWS Builder Centerの記事に、エージェントの役割とDeciderへ任せた判断を書く。
+3. 公開リポジトリにソースコードとOSI承認のオープンソースライセンスを含める。
+   再利用する判断パターンには、型付きの問い・選択肢・動作への接続コード・使い方を揃え、明示する。
+4. 3分未満のデモ動画をYouTube、Vimeo、Facebook Video、Youkuのいずれかで公開し、
+   応募にリンクを含める。第三者の商標・音楽等は権利上利用可能なものに限定する。
+5. `#strands-decider-2b` と、実装に合う判断パターンのタグを一つ付ける。
+   候補は `#tool-selection`、`#guardrails`、`#policy`、`#model-routing`、`#context-memory`。
+6. 未発表のオリジナルエージェントとし、一人一応募の条件を守る。
+   年齢、居住地、雇用・家族関係、Builder Centerプロフィール等の参加資格は本人が確認する。
+7. 提出期限は2026-10-23 23:59 PT（PDT、UTC−7）、日本時間2026-10-24 15:59。
+   期限や要件が更新された場合は公式情報を優先する。
+
+審査配点は創造性30%、DeciderとBedrockの活用30%、説明の明確さ25%、独創性15%。
+速度・費用の改善計測は加点要素であり、応募の必須条件ではない。
+本プロジェクトの費用管理は、これとは別に第II原則で必須とする。
+開催開始時刻には概要・規約内で00:00と09:00 PTの表記差があるため、
+開始時刻に依存する判断が必要になった場合は主催者の確認を取る。
+
+## 設計・検証の進め方
+
+- `docs/mvp.md` を要件の出発点とし、採用済みの方向性と仮置きの実装案を区別する。
+  利用者が一手を試して前後を比較し、自分で選ぶ体験を維持する。
+- 仕様では利用体験、応募成果物、認証境界、画像の扱いを定める。
+  計画では構成案、費用見積もり、Decider実行方式、予算と制限値を具体化する。
+- 各計画のConstitution Checkで、三原則への適合、根拠、未確認事項を記録する。
+  例外の理由を記録しても、公式必須要件や基本的なセキュリティを免除しない。
+- 実装時は、本人の禁止・終了操作を守ること、未認証・他ユーザーからのアクセス拒否、
+  呼び出し制限、画像削除、Deciderの判断が動作に反映されることを検証する。
+- デモと記事では実測・仮説・モックを区別し、未検証の品質や規約適合性を保証しない。
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+本憲章は、このリポジトリの設計・実装・レビューで用いる優先原則とする。
+公式規約と矛盾する場合は公式規約に従い、憲章と関連仕様を修正する。
+日常の開発手順は `AGENTS.md` と `README.md` を参照する。
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+原則を変更する場合は、理由、影響する仕様・計画・タスク、必要な修正を記録する。
+ユーザーが明示した必須原則の緩和は、ユーザーとの合意なしに行わない。
+互換性を失う原則変更はMAJOR、原則・要件の追加はMINOR、意味を変えない修正はPATCHを更新し、
+変更日とSync Impact Reportを更新する。
+
+各変更のレビューと応募前確認で本憲章への適合を確認する。
+未確認事項は担当段階と確認方法を明記し、完了したものとして扱わない。
+
+**Version**: 1.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17

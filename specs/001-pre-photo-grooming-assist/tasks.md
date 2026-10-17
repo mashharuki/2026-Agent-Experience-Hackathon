@@ -51,8 +51,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
 - [ ] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）
 - [ ] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**既定は MUI＋独自CSS（React Bits を取り込まない）**。取り込む場合はユーザー承認と OSI 要件との整合確認が前提（research T-005）
-- [ ] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）
-- [ ] T012 ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）
+- [x] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）。**完了 2026-10-17: 不一致なし、憲章の修正は不要。AWS上での実動作のデモ必須、記事は公開済みであることを T062・T100・T101 で反映**
+- [ ] T012 （一部完了）ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）。**2026-10-17: 上限 $30・ワーカー30時間以内は承認済み。残り: Billing → Credits の確認（ユーザー）、項目別の積算、停止手順の `docs/` への記載。クレジット確認と積算の完了で `[x]` にする**
 - [ ] T013 [P] AWS アカウントの Bedrock モデル呼び出しログが画像・本文を保存しない設定であることを確認し、結果を `research.md` に記録（research T-010）。アカウントを変更する操作はユーザー承認のうえ実施
 - [ ] T014 Fargate 4 vCPU/16 GB 相当の環境で Decider のピーク RSS とロード・推論時間を測定し `research.md` R-004 に記録（合格: ピーク RSS 12 GB 以内。不合格なら 24 GB 案と費用を再比較）。T008 に依存。ローカル Docker での予備測定と実 Fargate での測定を区別して記録（research T-004）
 - [ ] T015 Nova Lite の画像観察品質評価を実施（`evaluation/` のハーネスを `evaluation/run_eval.py` に作成）。**同意のある本人の写真をユーザーから提供してもらう**。開発用の例（`dev-examples/`）で調整し、評価用（`holdout/`）は調整後にのみ使う。合格条件: 逆光・変更なしで根拠のない断定が 0 件。結果は `research.md` R-002（research T-002）
@@ -120,7 +120,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 ### Implementation for User Story 1 — Infrastructure
 
 - [ ] T049 [US1] `apps/cdk/lib/constructs/worker.ts`: ECR、ECS on Fargate（Linux/x86_64、4 vCPU/16 GB、同時処理 1）、専用 VPC の public subnet、security group は**inbound なし**、NAT Gateway・ALB なし、S3/DynamoDB の gateway endpoint、用途別の最小権限 IAM（対象キュー・画像 prefix・テーブル・特定の Bedrock モデルのみ）
-- [ ] T050 [US1] `apps/cdk/lib/constructs/operations.ts`: EventBridge Scheduler（デモ前の起動、終了時刻の停止）、T039 の再送 Lambda、取り残し画像の回収 Lambda（15 分周期）、CloudWatch のメタデータ監視、AWS Budgets 通知（T012 で決めた上限）
+- [ ] T050 [US1] `apps/cdk/lib/constructs/operations.ts`: EventBridge Scheduler（デモ前の起動、終了時刻の停止）、T039 の再送 Lambda、取り残し画像の回収 Lambda（15 分周期）、CloudWatch のメタデータ監視、AWS Budgets 通知（$30 の 50%・80%・100%）
 - [ ] T051 [US1] `apps/api/ops/worker_control.py`: ワーカーの desired count 変更と、受付中フラグ（DynamoDB）の更新。起動後、モデルロード・疎通を確認してから受付を有効化し、停止時は受付を閉じて処理中ジョブの完了後に 0 にする
 
 ### Implementation for User Story 1 — Frontend
@@ -229,8 +229,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T097 [US6] `apps/worker/src/photoprep_worker/decision_pattern/`: 型付きの問い・選択肢・動作への接続を、アプリ固有の処理から切り離した再利用可能な形に抽出（FR-025）
 - [ ] T098 [US6] `apps/worker/tools/export_decisions.py`: デモ用に判断記録を書き出すスクリプト（運用者のみ・画像なし）
 - [ ] T099 [US6] `docs/decision-pattern.md`: 型付きの問い、選択肢、接続コード、使い方を説明（実測・仮説・モックを区別）
-- [ ] T100 [US6] `docs/article/draft.md`: Builder Center 記事の下書き（エージェントの役割、Decider に任せた判断、実測・仮説・モックの区別）。投稿はユーザーが行う
-- [ ] T101 [US6] `docs/demo-script.md`: 3 分未満のデモ台本。仮画像や再生データを使う場面を明示。動画の撮影・公開（YouTube 等）はユーザーが行う
+- [ ] T100 [US6] `docs/article/draft.md`: Builder Center 記事の下書き（エージェントの役割、Decider に任せた判断、実測・仮説・モックの区別）。**提出前に Builder Center で公開済みであること**が必須。公開はユーザーが行う
+- [ ] T101 [US6] `docs/demo-script.md`: 3 分未満のデモ台本。仮画像や再生データを使う場面を明示。動画の撮影・公開（YouTube 等）はユーザーが行う。**AWS上で実際に動作する場面を必ず含める**（再生データのみは不可の恐れ。R-007）
 - [ ] T102 [US6] リポジトリ公開前の確認: OSI 承認ライセンス（`LICENSE`）、第三者コード・モデルの権利表示、顔写真・認証情報・秘密鍵が含まれないことの走査、タグ（`#strands-decider-2b` と `#tool-selection`）の記載。公開の操作はユーザーの承認後
 
 ---

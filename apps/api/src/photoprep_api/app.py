@@ -19,7 +19,18 @@ from .logs import install_log_redaction
 # Where the contract lives: next to the code in the Lambda package (copied there by
 # scripts/build_lambda.py), or in packages/api-spec when running from the repository.
 _BUNDLED_SPEC_DIR = pathlib.Path(__file__).resolve().parent / "spec"
-_REPO_SPEC_DIR = pathlib.Path(__file__).resolve().parents[4] / "packages" / "api-spec"
+
+
+def repo_spec_dir(module_file: pathlib.PurePath) -> pathlib.PurePath | None:
+    """The repository's contract folder, or None when this code is not inside the repository.
+
+    The Lambda package is shallow (``/var/task/photoprep_api/app.py``), so the parent lookup
+    must not run unguarded at import time.
+    """
+    parents = module_file.parents
+    if len(parents) <= 4:
+        return None
+    return parents[4] / "packages" / "api-spec"
 
 
 def resolve_spec_dir() -> pathlib.Path:
@@ -29,7 +40,12 @@ def resolve_spec_dir() -> pathlib.Path:
         return pathlib.Path(override)
     if (_BUNDLED_SPEC_DIR / "openapi.yaml").is_file():
         return _BUNDLED_SPEC_DIR
-    return _REPO_SPEC_DIR
+    repo = repo_spec_dir(pathlib.Path(__file__).resolve())
+    if repo is None:
+        raise FileNotFoundError(
+            "openapi.yaml is not bundled with the package and no repository was found"
+        )
+    return pathlib.Path(repo)
 
 
 Handler = Callable[..., object]

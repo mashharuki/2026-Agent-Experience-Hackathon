@@ -28,6 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!returningFromSignIn) return;
     completeSignIn(cognito, window.location.search)
       .then((tokens) => {
+        // Before the state change: children that mount as "signed-in" send their first
+        // request in an effect that runs before this component's own effects.
+        setAccessTokenProvider(() => tokens.accessToken);
         setToken(tokens.accessToken);
         setStatus("signed-in");
         window.history.replaceState(null, "", "/");
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (config.cognito) void startSignIn(config.cognito);
       },
       signOut: () => {
+        setAccessTokenProvider(() => undefined);
         setToken(undefined);
         setStatus("signed-out");
       },

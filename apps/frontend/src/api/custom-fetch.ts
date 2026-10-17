@@ -13,6 +13,10 @@ export function setAccessTokenProvider(provider: AccessTokenProvider): void {
   tokenProvider = provider;
 }
 
+export function currentAccessToken(): string | undefined {
+  return tokenProvider();
+}
+
 export function setFetchImplementation(
   implementation: FetchImplementation,
 ): void {
@@ -38,7 +42,7 @@ export async function customFetch<T>(
   options: RequestInit,
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  const token = tokenProvider();
+  const token = currentAccessToken();
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }

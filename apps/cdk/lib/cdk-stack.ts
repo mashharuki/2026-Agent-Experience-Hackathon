@@ -6,6 +6,8 @@ import { Api } from "./constructs/api";
 import { Data } from "./constructs/data";
 import { Frontend } from "./constructs/frontend";
 import { Identity } from "./constructs/identity";
+import { Operations } from "./constructs/operations";
+import { Worker } from "./constructs/worker";
 
 export interface PhotoPrepStackProps extends cdk.StackProps {
   /** Extra local origins for development (also used as OAuth redirect hosts). */
@@ -15,8 +17,7 @@ export interface PhotoPrepStackProps extends cdk.StackProps {
 }
 
 /**
- * Foundations only (tasks T020-T024): Identity, Data, Frontend, Api. The worker and
- * operations constructs are added with user story 1 (T049/T050).
+ * Identity, Data, Frontend, Api (T020-T024), then the Worker and Operations (T049/T050).
  *
  * Stateful resources follow the context flag `photoprep:destroyData`: false (default)
  * retains the Cognito user pool and the metadata table on stack deletion; true allows a
@@ -46,14 +47,28 @@ export class PhotoPrepStack extends cdk.Stack {
 
     const data = new Data(this, "Data", { allowedOrigins, removalPolicy });
 
-    const api = new Api(this, "Api", {
-      identity,
+    // Placeholder package (source only, no dependencies). The real build is task T038.
+    const code =
+      props.apiCode ??
+      lambda.Code.fromAsset(path.join(__dirname, "..", "..", "api", "src"));
+
+    const api = new Api(this, "Api", { identity, data, allowedOrigins, code });
+
+    const worker = new Worker(this, "Worker", {
       data,
-      allowedOrigins,
-      // Placeholder package (source only, no dependencies). The real build is task T038.
-      code:
-        props.apiCode ??
-        lambda.Code.fromAsset(path.join(__dirname, "..", "..", "api", "src")),
+      bedrockModelId:
+        this.node.tryGetContext("photoprep:bedrockModelId") ??
+        "amazon.nova-lite-v1:0",
+      // Pushed separately (the image carries the model weights); never a floating tag.
+      imageTag: this.node.tryGetContext("photoprep:workerImageTag") ?? "unset",
+    });
+
+    const operations = new Operations(this, "Operations", {
+      data,
+      worker,
+      code,
+      alertEmail: this.node.tryGetContext("photoprep:alertEmail"),
+      budgetUsd: 30, // approved 2026-10-17 (docs/architecture/cost-estimate.md)
     });
 
     new cdk.CfnOutput(this, "SpaUrl", { value: spaOrigin });
@@ -65,5 +80,17 @@ export class PhotoPrepStack extends cdk.Stack {
       value: identity.client.userPoolClientId,
     });
     new cdk.CfnOutput(this, "CognitoIssuer", { value: identity.issuerUrl });
+    new cdk.CfnOutput(this, "WorkerRepositoryUri", {
+      value: worker.repository.repositoryUri,
+    });
+    new cdk.CfnOutput(this, "WorkerClusterName", {
+      value: worker.cluster.clusterName,
+    });
+    new cdk.CfnOutput(this, "WorkerServiceName", {
+      value: worker.service.serviceName,
+    });
+    new cdk.CfnOutput(this, "WorkerControlFunction", {
+      value: operations.workerControl.functionName,
+    });
   }
 }

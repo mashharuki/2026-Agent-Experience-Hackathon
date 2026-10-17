@@ -196,23 +196,47 @@ describe("API", () => {
     );
   });
 
-  test("the handler is outside any VPC and its role has no wildcard actions", () => {
+  test("the handler is outside any VPC", () => {
     template.hasResourceProperties("AWS::Lambda::Function", {
       Runtime: "python3.12",
       Handler: "photoprep_api.lambda_handler.handler",
       VpcConfig: Match.absent(),
     });
-    const policies = Object.values(template.findResources("AWS::IAM::Policy"));
-    for (const policy of policies) {
-      for (const s of policy.Properties.PolicyDocument.Statement as Array<{
-        Action: string | string[];
-        Resource: unknown;
-      }>) {
-        const actions = ([] as string[]).concat(s.Action);
-        expect(actions).not.toContain("*");
-        expect(JSON.stringify(s.Resource)).not.toEqual('"*"');
+  });
+
+  test("the handler's role has explicit actions only and no wildcard resource", () => {
+    const roles = Object.keys(template.findResources("AWS::IAM::Role")).filter(
+      (id) => /ApiHandlerServiceRole/.test(id),
+    );
+    expect(roles).toHaveLength(1);
+    const statements: Array<{ Action: string | string[]; Resource: unknown }> =
+      [];
+    for (const policy of Object.values(
+      template.findResources("AWS::IAM::Policy"),
+    )) {
+      const attached = (policy.Properties.Roles ?? []) as Array<{
+        Ref: string;
+      }>;
+      if (attached.some((r) => roles.includes(r.Ref))) {
+        statements.push(...policy.Properties.PolicyDocument.Statement);
       }
     }
+    expect(statements.length).toBeGreaterThan(0);
+    for (const s of statements) {
+      for (const action of ([] as string[]).concat(s.Action)) {
+        expect(action).not.toContain("*");
+      }
+      expect(JSON.stringify(s.Resource)).not.toBe('"*"');
+    }
+  });
+
+  test("the handler can put, read and delete photos under uploads/ and list that prefix", () => {
+    // Put: signed uploads. Get + ListBucket: HeadObject to see the photo arrived, and a clean
+    // 404 (not 403) when it did not. Delete: ending a session removes its photos.
+    const policies = JSON.stringify(template.findResources("AWS::IAM::Policy"));
+    expect(policies).toContain("s3:PutObject");
+    expect(policies).toContain("s3:GetObject");
+    expect(policies).toContain("s3:ListBucket");
   });
 
   test("CORS allows only the app origins and the headers the client needs", () => {

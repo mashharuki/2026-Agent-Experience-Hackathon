@@ -8,12 +8,25 @@ import threading
 from datetime import UTC, datetime
 
 from photoprep_common.logs import log_event
+from photoprep_common.service_status import PK, SK, set_status
 
 from .pipeline import Deps, Outcome, heartbeat, process_job
 
 VISIBILITY_SECONDS = 120
 HEARTBEAT_SECONDS = 30
 WAIT_SECONDS = 20
+
+
+def announce_ready(store) -> None:
+    """Open the door once the model is loaded, unless a stop is already being carried out."""
+    item = store.get(PK, SK)
+    if item and item.get("draining"):
+        return
+    set_status(store, accepting=True, reason="open")
+
+
+def announce_stopping(store) -> None:
+    set_status(store, accepting=False, reason="worker_stopped")
 
 
 def _job_id(body: str) -> str | None:
@@ -77,7 +90,6 @@ def main() -> None:  # pragma: no cover - wiring only, exercised on AWS
 
     region = os.environ.get("AWS_REGION", "ap-northeast-1")
     decider = load_strands_decider(os.environ.get("DECIDER_CHECKPOINT", DEFAULT_CHECKPOINT))
-    log_event("worker_ready", worker_id=socket.gethostname())  # model loaded: safe to accept work
     deps = Deps(
         store=DynamoStore(os.environ["TABLE_NAME"], region=region),
         images=S3Images(os.environ["IMAGE_BUCKET"]),

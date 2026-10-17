@@ -57,3 +57,34 @@ def test_poison_messages_are_dropped_not_retried(world):
     for i, body in enumerate(["not json", {"other": 1}, {"jobId": 5}, "[]"]):
         handle_message(world.deps, sqs, "q", message(body, handle=f"p{i}"))
     assert sqs.deleted == ["p0", "p1", "p2", "p3"]
+
+
+class TestReadiness:
+    """The door opens only when the worker itself says the model is loaded."""
+
+    def test_the_worker_opens_the_door_when_it_is_ready(self, world):
+        from photoprep_common.service_status import get_status, set_status
+
+        from photoprep_worker.main import announce_ready
+
+        set_status(world.store, accepting=False, reason="warming_up")
+        announce_ready(world.store)
+        assert get_status(world.store) == {"accepting": True, "reason": "open"}
+
+    def test_it_never_reopens_a_door_that_is_being_closed_for_a_stop(self, world):
+        from photoprep_common.service_status import get_status, set_status
+
+        from photoprep_worker.main import announce_ready
+
+        set_status(world.store, accepting=False, reason="maintenance", draining=True)
+        announce_ready(world.store)
+        assert get_status(world.store)["accepting"] is False
+
+    def test_it_closes_the_door_when_it_shuts_down(self, world):
+        from photoprep_common.service_status import get_status, set_status
+
+        from photoprep_worker.main import announce_stopping
+
+        set_status(world.store, accepting=True, reason="open")
+        announce_stopping(world.store)
+        assert get_status(world.store) == {"accepting": False, "reason": "worker_stopped"}

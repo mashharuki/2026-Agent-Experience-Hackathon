@@ -23,3 +23,6 @@ experiments/**/__pycache__/
 **/__pycache__/
 .pytest_cache/
 .ruff_cache/
+
+# CDK context cache: holds the AWS account id from local credentials, so it is not published
+apps/cdk/cdk.context.json

@@ -1,8 +1,25 @@
 # 契約：Decider の型付きの問いと動作への接続
 
 ハッカソンの提出物（再利用可能な判断パターン）の核になる契約。判断パターンの候補タグは
-`#tool-selection`。**Decider の応答形式（フィールド名）は公開資料に書かれていないため、
-本書の「問い」と「接続」は仮の契約であり、T-001 の実機確認で確定する。**
+`#tool-selection`。**呼び出し形式と応答形式は 2026-10-17 の実機確認（T008、開発Mac・CPU、
+`strands-decider 0.1.0`）で確認済み**（[research.md](../research.md) R-001）。接続ガードの閾値などは仮のままで、
+Fargate での性能・品質は未検証。
+
+## 呼び出し（確認済み）
+
+```python
+from strands_decider.infer import load_engine
+from strands_decider.schema import ChoiceQuestion
+
+engine = load_engine("StrandsAgents/strands-decider-2B-qwen3.5-v1-2610", device="cpu")
+res = engine.ask(state_text, {"next_support": ChoiceQuestion(instructions=..., criteria={...})})
+ans = res.answers["next_support"]   # ans.choice / ans.probabilities / ans.confidence
+```
+
+- `criteria` は**選択肢名→説明**の辞書。選択肢の説明を渡せる（最低2、最大255）。
+- 応答: `choice`（最上位）、`probabilities`（選択肢→確率、合計1）、`confidence`。`usage` は入力約200・出力1トークン。
+- モデルのロードはプロセス起動時に1回行い、再利用する（初回ロード約81秒、ピーク RSS 約5.7 GB。この環境）。
+- リビジョンは固定する。実行時にHugging Faceから取得しない（ビルド時に同梱）。
 
 ## 問い（型付き・`choice`）
 
@@ -25,8 +42,11 @@
 ## 出力の扱い
 
 - 最上位の選択肢、選択肢ごとの確率、confidence を受け取る。
-- confidence が暫定閾値（0.8）未満のときは `clarify` へ退避する。閾値は評価用データで調整する。
-  confidence を「美容助言の正解確率」として表示しない。
+- confidence が閾値未満のときは `clarify` へ退避する。**暫定値 0.8 には根拠がない**: 実機の合成例5件では、
+  妥当な選択（逆光→`capture_setup_tip` 0.685、根拠が弱い→`clarify` 0.688）も 0.8 未満だった。閾値は
+  評価データで調整し、決めるまで 0.8 を前提にしない。confidence を「美容助言の正解確率」として表示しない。
+- **Decider は状態テキスト内の禁止を守らないことがある**: 「眉には触れたくない」と明記した状態で `grooming_tip`
+  が最上位（確率 0.565、confidence 0.419）になった。禁止は必ず通常コードで検査する（下の接続ガード 2）。
 - Decider の失敗や不正な出力を成功した判断として記録しない（DecisionRecord に `FAILED` として残す）。
 
 ## 接続（通常コードのガード）

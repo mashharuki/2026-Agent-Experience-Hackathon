@@ -13,8 +13,24 @@
   - 出力は型付きの問いへの回答: `noul`（真偽の確率）、`choice`（最上位の選択肢、選択肢ごとの確率、confidence）、`score`。
   - 重みは別: ベース重み `Qwen/Qwen3.5-2B-Base` 約4.5 GB を初回ロード時にHugging Faceから取得する。→ 設計の「ビルド時に固定・同梱、実行時ダウンロードなし」は妥当（実行時取得を避ける）。
   - CPU実行は可能だが「大幅に遅い」。公表されたCPU時間は64 vCPUホストの Gemma 系の値で、採用候補の Qwen 2B を 4 vCPU の Fargate で動かした値ではない。
-- **Decision**: 型付きの問い（`choice`）の選択肢に `grooming_tip` / `capture_setup_tip` / `clarify` / `offer_finish` を置き、最上位の選択肢を通常コードが検査してから対応する処理を呼ぶ。[contracts/decider-decision.md](contracts/decider-decision.md) に契約として記す。
-- **Status**: 暫定・要検証。公開されている資料は `choice` の応答形式（フィールド名）を示していない。**実際のAPI形式を実機で確認する**（T-001）。
+- **実機確認の結果（T008、2026-10-17）**: `experiments/decider-spike/`（`spike.py`、実行ログ `run_cpu.log`）で、PyPI の `strands-decider 0.1.0`（torch 2.14.1、transformers 5.20.1、Python 3.12）をこの開発Mac（Apple silicon、CPU実行、16 GB）に入れ、`StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を動かした。**Fargate（x86_64）での測定ではない。**
+  - **API形式を確認**: Python から `load_engine(checkpoint, device="cpu")` → `engine.ask(state, {名前: ChoiceQuestion(instructions=…, criteria={選択肢: 説明})})` で呼べる。`criteria` は**選択肢名→説明の辞書**で、選択肢ごとの説明を渡せる。応答は `answers[名前]` に `choice`（最上位の選択肢）、`probabilities`（選択肢ごとの確率）、`confidence` を持ち、`usage` は入力約200トークン・出力1トークン。公開資料に無かったフィールド名はこれで確定。
+  - **4選択肢の問いは動作した**（日本語の状態・選択肢でも）。合成した5つの状態テキスト（写真なし）の結果:
+
+    | ケース | 最上位 | confidence | 備考 |
+    |---|---|---|---|
+    | A 毛流れを整えたい・照明十分 | `grooming_tip` | 0.846 | 期待どおり |
+    | B 逆光で眉が見えない | `capture_setup_tip` | 0.685 | 期待どおり。ただし confidence は 0.8 未満 |
+    | C 相談範囲「まず見てほしい」・根拠が弱い | `clarify` | 0.688 | 期待どおり。ただし 0.8 未満 |
+    | D 試行回数 2/2 | `offer_finish` | 0.932 | 期待どおり |
+    | E 「眉には触れたくない」と明示・眉が乱れて見える | `grooming_tip` | 0.419 | **禁止に反する選択**（確率 0.565 で最上位） |
+
+  - **判断の含意**: (1) E は、Decider が状態テキストに書いた禁止を守らない場合があることを示す。**禁止・上限・終了を通常コードで再検査する設計（FR-008、`contracts/decider-decision.md` の接続ガード）は必須**。(2) 暫定閾値 0.8 では B・C のような妥当な選択も `clarify` に退避される。**閾値の根拠はまだなく、評価データで調整する**（T087・T090）。0.8 のままにしない。(3) 5件の合成例は品質の証拠にならない。
+  - **この環境での性能**（Fargate 4 vCPU の保証にならない）: 初回ロード約81秒（重みの取得後。ネットワーク取得は別、取得ファイル29個）、プロセスのピーク RSS 約5.7 GB、問い1件の推論は約4.5秒（3回測定、初回のみ約6.6秒）。ライブラリは `causal_conv1d` と `flash-linear-attention` が無く参照実装に退避すると警告していた（遅いが結果は正しいとされる）。**問い1件で約4.5秒かかるため、SC-005（中央値10秒）の予算の約半分を Decider が使う**。Bedrock の観察・説明・ポーリング遅延と合算すると超える恐れがあり、T014・T103 で優先して測る。
+  - **ディスク**: Hugging Face キャッシュ約4.5 GB（チェックポイント＋`Qwen/Qwen3.5-2B-Base`）、仮想環境約0.7 GB。実行時の自動ダウンロードがあるため、Docker では**ビルド時に取得して同梱**する（T048）。
+  - **未確認**: `strands-decider serve`（HTTP）の応答、MPS／GPU、fp32 以外、x86_64 Linux（T014）。ワーカーは HTTP サーバーを使わず、ライブラリを直接呼ぶ（Flask 不要の設計と整合）。
+- **Decision**: 型付きの問い（`choice`）の選択肢に `grooming_tip` / `capture_setup_tip` / `clarify` / `offer_finish` を置き、**選択肢ごとの説明を `criteria` に渡す**。最上位の選択肢を通常コードが検査してから対応する処理を呼ぶ。[contracts/decider-decision.md](contracts/decider-decision.md) に契約として記す。
+- **Status**: **API形式と4択の動作は実機で確認済み（開発Mac・CPU）**。Fargate での性能、閾値の設定、品質は未検証（T014・T015・T087・T090）。
 - **Alternatives**: Strands Agents SDK の自律ループ（初版の必須要件にしない）。Bedrockだけでツール選択（憲章I違反＝Deciderの意味のある判断が必要なため不可）。
 
 ## R-002 Bedrock・Nova Lite の可用性と制約
@@ -82,7 +98,7 @@
 
 | ID | 内容 | 合格条件の概要 | 関連 |
 |---|---|---|---|
-| T-001 | Decider の `choice` API 形式と4選択肢の接続を実機で確認 | 型付きの問い→選択肢確率が取得でき、コードが支援ツールに接続できる | R-001, FR-015 |
+| T-001 | Decider の `choice` API 形式と4選択肢の接続を実機で確認（**完了 2026-10-17、開発Mac・CPU**） | 型付きの問い→選択肢確率が取得できた。Fargate・品質・閾値は別タスク | R-001, FR-015 |
 | T-002 | Nova Lite の画像観察品質評価（開発用例と評価用データを分離） | 逆光・変更なしで根拠のない断定が0件 | R-002, SC-003 |
 | T-003 | Connexion＋Mangum の結合確認（最小API） | R-003 の項目がすべて確認できる | R-003 |
 | T-004 | Fargate 4 vCPU/16 GB で Decider のピークRSSと遅延を測定 | ピークRSS 12 GB以内 | R-004 |

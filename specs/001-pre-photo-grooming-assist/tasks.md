@@ -48,7 +48,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### A. 検証ゲート（research.md の T-001〜T-010 のうち実装前に判断できるもの）
 
-- [ ] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
+- [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
 - [ ] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）
 - [ ] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**既定は MUI＋独自CSS（React Bits を取り込まない）**。取り込む場合はユーザー承認と OSI 要件との整合確認が前提（research T-005）
 - [ ] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）
@@ -198,7 +198,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T084 [P] [US3] `apps/worker/tests/test_uncertainty.py`、`apps/api/tests/unit/test_no_image.py`: 画像欠如、逆光、変更なしの再撮影、前後の光の差、根拠のない「まず見てほしい」の各ケース（決定的に確定できるものはコードのテスト、モデルの判断は T090 で評価）
 - [ ] T085 [US3] `apps/api/.../handlers/analyses.py`、`apps/worker/.../pipeline.py`、`apps/frontend/src/screens/TrialCapture.tsx`: 画像が届いていない場合は助言を生成せず `no_image` で終了し、再撮影を案内（モデルに判断させない）
 - [ ] T086 [US3] `apps/worker/.../observe.py`、`compare.py`: 観察結果に `uncertain`・`lighting`・`framing` を含め、前後の比較可否（`comparable`）を判定
-- [ ] T087 [US3] `apps/worker/.../guards.py`: 不確かな点が多い場合は `capture_setup_tip` か `clarify` へ、confidence が暫定閾値 0.8 未満なら `clarify` へ退避（閾値は T090 の評価で調整。confidence を美容助言の正解確率として表示しない）
+- [ ] T087 [US3] `apps/worker/.../guards.py`: 不確かな点が多い場合は `capture_setup_tip` か `clarify` へ、confidence が閾値未満なら `clarify` へ退避（**0.8 は根拠のない暫定値**。T008 の実機では妥当な選択も 0.685・0.688 だった。閾値は T090 の評価で決める。confidence を美容助言の正解確率として表示しない）
 - [ ] T088 [US3] `apps/worker/.../guards.py`: 変更なしの再撮影では新しい外見の指摘を作らない
 - [ ] T089 [US3] `apps/frontend/src/screens/Compare.tsx`、`TrialCapture.tsx`: 比較できない場合の撮り直し案内と、見えない場合の確認表示
 - [ ] T090 [US3] `evaluation/dev-examples/`・`evaluation/run_eval.py`: シナリオ 5〜8 の開発用の例と、閾値調整。調整後に `evaluation/holdout/` で一度だけ評価し、結果を `research.md` に記録

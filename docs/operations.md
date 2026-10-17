@@ -18,16 +18,31 @@ the whole AWS account, so spend from anything else in the account counts too.
 
 ## Deploy (do this only after the owner agrees)
 
+Order matters: the stack needs the Lambda package, and the frontend needs the stack's outputs.
+
 ```sh
+pnpm build:lambda                      # code + pinned Linux x86_64 dependencies + the OpenAPI file
 cd apps/cdk
-pnpm exec cdk diff  -c photoprep:alertEmail=<your-email>
+pnpm exec cdk diff   -c photoprep:alertEmail=<your-email>
 pnpm exec cdk deploy -c photoprep:alertEmail=<your-email> -c photoprep:workerImageTag=<immutable-tag>
+cd ../frontend
+pnpm run publish:plan                  # prints what would be uploaded; changes nothing
+pnpm run publish:apply                 # builds against the deployed API, uploads, invalidates
 ```
 
+- `cdk synth/deploy` refuses to run without the package from `pnpm build:lambda`: the Lambdas could not
+  start without it (an earlier version shipped only the source files).
+- `publish:apply` builds the SPA with the deployed API and Cognito addresses and with the mock **off**,
+  refuses a build that does not contain the API address, and only writes to the bucket and distribution
+  named in the stack outputs.
+- The worker image does not exist yet on the first deploy: leave `workerImageTag` unset (the service runs
+  0 tasks), push the image (next section), then deploy again with the tag.
 - `photoprep:alertEmail` is required for alarms and the budget; without it the stack warns and creates no budget.
 - Confirm the e-mail subscription that AWS sends (alarms and the budget stay silent until you do).
 - Stateful resources (user pool, table) are **retained** by default. For a full tear-down pass
   `-c photoprep:destroyData=true` when deploying, before deleting the stack.
+- Create the invited user in Cognito yourself (the console or `aws cognito-idp admin-create-user`); never
+  share the password.
 
 ## Build and push the worker image (about 5 GB with the model weights)
 

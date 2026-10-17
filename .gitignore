@@ -26,3 +26,6 @@ experiments/**/__pycache__/
 
 # CDK context cache: holds the AWS account id from local credentials, so it is not published
 apps/cdk/cdk.context.json
+
+# Built Lambda package (scripts/build_lambda.py) and frontend output
+apps/api/build/

@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -12,8 +13,10 @@ import { Worker } from "./constructs/worker";
 export interface PhotoPrepStackProps extends cdk.StackProps {
   /** Extra local origins for development (also used as OAuth redirect hosts). */
   readonly devOrigins?: string[];
-  /** Overrides the default Lambda package (tests pass an inline stub). */
+  /** Overrides the Lambda package (tests pass an inline stub). */
   readonly apiCode?: lambda.Code;
+  /** Folder produced by `pnpm build:lambda` (apps/api/build/lambda by default). */
+  readonly lambdaPackageDir?: string;
 }
 
 /**
@@ -47,10 +50,18 @@ export class PhotoPrepStack extends cdk.Stack {
 
     const data = new Data(this, "Data", { allowedOrigins, removalPolicy });
 
-    // Placeholder package (source only, no dependencies). The real build is task T038.
-    const code =
-      props.apiCode ??
-      lambda.Code.fromAsset(path.join(__dirname, "..", "..", "api", "src"));
+    // The real package (code + pinned dependencies + the OpenAPI file) built by
+    // scripts/build_lambda.py. Without it the Lambdas could not start, so refuse to synthesize
+    // rather than deploy something broken.
+    const packageDir =
+      props.lambdaPackageDir ??
+      path.join(__dirname, "..", "..", "api", "build", "lambda");
+    if (!props.apiCode && !fs.existsSync(packageDir)) {
+      throw new Error(
+        `Lambda package not found at ${packageDir}. Run \`pnpm build:lambda\` first.`,
+      );
+    }
+    const code = props.apiCode ?? lambda.Code.fromAsset(packageDir);
 
     const api = new Api(this, "Api", { identity, data, allowedOrigins, code });
 
@@ -72,6 +83,15 @@ export class PhotoPrepStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "SpaUrl", { value: spaOrigin });
+    new cdk.CfnOutput(this, "SpaBucketName", {
+      value: frontend.bucket.bucketName,
+    });
+    new cdk.CfnOutput(this, "DistributionId", {
+      value: frontend.distribution.distributionId,
+    });
+    new cdk.CfnOutput(this, "CognitoHostedUiUrl", {
+      value: identity.hostedUiUrl,
+    });
     new cdk.CfnOutput(this, "ApiUrl", { value: api.httpApi.apiEndpoint });
     new cdk.CfnOutput(this, "UserPoolId", {
       value: identity.userPool.userPoolId,

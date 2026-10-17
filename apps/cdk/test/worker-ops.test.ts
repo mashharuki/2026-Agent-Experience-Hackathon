@@ -365,3 +365,53 @@ describe("budget notification", () => {
     ).toBeGreaterThan(0);
   });
 });
+
+describe("deployment package and outputs", () => {
+  test("without a built Lambda package the stack refuses to synthesize, and says how to build it", () => {
+    const app = new cdk.App();
+    expect(
+      () =>
+        new PhotoPrepStack(app, "NoPackage", {
+          env: { region: "ap-northeast-1", account: "123456789012" },
+          lambdaPackageDir: path.join(__dirname, "does-not-exist"),
+        }),
+    ).toThrow(/build:lambda/);
+  });
+
+  test("with a built package folder the Lambdas use it", () => {
+    const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "pkg-"));
+    fs.writeFileSync(path.join(dir, "marker.py"), "x = 1\n");
+    const app = new cdk.App();
+    const stack = new PhotoPrepStack(app, "WithPackage", {
+      env: { region: "ap-northeast-1", account: "123456789012" },
+      lambdaPackageDir: dir,
+    });
+    const functions = Object.values(
+      Template.fromStack(stack).findResources("AWS::Lambda::Function"),
+    ).filter((f) =>
+      String(f.Properties.Handler ?? "").startsWith("photoprep_api"),
+    );
+    expect(functions.length).toBe(4); // API + worker control + re-dispatch + sweeper
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("the outputs the frontend publish step and the operators need are exported", () => {
+    const { template } = build();
+    const outputs = Object.keys(template.toJSON().Outputs ?? {});
+    for (const name of [
+      "SpaUrl",
+      "SpaBucketName",
+      "DistributionId",
+      "ApiUrl",
+      "UserPoolId",
+      "UserPoolClientId",
+      "CognitoHostedUiUrl",
+      "WorkerRepositoryUri",
+      "WorkerClusterName",
+      "WorkerServiceName",
+      "WorkerControlFunction",
+    ]) {
+      expect(outputs).toContain(name);
+    }
+  });
+});

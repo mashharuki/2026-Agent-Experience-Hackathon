@@ -25,8 +25,9 @@ package = false
 photoprep-common = { path = "../../packages/photoprep-common", editable = true }
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "scripts"]
 testpaths = ["tests"]
+markers = ["package: builds the real Lambda package (downloads Linux wheels); run with RUN_PACKAGE_BUILD=1"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::starlette.exceptions.StarletteDeprecationWarning",

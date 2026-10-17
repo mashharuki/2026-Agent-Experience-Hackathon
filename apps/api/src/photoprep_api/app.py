@@ -16,7 +16,21 @@ from connexion.resolver import Resolver
 from .errors import register_error_handlers
 from .logs import install_log_redaction
 
-DEFAULT_SPEC_DIR = pathlib.Path(__file__).resolve().parents[4] / "packages" / "api-spec"
+# Where the contract lives: next to the code in the Lambda package (copied there by
+# scripts/build_lambda.py), or in packages/api-spec when running from the repository.
+_BUNDLED_SPEC_DIR = pathlib.Path(__file__).resolve().parent / "spec"
+_REPO_SPEC_DIR = pathlib.Path(__file__).resolve().parents[4] / "packages" / "api-spec"
+
+
+def resolve_spec_dir() -> pathlib.Path:
+    """``PHOTOPREP_SPEC_DIR`` if set, else the bundled copy, else the repository's."""
+    override = os.environ.get("PHOTOPREP_SPEC_DIR")
+    if override:
+        return pathlib.Path(override)
+    if (_BUNDLED_SPEC_DIR / "openapi.yaml").is_file():
+        return _BUNDLED_SPEC_DIR
+    return _REPO_SPEC_DIR
+
 
 Handler = Callable[..., object]
 
@@ -27,13 +41,13 @@ def _not_implemented(**_: object):
 
 def create_app(
     handlers: Mapping[str, Handler] | None = None,
-    spec_dir: pathlib.Path | str = DEFAULT_SPEC_DIR,
+    spec_dir: pathlib.Path | str | None = None,
 ) -> connexion.FlaskApp:
     # The security function is named by env var so the spec stays free of app extensions.
     os.environ.setdefault("BEARERINFO_FUNC", "photoprep_api.auth.bearer_info")
     install_log_redaction()
     table = dict(handlers or {})
-    app = connexion.FlaskApp(__name__, specification_dir=str(spec_dir))
+    app = connexion.FlaskApp(__name__, specification_dir=str(spec_dir or resolve_spec_dir()))
     app.add_api(
         "openapi.yaml",
         resolver=Resolver(function_resolver=lambda op_id: table.get(op_id, _not_implemented)),

@@ -11,7 +11,9 @@
     "api:generate": "orval --config orval.config.ts",
     "api:check": "pnpm run api:generate && git diff --exit-code -- src/api/generated",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "publish:plan": "node scripts/publish.ts",
+    "publish:apply": "node scripts/publish.ts --yes"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

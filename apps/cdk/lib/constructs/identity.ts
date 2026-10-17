@@ -27,6 +27,8 @@ export class Identity extends Construct {
   readonly userPool: cognito.UserPool;
   readonly client: cognito.UserPoolClient;
   readonly issuerUrl: string;
+  /** Base URL of the Cognito hosted UI (the OAuth endpoints live under it). */
+  readonly hostedUiUrl: string;
 
   constructor(scope: Construct, id: string, props: IdentityProps) {
     super(scope, id);
@@ -97,6 +99,7 @@ export class Identity extends Construct {
     this.userPool.addDomain("HostedUiDomain", {
       cognitoDomain: { domainPrefix: props.domainPrefix },
     });
+    this.hostedUiUrl = `https://${props.domainPrefix}.auth.${cdk.Stack.of(this).region}.amazoncognito.com`;
 
     this.issuerUrl = `https://cognito-idp.${cdk.Stack.of(this).region}.amazonaws.com/${this.userPool.userPoolId}`;
 

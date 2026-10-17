@@ -102,7 +102,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
 - [x] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
 - [x] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
-- [x] T038 [US1] （ZIP の作成は未実装: x86_64 向けの依存を uv で同梱する作業が残る。CDK は仮のソースのみを配布している）`apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
+- [x] T038 [US1] （**ZIP の作成を実装 2026-10-17**: `pnpm build:lambda`（`apps/api/scripts/build_lambda.py`）が uv.lock から Linux x86_64 の依存、アプリ、共有パッケージ、OpenAPI ファイルを同梱して検証する。実物は 31 MB。Lambda 上での起動は未確認。CDK はこの成果物が無いと synth を拒否する）`apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
 - [x] T039 [US1] `apps/api/src/photoprep_api/ops/dispatch.py`（パッケージ内に置く。CDK のハンドラ指定は `photoprep_api.ops.dispatch.handler`）: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
 
 ### Implementation for User Story 1 — Worker
@@ -135,7 +135,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T059 [US1] `apps/frontend/src/screens/TryOne.tsx`: 助言一つと「やってみる／別の提案／このままで終える」、実施中の待機と「整えたので確認」
 - [x] T060 [US1] `apps/frontend/src/screens/Compare.tsx`: 前後の並置、「前が好き／後が好き／差が分からない」、「終える」を主操作に
 - [x] T061 **（設計の修正: 2回目の変更は比較画面の「次の一手」から直接始める。「整えたので確認」の解析が次の提案も返すため、2回の変更が3回の解析に収まる）** [US1] `apps/frontend/src/features/session/`: 四画面をつなぐフロー制御（FR-026）
-- [ ] T062 [US1] 初回の実 AWS 通しを実施（**T012 の承認後のみ**）: ワーカー起動 → quickstart シナリオ 1 → 停止。デプロイは `cdk diff` を確認してユーザー承認を得てから行う
+- [ ] T062 [US1] （準備済み: Lambda の配布物、`apps/frontend/scripts/publish.ts`、出力の追加。残りは実デプロイと通し確認）初回の実 AWS 通しを実施（**T012 の承認後のみ**）: ワーカー起動 → quickstart シナリオ 1 → 停止。デプロイは `cdk diff` を確認してユーザー承認を得てから行う
 
 **Checkpoint**: US1 が単独で動き、シナリオ 1 を通せる。ただし公開前の条件は Phase 4・5 の完了を含む。
 

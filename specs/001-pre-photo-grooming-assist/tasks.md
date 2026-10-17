@@ -30,10 +30,10 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 **Purpose**: プロジェクト初期化。この時点で機能は作らない。必要な依存だけ導入する。
 
-- [ ] T001 [P] `apps/api/` を uv で初期化（`pyproject.toml`、`uv.lock`、Python 3.12、pytest・Ruff 設定）。依存は API に必要なものだけとし、PyTorch・Decider を含めない
+- [x] T001 [P] **完了 2026-10-17** `apps/api/` を uv で初期化（`pyproject.toml`、`uv.lock`、Python 3.12、pytest・Ruff 設定）。依存は API に必要なものだけとし、PyTorch・Decider を含めない
 - [ ] T002 [P] `apps/worker/` を uv で初期化（`pyproject.toml`、`uv.lock`、Python 3.12、pytest・Ruff 設定）。PyTorch CPU・Decider はここにのみ置く
-- [ ] T003 [P] `apps/frontend/package.json` に Material UI＋Emotion、TanStack Query、Vitest、Playwright を追加し、`pnpm install` で lockfile を更新（React Bits は入れない: T010）
-- [ ] T004 [P] `packages/api-spec/` に OpenAPI の lint ツールと Orval を導入（lint ツールの選定理由を `research.md` に追記）。`main: index.js` のヒントは本タスクで扱わない
+- [ ] T003 [P] （一部完了: TanStack Query と Orval のみ導入済み。MUI・Emotion・Vitest・Playwright は未導入）`apps/frontend/package.json` に Material UI＋Emotion、TanStack Query、Vitest、Playwright を追加し、`pnpm install` で lockfile を更新（React Bits は入れない: T010）
+- [ ] T004 [P] （ほぼ完了: lint は JS ではなく Python の `openapi-spec-validator`＋Connexion 読込みで `check_spec.py` に実装し、依存の重い JS ツールを避けた。Orval は T019 で導入済み）`packages/api-spec/` に OpenAPI の lint ツールと Orval を導入（lint ツールの選定理由を `research.md` に追記）。`main: index.js` のヒントは本タスクで扱わない
 - [ ] T005 [P] `evaluation/` の構成を作成（`evaluation/dev-examples/`、`evaluation/holdout/`、`evaluation/README.md`）。顔写真・個人データをコミットしないよう `.gitignore` に画像拡張子と `evaluation/holdout/` の実データを追加
 - [ ] T006 [P] `apps/frontend/.env.example`、`apps/api/.env.example`、`apps/worker/.env.example` を**プレースホルダのみ**で作成（認証情報・トークンの値を書かない）
 - [ ] T007 `apps/cdk/package.json` で CDK CLI/lib・Node.js・TypeScript・cdk-nag の互換性を確認して固定し、`pnpm --filter cdk test` と `pnpm --filter cdk cdk synth` が通ることを確認（結果を `docs/tech-stack.md` の備考へ）
@@ -59,10 +59,10 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### B. API 契約
 
-- [ ] T016 `specs/001-pre-photo-grooming-assist/contracts/openapi.draft.yaml` を `packages/api-spec/openapi.yaml`（正本）へ移し、草案側は正本へのポインタに置き換える（OpenAPI 3.0.3 のまま。3.1 専用構文を入れない）
-- [ ] T017 `packages/api-spec/openapi.yaml` に**受付状態の API** `getServiceStatus`（`GET /service-status`）を追加: 認証あり、応答は `accepting`（真偽）、`reason`（`open`/`worker_stopped`/`warming_up`/`quota_exhausted`/`maintenance`）、`expectedReopenAt`（任意）。`503` の `Error.code` に受付停止の識別子を追加。草案・`data-model.md`・`quickstart.md` の記述と整合させる（FR-027）
-- [ ] T018 `packages/api-spec/package.json` に OpenAPI の lint と Connexion 読込み確認（`apps/api` で仕様を読み込むスクリプト）を追加し、`pnpm` から実行できるようにする
-- [ ] T019 `apps/frontend/orval.config.ts` で Orval を設定し `apps/frontend/src/api/generated/` へ TS 型・クライアント・TanStack Query hooks を生成。生成物は直接編集せず、再生成後の差分検査スクリプトを追加
+- [x] T016 `specs/001-pre-photo-grooming-assist/contracts/openapi.draft.yaml` を `packages/api-spec/openapi.yaml`（正本）へ移し、草案側は正本へのポインタに置き換える（OpenAPI 3.0.3 のまま。3.1 専用構文を入れない）
+- [x] T017 `packages/api-spec/openapi.yaml` に**受付状態の API** `getServiceStatus`（`GET /service-status`）を追加: 認証あり、応答は `accepting`（真偽）、`reason`（`open`/`worker_stopped`/`warming_up`/`quota_exhausted`/`maintenance`）、`expectedReopenAt`（任意）。`503` の `Error.code` に受付停止の識別子を追加。草案・`data-model.md`・`quickstart.md` の記述と整合させる（FR-027）
+- [x] T018 `packages/api-spec/package.json` に OpenAPI の lint と Connexion 読込み確認（`apps/api` で仕様を読み込むスクリプト）を追加し、`pnpm` から実行できるようにする
+- [x] T019 `apps/frontend/orval.config.ts` で Orval を設定し `apps/frontend/src/api/generated/` へ TS 型・クライアント・TanStack Query hooks を生成。生成物は直接編集せず、再生成後の差分検査スクリプトを追加
 
 ### C. 認証・データ・API 骨格
 
@@ -71,8 +71,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
 - [ ] T023 `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
 - [ ] T024 `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
-- [ ] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logging.py`: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は `experiments/connexion-mangum/app.py`）
-- [ ] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
+- [x] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logs.py`（標準の `logging` と紛らわしいため改名）: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は `experiments/connexion-mangum/app.py`）
+- [x] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
 
 **Checkpoint**: 検証ゲートの結果が `research.md` に反映され、契約と認証・データの土台がそろっている。T012（予算）が未承認なら、以降は**ローカル・モックで進め、実 AWS へは出さない**。
 

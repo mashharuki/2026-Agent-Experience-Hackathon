@@ -23,7 +23,7 @@
 | モノレポ実行 | Turborepo 2.x | 既存 | `turbo` は導入済み、タスク定義は未整備。Vite Taskとの二重管理を避ける |
 | UI部品 | Material UI、Emotion | 採用・未導入 | フォーム、ボタン、ダイアログ、進行表示、共通テーマ |
 | 演出 | MUI＋独自CSS | 採用・未導入 | **React Bits は採用しない**（2026-10-17、ユーザー承認。現行MIT＋Commons Clauseは部品の再配布を制限し、公式Rulesが求めるOSI承認の公開リポジトリと衝突し得るため）。撮影・操作を妨げず、`prefers-reduced-motion` を尊重する |
-| サーバー状態管理 | TanStack Query | 採用・未導入 | ジョブのポーリングとキャッシュ。解析POSTの自動再試行を無効化 |
+| サーバー状態管理 | TanStack Query | 採用・導入済み（フロントに依存を追加。利用は未実装） | ジョブのポーリングとキャッシュ。解析POSTの自動再試行を無効化 |
 | 撮影 | ブラウザCamera API | 採用・未実装 | 写真は端末メモリで保持。同意後のみ解析用S3に送信 |
 | 共通コード | TypeScript | 採用・空パッケージあり | `packages/shared/` はUI共通処理。API境界型を手書きで重複管理しない |
 
@@ -34,14 +34,14 @@ Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使�
 
 | 領域 | 技術・バージョン方針 | 選定状態 | 配置・用途・後続処理の注意 |
 | --- | --- | --- | --- |
-| API契約の正本 | OpenAPI YAML | 採用・未作成 | `packages/api-spec/openapi.yaml`。Pythonから生成する仕様を正本にしない |
+| API契約の正本 | OpenAPI YAML | 採用・作成済み（7操作。`pnpm --filter api-spec check` で検査） | `packages/api-spec/openapi.yaml`。Pythonから生成する仕様を正本にしない |
 | OpenAPIの版 | 3.0.3 | 推奨 | Connexion案との互換性を優先。旧3.1案を引き継がず、3.1専用構文を混在させない |
-| サーバー検証 | Connexion 3＋Flask | 推奨・未導入 | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
+| サーバー検証 | Connexion 3＋Flask | 推奨・apps/apiに導入済み・ローカル検証済み（実API Gateway／Lambdaは未確認） | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
 | API実装言語 | Python 3.12、boto3 | 推奨・未実装 | 旧TypeScript API案を見直した案。認可、署名付きPOST、ジョブ受付・結果取得 |
 | Lambdaアダプター | Mangum | 推奨・未検証 | Connexion全体を包む。HTTP API v2イベントとJWT claimsの引渡しを検証 |
-| フロント向け生成 | Orval | 推奨・未導入 | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
+| フロント向け生成 | Orval | 推奨・導入済み・生成確認済み（`pnpm --filter frontend api:generate`） | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
 | APIドキュメント | Swagger UI | 推奨・未導入 | 同じYAMLから表示。ドキュメント公開設定とAPI認証を区別する |
-| Python依存管理 | uv、lockfile | 推奨・アプリ未作成 | APIとワーカーの依存を分離し、再現可能にする |
+| Python依存管理 | uv、lockfile | 推奨・apps/apiで導入済み（apps/workerは未作成） | APIとワーカーの依存を分離し、再現可能にする |
 | AIワーカー | Python 3.12、PyTorch CPU | 採用・未実装 | `apps/worker/`。SQSを取得するプロセス。Flaskサーバーは不要 |
 | 判断モデル | Strands Decider 2B | 採用・未検証 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を初期候補とし、revisionを固定。判断で実行ツールを変える |
 | 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・未検証 | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
@@ -81,7 +81,7 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | Python | pytest、Ruff | 推奨・未導入。認可、利用枠、重複配送、判断結果の接続 |
 | IaC | Jest、CDK assertions、cdk-nag | 雛形・依存あり。既存テストは構成検証済みの証拠ではない |
 | E2E | Playwright | 推奨・未導入。撮影から結果・終了までの体験 |
-| API契約 | YAML lint、Connexion読込み、Orval再生成差分、契約テスト | 未整備。仕様と実装・生成クライアントの不一致を検出 |
+| API契約 | YAML lint、Connexion読込み、Orval再生成差分、契約テスト | 一部整備（YAML検証・Connexion読込み・operationId重複・認証必須・3.1構文の検査は `check_spec.py`。Orval再生成差分の検査はコミット後に有効。契約テストは未実装）。仕様と実装・生成クライアントの不一致を検出 |
 
 ## Spec Kitでの適用ルール
 

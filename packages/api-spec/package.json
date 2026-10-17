@@ -1,13 +1,13 @@
 {
   "name": "api-spec",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "OpenAPI 3.0.3 contract (source of truth) for the pre-photo grooming assistant API",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "uv run --project ../../apps/api python ../../apps/api/scripts/check_spec.py ./openapi.yaml"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "private": true
 }

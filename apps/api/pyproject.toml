@@ -1,0 +1,39 @@
+[project]
+name = "photoprep-api"
+version = "0.1.0"
+description = "Python Lambda API for the pre-photo grooming assistant (Connexion + Mangum)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "connexion[flask,uvicorn]>=3.3,<4",
+    "mangum>=0.22,<1",
+    "boto3>=1.40",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "ruff>=0.14",
+    "openapi-spec-validator>=0.7",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105"]

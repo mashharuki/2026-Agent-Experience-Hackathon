@@ -17,3 +17,9 @@ docs/output/
 # Experiment virtual environments and model caches
 experiments/**/.venv/
 experiments/**/__pycache__/
+
+# Python environments and caches
+**/.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/

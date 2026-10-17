@@ -1,4 +1,4 @@
-"""T009 spike: Connexion 3 (FlaskApp) wrapped by Mangum, spec = contracts draft.
+"""T009 spike: Connexion 3 (FlaskApp) wrapped by Mangum, spec = packages/api-spec/openapi.yaml.
 
 Throwaway experiment, not product code. Handlers are stubs.
 Claims come ONLY from the API Gateway v2 event (JWT authorizer result);
@@ -19,10 +19,7 @@ from connexion.resolver import Resolver
 from starlette.exceptions import HTTPException
 from mangum import Mangum
 
-SPEC_DIR = (
-    pathlib.Path(__file__).resolve().parents[2]
-    / "specs/001-pre-photo-grooming-assist/contracts"
-)
+SPEC_DIR = pathlib.Path(__file__).resolve().parents[2] / "packages/api-spec"
 
 
 def bearer_info(token, request):
@@ -108,7 +105,7 @@ def build():
     t = time.perf_counter()
     app = connexion.FlaskApp(__name__, specification_dir=str(SPEC_DIR))
     app.add_api(
-        "openapi.draft.yaml",
+        "openapi.yaml",
         resolver=Resolver(function_resolver=_resolve),
         validate_responses=True,
         strict_validation=True,

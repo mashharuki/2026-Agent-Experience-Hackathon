@@ -6,13 +6,30 @@ question with a probability per option and a confidence. Call shape verified aga
 strands-decider 0.1.0: ``engine.ask(state, {name: ChoiceQuestion(...)})``.
 """
 
-from dataclasses import dataclass
-from typing import Protocol
-
-from strands_decider.schema import ChoiceQuestion
-
+from .decision_pattern import (
+    DEFAULT_CHECKPOINT,
+    Choice,
+    Decider,
+    TypedQuestion,
+    load_engine,
+)
+from .decision_pattern import StrandsDecider as PatternDecider
 from .observe import SCOPE_LABEL
 from .schemas import Observation
+
+__all__ = [
+    "CRITERIA",
+    "DEFAULT_CHECKPOINT",
+    "INSTRUCTIONS",
+    "NEXT_SUPPORT",
+    "QUESTION_NAME",
+    "QUESTION_VERSION",
+    "Choice",
+    "Decider",
+    "StrandsDecider",
+    "build_state_text",
+    "load_strands_decider",
+]
 
 QUESTION_VERSION = "v1"
 QUESTION_NAME = "next_support"
@@ -24,24 +41,15 @@ CRITERIA = {
     "clarify": "根拠が弱い・依頼が曖昧・矛盾しているため、本人に確認する",
     "offer_finish": "試行の上限に達した、または本人が終えたいので終了を提案する",
 }
-DEFAULT_CHECKPOINT = "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610"
+NEXT_SUPPORT = TypedQuestion(
+    name=QUESTION_NAME, version=QUESTION_VERSION, instructions=INSTRUCTIONS, options=CRITERIA
+)
 
 _RESTRICTION_LABEL = {
     "no_touch_brow": "眉には触れない",
     "keep_brow_shape": "眉の形は変えない",
     "no_touch_bangs": "前髪には触れない",
 }
-
-
-@dataclass(frozen=True)
-class Choice:
-    selected: str
-    probabilities: dict[str, float]
-    confidence: float
-
-
-class Decider(Protocol):
-    def choose(self, state_text: str) -> Choice: ...
 
 
 def build_state_text(
@@ -73,27 +81,13 @@ def build_state_text(
     return "\n".join(lines)
 
 
-class StrandsDecider:
-    def __init__(self, engine) -> None:
-        self._engine = engine
-        self._question = ChoiceQuestion(instructions=INSTRUCTIONS, criteria=CRITERIA)
-
-    def choose(self, state_text: str) -> Choice:
-        response = self._engine.ask(state_text, {QUESTION_NAME: self._question})
-        answer = response.answers[QUESTION_NAME]
-        if answer.choice not in CRITERIA:
-            raise ValueError("decider returned an option outside the contract")
-        return Choice(
-            selected=answer.choice,
-            probabilities={k: float(v) for k, v in answer.probabilities.items()},
-            confidence=float(answer.confidence),
-        )
+def StrandsDecider(engine) -> PatternDecider:  # noqa: N802 - keeps the original constructor name
+    """The pattern's decider bound to this app's question."""
+    return PatternDecider(engine, NEXT_SUPPORT)
 
 
 def load_strands_decider(
     checkpoint: str = DEFAULT_CHECKPOINT, device: str = "cpu"
-) -> StrandsDecider:
+) -> PatternDecider:
     """Load the model once at start-up and reuse it (about 5.7 GB resident on CPU)."""
-    from strands_decider.infer import load_engine
-
     return StrandsDecider(load_engine(checkpoint, device=device))

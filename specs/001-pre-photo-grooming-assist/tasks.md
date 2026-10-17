@@ -225,13 +225,13 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 **Independent Test**: quickstart のシナリオ 14。曖昧な依頼で `clarify` が選ばれ、判断記録と画面の動作が一致する。
 
-- [ ] T096 [P] [US6] `apps/worker/tests/test_decision_record.py`: 判断記録の `selected` と実際に呼ばれた処理（`invoked`）が一致し、画像を含まないこと
-- [ ] T097 [US6] `apps/worker/src/photoprep_worker/decision_pattern/`: 型付きの問い・選択肢・動作への接続を、アプリ固有の処理から切り離した再利用可能な形に抽出（FR-025）
-- [ ] T098 [US6] `apps/worker/tools/export_decisions.py`: デモ用に判断記録を書き出すスクリプト（運用者のみ・画像なし）
-- [ ] T099 [US6] `docs/decision-pattern.md`: 型付きの問い、選択肢、接続コード、使い方を説明（実測・仮説・モックを区別）
-- [ ] T100 [US6] `docs/article/draft.md`: Builder Center 記事の下書き（エージェントの役割、Decider に任せた判断、実測・仮説・モックの区別）。**提出前に Builder Center で公開済みであること**が必須。公開はユーザーが行う
-- [ ] T101 [US6] `docs/demo-script.md`: 3 分未満のデモ台本。仮画像や再生データを使う場面を明示。動画の撮影・公開（YouTube 等）はユーザーが行う。**AWS上で実際に動作する場面を必ず含める**（再生データのみは不可の恐れ。R-007）
-- [ ] T102 [US6] リポジトリ公開前の確認: OSI 承認ライセンス（`LICENSE`）、第三者コード・モデルの権利表示、顔写真・認証情報・秘密鍵が含まれないことの走査、タグ（`#strands-decider-2b` と `#tool-selection`）の記載。公開の操作はユーザーの承認後
+- [x] T096 **完了 2026-10-17: 選ばれた選択肢が実際に実行された処理と一致することを4種類の選択でテスト（パイプラインと判断パターンの両方）。** [P] [US6] `apps/worker/tests/test_decision_record.py`: 判断記録の `selected` と実際に呼ばれた処理（`invoked`）が一致し、画像を含まないこと
+- [x] T097 **（パターンはアプリの他の部分に依存しないことをテストで強制。保護を壊す13件の変更はすべてテストで検出）** [US6] `apps/worker/src/photoprep_worker/decision_pattern/`: 型付きの問い・選択肢・動作への接続を、アプリ固有の処理から切り離した再利用可能な形に抽出（FR-025）
+- [x] T098 **（`apps/worker/tools/export_decisions.py`。利用者・セッションは一方向ハッシュで匿名化。実DynamoDBのスキャンは未実行）** [US6] `apps/worker/tools/export_decisions.py`: デモ用に判断記録を書き出すスクリプト（運用者のみ・画像なし）
+- [x] T099 [US6] `docs/decision-pattern.md`: 型付きの問い、選択肢、接続コード、使い方を説明（実測・仮説・モックを区別）
+- [x] T100 **（下書きのみ。英語。`[MEASURE]`/`[TODO]` を埋め、Builder Center での公開は本人が行う）** [US6] `docs/article/draft.md`: Builder Center 記事の下書き（エージェントの役割、Decider に任せた判断、実測・仮説・モックの区別）。**提出前に Builder Center で公開済みであること**が必須。公開はユーザーが行う
+- [x] T101 **（台本のみ。AWS上で動いている場面が必須。撮影・公開は本人が行う）** [US6] `docs/demo-script.md`: 3 分未満のデモ台本。仮画像や再生データを使う場面を明示。動画の撮影・公開（YouTube 等）はユーザーが行う。**AWS上で実際に動作する場面を必ず含める**（再生データのみは不可の恐れ。R-007）
+- [x] T102 **（`scripts/check-publishable.sh`、`THIRD_PARTY_NOTICES.md`、README のタグを整備。リポジトリの公開は本人の承認後。作業中に見つけた不具合: DynamoDB が float を受け付けず、ワーカーの保存が AWS で失敗するところだった。共有の Store で Decimal に変換して修正し、DynamoDB(moto) でのテストを追加）** [US6] リポジトリ公開前の確認: OSI 承認ライセンス（`LICENSE`）、第三者コード・モデルの権利表示、顔写真・認証情報・秘密鍵が含まれないことの走査、タグ（`#strands-decider-2b` と `#tool-selection`）の記載。公開の操作はユーザーの承認後
 
 ---
 

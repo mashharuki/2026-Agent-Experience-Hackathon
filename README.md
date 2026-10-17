@@ -1,8 +1,43 @@
-# 2026-Agent-Experience-Hackathon
+# 撮る前のひと手間（Agent Experience Hackathon: Strands Decider）
 
-[AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider) 向けのプロジェクトです。
+[AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider) への応募プロジェクトです。
 
-撮影前の眉・前髪を一つ整えて試し、前後を比べて本人が選ぶ体験を検討しています。現在の案は [MVP仕様書](docs/mvp.md)、開発上の案内は [AGENTS.md](AGENTS.md) を参照してください。
+**Tags: `#strands-decider-2b` `#tool-selection`** · License: [MIT](LICENSE)（OSI承認） · [第三者ライセンス](THIRD_PARTY_NOTICES.md)
+
+撮影前の眉・前髪を**一つだけ**整えて試し、前後を比べて本人が選ぶ体験です。エージェントは、
+次にどの支援を使うか（`grooming_tip` / `capture_setup_tip` / `clarify` / `offer_finish`）を
+**Strands Decider 2B** に選ばせ、画像の観察と説明は Amazon Bedrock（Nova Lite）が担います。
+禁止・上限・終了は通常のコード（ガード）が守ります。
+
+## 再利用できる判断パターン（#tool-selection）
+
+「型付きの問い → Decider の選択 → ガードによる上書き → 選ばれたツールだけが実行される」を
+独立したパッケージにしています。説明と使い方は [docs/decision-pattern.md](docs/decision-pattern.md)、
+コードは [`apps/worker/src/photoprep_worker/decision_pattern/`](apps/worker/src/photoprep_worker/decision_pattern/) です
+（他のアプリへはこのディレクトリをコピーして使えます。テストで、アプリの他の部分に依存しないことを確認しています）。
+
+## 現在の状態（2026-10-17 時点・正直な記録）
+
+| 項目 | 状態 |
+| --- | --- |
+| 仕様・計画・タスク | [`specs/001-pre-photo-grooming-assist/`](specs/001-pre-photo-grooming-assist/) |
+| API・ワーカー・フロント・CDK | ローカルで実装・テスト済み（API 183件、ワーカー126件、フロント22件、CDK 17件）。BedrockとフロントのAPIは**モック** |
+| Deciderの実機確認 | 開発Mac（CPU）で動作確認。Fargateでの性能は**未測定** |
+| AWSへのデプロイ・実Bedrock・実カメラ | **未実施** |
+| デモ動画・記事 | 下書きのみ（[記事](docs/article/draft.md)、[台本](docs/demo-script.md)）。**公開・撮影は未実施** |
+
+## ローカルで動かす（モックAPI）
+
+```sh
+pnpm install
+pnpm --filter frontend dev      # 画面にモック動作中のバナーが出ます。AWSにはつながりません
+pnpm --filter frontend test     # 画面とモックの通しテスト
+(cd apps/api && uv sync && uv run pytest)
+(cd apps/worker && uv sync && uv run pytest)
+(cd apps/cdk && pnpm test)      # デプロイはしません
+```
+
+公開前の確認: `sh scripts/check-publishable.sh`
 
 ## システムアーキテクチャ
 

@@ -100,6 +100,17 @@ class InMemoryStore:
         return found[:limit]
 
 
+def _to_dynamo(value: Any) -> Any:
+    """DynamoDB's SDK rejects Python floats; store them as Decimal (via str, so 0.1 stays 0.1)."""
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        return {k: _to_dynamo(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        return [_to_dynamo(v) for v in value]
+    return value
+
+
 def _from_dynamo(value: Any) -> Any:
     if isinstance(value, Decimal):
         return int(value) if value == value.to_integral_value() else float(value)
@@ -121,7 +132,7 @@ class DynamoStore:
 
         try:
             self._table.put_item(
-                Item={**dict(item), "pk": pk, "sk": sk},
+                Item={**_to_dynamo(dict(item)), "pk": pk, "sk": sk},
                 ConditionExpression="attribute_not_exists(pk)",
             )
         except ClientError as err:
@@ -151,7 +162,7 @@ class DynamoStore:
 
         def value(v: Any) -> str:
             ref = f":v{len(values)}"
-            values[ref] = v
+            values[ref] = _to_dynamo(v)
             return ref
 
         conditions = ["attribute_exists(pk)"]

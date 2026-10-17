@@ -19,8 +19,8 @@ KEY = f"uploads/{SESSION}/up000001"
 class World:
     """A session mid-analysis plus everything the worker talks to (all fakes)."""
 
-    def __init__(self) -> None:
-        self.store = InMemoryStore()
+    def __init__(self, store=None) -> None:
+        self.store = store or InMemoryStore()
         self.images = FakeImages()
         self.clock = FixedClock()
         self.decider = FakeDecider()

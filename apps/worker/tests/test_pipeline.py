@@ -294,3 +294,41 @@ class TestRacesBetweenWorkers:
         with pytest.raises(ConditionFailed):
             _finish_job(world.deps, JOB, status="SUCCEEDED", result={"kind": "clarify"})
         assert world.job()["status"] == "CANCELLED" and "result" not in world.job()
+
+
+class TestTheDecisionDecidesWhatRuns:
+    """T096: the option the pipeline records is the option that actually ran."""
+
+    @pytest.mark.parametrize(
+        ("kind", "models", "state"),
+        [
+            ("grooming_tip", ["bedrock.observe", "bedrock.explain"], "ADVICE_SHOWN"),
+            ("capture_setup_tip", ["bedrock.observe"], "CAPTURE_ADJUST"),
+            ("clarify", ["bedrock.observe"], "CONSULTING"),
+            ("offer_finish", ["bedrock.observe"], "DONE"),
+        ],
+    )
+    def test_each_choice_runs_its_own_tool_and_is_recorded_as_such(
+        self, world, kind, models, state
+    ):
+        world.seed()
+        world.decider.selected = kind
+        process_job(world.deps, JOB)
+        assert world.job()["result"]["kind"] == kind
+        record = world.decision()
+        assert record["selected"] == record["decider_choice"] == kind
+        assert record["invoked"] == models
+        assert world.session()["state"] == state
+        assert len(world.bedrock.calls) == len(models)  # no model ran that is not recorded
+
+    def test_the_records_of_different_choices_differ_in_what_ran(self, world):
+        """The same photo and facts, a different Decider choice, a different action."""
+        outcomes = {}
+        for kind in ("grooming_tip", "clarify"):
+            from tests.conftest import World
+
+            fresh = World().seed()
+            fresh.decider.selected = kind
+            process_job(fresh.deps, JOB)
+            outcomes[kind] = (fresh.job()["result"]["text"], fresh.decision()["invoked"])
+        assert outcomes["grooming_tip"] != outcomes["clarify"]

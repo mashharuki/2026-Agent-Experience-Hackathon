@@ -20,9 +20,10 @@ from photoprep_common.states import State, state_after_job
 from photoprep_common.store import ConditionFailed, Store
 
 from .bedrock import Bedrock, BudgetedBedrock
-from .decider import QUESTION_VERSION, Decider, build_state_text
+from .decider import NEXT_SUPPORT, Decider, build_state_text
+from .decision_pattern import run_decision
 from .explain import build_advice
-from .guards import GuardContext, apply_guards
+from .guards import GuardContext, guards_for
 from .images import ImageError, prepare_image
 from .observe import observe
 from .schemas import DecisionRecord, Observation
@@ -184,42 +185,48 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
 
         try:
             observation = observe(bedrock, image, scope)
-            choice = deps.decider.choose(
-                build_state_text(
+            comparable = (
+                is_comparable(session.get("baseline"), observation) if phase == "after" else None
+            )
+            state_text = build_state_text(
+                scope=scope,
+                wish=wish,
+                restrictions=restrictions,
+                observation=observation,
+                tools=list(job.get("tools", [])),
+                changes_used=session["changesUsed"],
+                phase=phase,
+                last_advice=session.get("lastAdviceKind"),
+            )
+
+            def tool(kind: str):
+                # One handler per option of the question. Only the selected one runs.
+                return lambda: build_advice(
+                    kind,
+                    observation,
+                    bedrock,
                     scope=scope,
                     wish=wish,
                     restrictions=restrictions,
-                    observation=observation,
-                    tools=list(job.get("tools", [])),
-                    changes_used=session["changesUsed"],
                     phase=phase,
-                    last_advice=session.get("lastAdviceKind"),
+                    comparable=comparable,
                 )
-            )
-            guarded = apply_guards(
-                choice,
-                GuardContext(
+
+            decision = run_decision(
+                decider=deps.decider,
+                question=NEXT_SUPPORT,
+                state=state_text,
+                guards=guards_for(deps.min_confidence),
+                context=GuardContext(
                     scope=scope,
                     restrictions=restrictions,
                     changes_used=session["changesUsed"],
                     lighting=observation.lighting,
                     framing=observation.framing,
                 ),
-                deps.min_confidence,
+                handlers={kind: tool(kind) for kind in NEXT_SUPPORT.options},
             )
-            comparable = (
-                is_comparable(session.get("baseline"), observation) if phase == "after" else None
-            )
-            advice, advice_invoked = build_advice(
-                guarded.selected,
-                observation,
-                bedrock,
-                scope=scope,
-                wish=wish,
-                restrictions=restrictions,
-                phase=phase,
-                comparable=comparable,
-            )
+            advice, advice_invoked = decision.result
         except Exception as err:  # noqa: BLE001 - any model-side failure is a failed job
             log_event("model_step_failed", job_id=job_id, error_class=type(err).__name__)
             return fail("model_error")
@@ -247,12 +254,12 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
         record = DecisionRecord(
             job_id=job_id,
             session_id=session_id,
-            question_version=QUESTION_VERSION,
-            probabilities=choice.probabilities,
-            confidence=choice.confidence,
-            decider_choice=choice.selected,
-            selected=advice.kind,
-            guard_override=guarded.override,
+            question_version=decision.question_version,
+            probabilities=decision.probabilities,
+            confidence=decision.confidence,
+            decider_choice=decision.decider_choice,
+            selected=decision.selected,
+            guard_override=decision.override_reason,
             invoked=["bedrock.observe", *[i for i in advice_invoked if i != "none"]],
             created_at=now.isoformat(),
         )
@@ -270,7 +277,7 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             "job_done",
             job_id=job_id,
             selected=advice.kind,
-            confidence=choice.confidence,
+            confidence=decision.confidence,
             outcome="done",
         )
         return Outcome.DONE

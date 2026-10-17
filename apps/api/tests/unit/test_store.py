@@ -126,3 +126,17 @@ def test_query_by_status_returns_only_old_enough_items_oldest_first(store):
     )  # no statusKey: not in the sparse index
     found = store.query_by_status("PENDING_DISPATCH", older_than="2026-10-18T09:10:00+00:00")
     assert [i["jobId"] for i in found] == ["J1", "J2"]
+
+
+def test_floats_in_items_and_updates_are_stored_and_read_back(store):
+    """DynamoDB's SDK rejects Python floats; the worker stores confidences and probabilities."""
+    store.create_if_absent(
+        "D",
+        "META",
+        {"confidence": 0.7, "probabilities": {"a": 0.25, "b": 0.75}, "scores": [0.5, 1.5]},
+    )
+    item = store.get("D", "META")
+    assert item["confidence"] == 0.7
+    assert item["probabilities"] == {"a": 0.25, "b": 0.75} and item["scores"] == [0.5, 1.5]
+    updated = store.update("D", "META", set={"confidence": 0.125, "nested": {"x": 0.3}})
+    assert updated["confidence"] == 0.125 and updated["nested"] == {"x": 0.3}

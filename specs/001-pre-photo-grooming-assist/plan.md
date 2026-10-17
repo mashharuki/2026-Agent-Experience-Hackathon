@@ -28,7 +28,7 @@ React/ViteのSPAが端末で撮影し、同意後にだけ画像を一時S3へ�
 **Language/Version**: フロント TypeScript／React 19／Vite 8（採用・導入済み）。API・ワーカー Python 3.12（推奨・未実装）。IaC TypeScript／AWS CDK v2（採用・雛形あり）
 
 **Primary Dependencies**:
-- フロント：Material UI＋Emotion（採用・未導入）、TanStack Query（採用・未導入）、Orval 生成クライアント（推奨・未導入）、React Bits（**条件付き**・ライセンス適合が未確定。R-005）
+- フロント：Material UI＋Emotion（採用・未導入）、TanStack Query（採用・未導入）、Orval 生成クライアント（推奨・未導入）、演出は MUI＋独自CSS（React Bits は採用しない。R-005）
 - API：Connexion 3＋Flask＋Mangum＋boto3（推奨・**結合未検証**。R-003）
 - ワーカー：PyTorch CPU、Strands Decider 2B（採用・**未検証**）、Bedrock Converse／Amazon Nova Lite（条件付き）
 
@@ -121,7 +121,7 @@ APIとワーカーの依存・権限を混ぜず、PyTorch／Decider重みをAPI
 
 2026-10-17 再評価。**ゲート違反なし。条件付きの項目は残る。**
 
-- **原則I**：判断パターンを [contracts/decider-decision.md](contracts/decider-decision.md) に型付きの問い・選択肢・接続として記し、`invoked` の記録で「選択が動作を変える」ことを示す設計にした。ただし Decider の応答形式は未確認（T-001）、OSIライセンス要件はRules全文で確認済み（R-007）。残る課題は、AWS上での実動作のデモが必須であること。React Bits は取り込まない暫定方針（T-005）。
+- **原則I**：判断パターンを [contracts/decider-decision.md](contracts/decider-decision.md) に型付きの問い・選択肢・接続として記し、`invoked` の記録で「選択が動作を変える」ことを示す設計にした。ただし Decider の応答形式は未確認（T-001）、OSIライセンス要件はRules全文で確認済み（R-007）。残る課題は、AWS上での実動作のデモが必須であること。React Bits は採用しないと決定済み（R-005）。
 - **原則II**：Phase 1 で新しい常時課金を追加していない。予算上限は未定（T-008）。
 - **原則III**：data-model で画像・自由記述をログ／判断記録に含めない構造にした。同意と所有権は Session/Consent/Job の検証条件に落とした。実装後の拒否試験が必要（SC-007、T-009、T-010）。
 

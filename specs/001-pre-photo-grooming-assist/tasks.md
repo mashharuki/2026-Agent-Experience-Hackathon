@@ -50,7 +50,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 - [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
 - [x] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）。**ローカルは完了 2026-10-17（23件成功）。実 API Gateway／Lambda での結合は T062 で確認**
-- [ ] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**既定は MUI＋独自CSS（React Bits を取り込まない）**。取り込む場合はユーザー承認と OSI 要件との整合確認が前提（research T-005）
+- [x] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**決定 2026-10-17（ユーザー承認）: React Bits は採用せず、MUI＋独自CSS で演出する**（research T-005）
 - [x] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）。**完了 2026-10-17: 不一致なし、憲章の修正は不要。AWS上での実動作のデモ必須、記事は公開済みであることを T062・T100・T101 で反映**
 - [ ] T012 （一部完了）ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）。**2026-10-17: 上限 $30・ワーカー30時間以内は承認済み。クレジットは Community Builder の特典で $450 以上（申告）。ユーザーは上限 $30 を再確認済み。残り: 項目別の積算（最初のデプロイ前に必須）、停止手順の `docs/` への記載、対象製品・有効期限の確認（ユーザー・任意。未確認でも上限の運用は変わらない）、停止手順の `docs/` への記載。クレジット確認と積算の完了で `[x]` にする**
 - [ ] T013 [P] AWS アカウントの Bedrock モデル呼び出しログが画像・本文を保存しない設定であることを確認し、結果を `research.md` に記録（research T-010）。アカウントを変更する操作はユーザー承認のうえ実施

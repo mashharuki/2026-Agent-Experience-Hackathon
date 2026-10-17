@@ -22,12 +22,12 @@
 | パッケージ管理 | pnpm 10.32.1、workspace | 採用・導入済み | `apps/*`、`packages/*`。Pythonの依存はuvで別管理 |
 | モノレポ実行 | Turborepo 2.x | 既存 | `turbo` は導入済み、タスク定義は未整備。Vite Taskとの二重管理を避ける |
 | UI部品 | Material UI、Emotion | 採用・未導入 | フォーム、ボタン、ダイアログ、進行表示、共通テーマ |
-| 演出 | React Bits、TypeScript＋CSS版 | 条件付き・未導入 | 現行MIT＋Commons Clauseと応募時の公開条件の整合を確認。撮影・操作を妨げない |
+| 演出 | MUI＋独自CSS | 採用・未導入 | **React Bits は採用しない**（2026-10-17、ユーザー承認。現行MIT＋Commons Clauseは部品の再配布を制限し、公式Rulesが求めるOSI承認の公開リポジトリと衝突し得るため）。撮影・操作を妨げず、`prefers-reduced-motion` を尊重する |
 | サーバー状態管理 | TanStack Query | 採用・未導入 | ジョブのポーリングとキャッシュ。解析POSTの自動再試行を無効化 |
 | 撮影 | ブラウザCamera API | 採用・未実装 | 写真は端末メモリで保持。同意後のみ解析用S3に送信 |
 | 共通コード | TypeScript | 採用・空パッケージあり | `packages/shared/` はUI共通処理。API境界型を手書きで重複管理しない |
 
-React Bitsのライセンス確認で適合できない場合の代替はMUI＋独自CSS。
+React Bitsは採用しない。演出はMUI＋独自CSSで作る。ライセンスの経緯は[research R-005](../specs/001-pre-photo-grooming-assist/research.md)を参照。
 Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使う。
 
 ## API契約・バックエンド・AI

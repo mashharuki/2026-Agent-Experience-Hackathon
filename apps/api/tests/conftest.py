@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 from mangum import Mangum
+from photoprep_common.service_status import set_status
 
 from photoprep_api.app import create_app
 from photoprep_api.container import Container, configure
@@ -13,7 +14,12 @@ from photoprep_api.store import InMemoryStore
 from tests.fakes import FakeQueue, FakeUploads, FixedClock, sequential_ids
 
 ACCESS_CLAIMS = {"sub": "user-123", "scope": "photoprep/session", "token_use": "access"}
-GOOD_SESSION = {"consentVersion": "v1", "scope": "brow", "restrictions": ["no_touch_brow"]}
+CONSENT_VERSION = "2026-10-v1"  # the wording the app currently shows (services/access.py)
+GOOD_SESSION = {
+    "consentVersion": CONSENT_VERSION,
+    "scope": "brow",
+    "restrictions": ["no_touch_brow"],
+}
 IDEMPOTENCY = {"idempotency-key": "k" * 16}
 
 
@@ -144,6 +150,7 @@ def api(request):
         now=FixedClock(),
         new_id=sequential_ids("id"),
     )
+    set_status(store, accepting=True, reason="open")  # most tests run with the service open
     configure(container)
     mangum = Mangum(create_app(HANDLERS), lifespan="off")
 
@@ -170,4 +177,8 @@ def api(request):
         uploads=container.uploads,
         queue=container.queue,
         clock=container.now,
+        close_door=lambda reason="worker_stopped", **kw: set_status(
+            store, accepting=False, reason=reason, **kw
+        ),
+        open_door=lambda: set_status(store, accepting=True, reason="open"),
     )

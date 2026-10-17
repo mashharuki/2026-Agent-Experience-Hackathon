@@ -33,6 +33,22 @@ class S3Uploads:
                 return None
             raise
 
+    def delete_session_images(self, session_id: str) -> int:
+        """Remove every temporary photo of one session (ending it, or withdrawing consent)."""
+        prefix = f"uploads/{session_id}/"
+        keys: list[str] = []
+        for page in self._s3.get_paginator("list_objects_v2").paginate(
+            Bucket=self._bucket, Prefix=prefix
+        ):
+            keys += [o["Key"] for o in page.get("Contents", [])]
+        for start in range(0, len(keys), 1000):
+            batch = keys[start : start + 1000]
+            self._s3.delete_objects(
+                Bucket=self._bucket,
+                Delete={"Objects": [{"Key": k} for k in batch], "Quiet": True},
+            )
+        return len(keys)
+
 
 class SqsQueue:
     def __init__(self, queue_url: str, client=None) -> None:

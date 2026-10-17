@@ -25,6 +25,16 @@ ALLOWED_FIELDS = frozenset(
 
 _logger = logging.getLogger("photoprep")
 
+# Libraries whose DEBUG output contains request and response bodies (botocore logs every
+# DynamoDB item and S3 call in full, including the user's words). Whatever the root log level
+# is set to, these stay quiet.
+NOISY_LIBRARIES = ("boto3", "botocore", "s3transfer", "urllib3")
+
+
+def quiet_libraries() -> None:
+    for name in NOISY_LIBRARIES:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
 
 def log_event(event: str, **fields: object) -> None:
     """Log one line. Unknown field names are rejected rather than silently written."""

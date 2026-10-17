@@ -7,7 +7,7 @@ import socket
 import threading
 from datetime import UTC, datetime
 
-from photoprep_common.logs import log_event
+from photoprep_common.logs import log_event, quiet_libraries
 from photoprep_common.service_status import PK, SK, set_status
 
 from .pipeline import Deps, Outcome, heartbeat, process_job
@@ -88,6 +88,7 @@ def main() -> None:  # pragma: no cover - wiring only, exercised on AWS
     from .bedrock import DEFAULT_MODEL_ID, BedrockConverse
     from .decider import DEFAULT_CHECKPOINT, load_strands_decider
 
+    quiet_libraries()  # botocore DEBUG would print DynamoDB items, including the user's words
     region = os.environ.get("AWS_REGION", "ap-northeast-1")
     decider = load_strands_decider(os.environ.get("DECIDER_CHECKPOINT", DEFAULT_CHECKPOINT))
     deps = Deps(

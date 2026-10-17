@@ -558,6 +558,11 @@ export type requestAnalysisResponse401 = {
   status: 401
 }
 
+export type requestAnalysisResponse403 = {
+  data: ErrorResponse
+  status: 403
+}
+
 export type requestAnalysisResponse404 = {
   data: ErrorResponse
   status: 404
@@ -581,7 +586,7 @@ export type requestAnalysisResponse503 = {
 export type requestAnalysisResponseSuccess = (requestAnalysisResponse202) & {
   headers: Headers;
 };
-export type requestAnalysisResponseError = (requestAnalysisResponse400 | requestAnalysisResponse401 | requestAnalysisResponse404 | requestAnalysisResponse409 | requestAnalysisResponse429 | requestAnalysisResponse503) & {
+export type requestAnalysisResponseError = (requestAnalysisResponse400 | requestAnalysisResponse401 | requestAnalysisResponse403 | requestAnalysisResponse404 | requestAnalysisResponse409 | requestAnalysisResponse429 | requestAnalysisResponse503) & {
   headers: Headers;
 };
 

@@ -9,11 +9,14 @@ import { setFetchImplementation } from "../api/custom-fetch";
 import {
   createSession,
   createUpload,
+  endSession,
   getJob,
+  getServiceStatus,
   recordFeedback,
   requestAnalysis,
 } from "../api/generated/photoprep";
 import { unwrap } from "../api/unwrap";
+import { CONSENT_VERSION } from "../config";
 import { createMockApi } from "./mock-api";
 
 const spec = parse(specText);
@@ -28,7 +31,7 @@ function conforms(schemaName: string, value: unknown) {
 }
 
 const key = (n: number) => `${String(n).padStart(2, "0")}`.repeat(8);
-const BODY = { consentVersion: "v1", scope: "brow" } as const;
+const BODY = { consentVersion: CONSENT_VERSION, scope: "brow" } as const;
 const PHOTO = { contentType: "image/jpeg", sizeBytes: 1000 } as const;
 const idem = (n: number) => ({ headers: { "Idempotency-Key": key(n) } });
 
@@ -139,5 +142,64 @@ describe("mock API follows the contract", () => {
     expect((await unwrap(getJob(accepted.jobId))).advice?.kind).toBe(
       "capture_setup_tip",
     );
+  });
+});
+
+describe("mock API: the door, consent and ending a session follow the contract", () => {
+  it("reports an open door with a schema-valid body", async () => {
+    const status = await unwrap(getServiceStatus());
+    conforms("ServiceStatus", status);
+    expect(status).toEqual({ accepting: true, reason: "open" });
+  });
+
+  it("reports why it is closed and when it may reopen", async () => {
+    mock.setDoor({
+      accepting: false,
+      reason: "warming_up",
+      expectedReopenAt: "2026-10-18T09:05:00.000Z",
+    });
+    const status = await unwrap(getServiceStatus());
+    conforms("ServiceStatus", status);
+    expect(status).toMatchObject({ accepting: false, reason: "warming_up" });
+  });
+
+  it("refuses new sessions, uploads and analyses while closed, but not finishing", async () => {
+    const { sessionId, upload } = await sessionWithPhoto();
+    mock.setDoor({ accepting: false, reason: "worker_stopped" });
+    await expect(createSession(BODY, idem(7))).rejects.toMatchObject({
+      status: 503,
+      code: "not_accepting",
+    });
+    await expect(
+      createUpload(sessionId, { phase: "before", ...PHOTO }),
+    ).rejects.toMatchObject({ status: 503 });
+    await expect(
+      requestAnalysis(
+        sessionId,
+        { uploadId: upload.uploadId, phase: "before" },
+        idem(8),
+      ),
+    ).rejects.toMatchObject({ status: 503, code: "not_accepting" });
+    expect((await endSession(sessionId)).status).toBe(202);
+  });
+
+  it("refuses an unknown consent wording", async () => {
+    await expect(
+      createSession({ ...BODY, consentVersion: "old" }, idem(9)),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "consent_required",
+    });
+  });
+
+  it("ends a session so nothing more is accepted", async () => {
+    const { sessionId } = await sessionWithPhoto();
+    expect((await endSession(sessionId)).status).toBe(202);
+    await expect(
+      createUpload(sessionId, { phase: "before", ...PHOTO }),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "session_ended",
+    });
   });
 });

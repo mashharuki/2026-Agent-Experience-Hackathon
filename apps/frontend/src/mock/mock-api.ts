@@ -2,9 +2,24 @@
 // bodies, limits and the session state machine), so the UI can be built and demonstrated
 // without AWS. It says nothing about real model quality, and the UI always says so.
 
-import type { Advice, Job, Session, Upload } from "../api/generated/model";
+import type {
+  Advice,
+  Job,
+  ServiceStatus,
+  Session,
+  Upload,
+} from "../api/generated/model";
+import { CONSENT_VERSION } from "../config";
 
 export type MockScenario = "normal" | "backlight" | "vague" | "error";
+
+export interface MockDoor {
+  accepting: boolean;
+  reason: ServiceStatus["reason"];
+  expectedReopenAt?: string;
+  /** Simulates the status check itself failing (the app must treat that as closed). */
+  failing?: boolean;
+}
 
 export interface MockCall {
   method: string;
@@ -81,9 +96,14 @@ const fail = (status: number, code: string) =>
   respond(status, { code, message: "リクエストを処理できませんでした" });
 
 export function createMockApi(
-  options: { latencyMs?: number; scenario?: MockScenario } = {},
+  options: {
+    latencyMs?: number;
+    scenario?: MockScenario;
+    door?: MockDoor;
+  } = {},
 ) {
   let scenario: MockScenario = options.scenario ?? "normal";
+  let door: MockDoor = options.door ?? { accepting: true, reason: "open" };
   const latencyMs = options.latencyMs ?? 900;
   let counter = 0;
   const id = (prefix: string) =>
@@ -154,10 +174,15 @@ export function createMockApi(
 
     if (method === "GET" && parts[0] === "service-status") {
       route("/service-status");
-      return respond(200, { accepting: true, reason: "open" });
+      if (door.failing) return fail(500, "internal_error");
+      const { failing: _failing, ...status } = door;
+      return respond(200, status satisfies ServiceStatus);
     }
     if (method === "POST" && url.pathname === "/sessions") {
       route("/sessions");
+      if (!door.accepting) return fail(503, "not_accepting");
+      if (body?.consentVersion !== CONSENT_VERSION)
+        return fail(400, "consent_required");
       const session: SessionItem = {
         state: "CONSULTING",
         changesUsed: 0,
@@ -176,6 +201,7 @@ export function createMockApi(
       if (method === "POST" && parts[2] === "uploads") {
         route("/sessions/{sessionId}/uploads");
         if (session.state === "DONE") return fail(409, "session_ended");
+        if (!door.accepting) return fail(503, "not_accepting");
         const uploadId = id("upl");
         uploads.set(uploadId, { sessionId, phase: body.phase, used: false });
         return respond(201, {
@@ -194,6 +220,7 @@ export function createMockApi(
         if (!key) return fail(400, "invalid_request");
         const replay = idempotent.get(`${sessionId}:${key}`);
         if (replay) return respond(202, { jobId: replay, status: "QUEUED" });
+        if (!door.accepting) return fail(503, "not_accepting"); // new work only while accepting
         const upload = uploads.get(body.uploadId);
         if (!upload || upload.sessionId !== sessionId)
           return fail(404, "not_found");
@@ -294,6 +321,12 @@ export function createMockApi(
     feedback,
     setScenario: (next: MockScenario) => {
       scenario = next;
+    },
+    setDoor: (next: MockDoor) => {
+      door = next;
+    },
+    get door() {
+      return door;
     },
     get scenario() {
       return scenario;

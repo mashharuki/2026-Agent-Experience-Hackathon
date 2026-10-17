@@ -7,8 +7,12 @@ import App from "./App";
 import { createMockApi, type MockScenario } from "./mock/mock-api";
 import { liveObjectUrls } from "./test/setup";
 
-function setup(scenario: MockScenario = "normal") {
+function setup(
+  scenario: MockScenario = "normal",
+  door?: Parameters<ReturnType<typeof createMockApi>["setDoor"]>[0],
+) {
   const mock = createMockApi({ latencyMs: 0, scenario });
+  if (door) mock.setDoor(door);
   const user = userEvent.setup();
   render(<App config={{ mode: "mock", mock, pollDelay: () => 5 }} />);
   return { mock, user };
@@ -53,7 +57,7 @@ describe("screen 1: consult", () => {
     expect(next).toBeDisabled();
     await user.click(screen.getByRole("checkbox", { name: /同意します/ }));
     expect(next).toBeEnabled();
-    expect(mock.calls).toHaveLength(0); // nothing is sent before the user continues
+    expect(path(mock)).toEqual(["GET /service-status"]); // only the status check; no session yet
   });
 
   it("explains cloud analysis and deletion before any photo is taken", async () => {
@@ -240,5 +244,107 @@ describe("photos stay in this browser tab", () => {
       JSON.stringify({ ...sessionStorage });
     expect(stored).not.toMatch(/jpeg|blob:|data:image/i);
     await waitFor(() => expect(liveObjectUrls()).toBe(0));
+  });
+});
+
+describe("the door: closed means nothing can start", () => {
+  it("shows why and does not offer the form, the consent or the camera", async () => {
+    const { mock } = setup("normal", {
+      accepting: false,
+      reason: "worker_stopped",
+    });
+    expect(await screen.findByText(/いまは停止しています/)).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "眉" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /同意します/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "撮影へ進む" }),
+    ).not.toBeInTheDocument();
+    expect(path(mock)).toEqual(["GET /service-status"]); // nothing but the status check was sent
+  });
+
+  it("says when it expects to reopen while the worker is warming up", async () => {
+    setup("normal", {
+      accepting: false,
+      reason: "warming_up",
+      expectedReopenAt: "2026-10-18T09:05:00.000Z",
+    });
+    expect(await screen.findByText(/準備中です/)).toBeInTheDocument();
+    expect(screen.getByText(/再開できる見込み/)).toBeInTheDocument();
+  });
+
+  it("explains a used-up daily quota", async () => {
+    setup("normal", { accepting: false, reason: "quota_exhausted" });
+    expect(await screen.findByText(/本日の利用枠/)).toBeInTheDocument();
+  });
+
+  it("lets the user check again, and shows the form once the door opens", async () => {
+    const { mock, user } = setup("normal", {
+      accepting: false,
+      reason: "worker_stopped",
+    });
+    await screen.findByText(/いまは停止しています/);
+    mock.setDoor({ accepting: true, reason: "open" });
+    await user.click(screen.getByRole("button", { name: "もう一度確認" }));
+    expect(
+      await screen.findByRole("radio", { name: "眉" }),
+    ).toBeInTheDocument();
+  });
+
+  it("treats a failed status check as closed, never as open", async () => {
+    const { mock } = setup("normal", {
+      accepting: true,
+      reason: "open",
+      failing: true,
+    });
+    expect(
+      await screen.findByText(/受付の状態を確認できませんでした/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "眉" })).not.toBeInTheDocument();
+    expect(mock.calls.some((c) => c.route === "/sessions")).toBe(false);
+  });
+
+  it("shows a clear message and still allows finishing when the door closes mid-session", async () => {
+    const { mock, user } = setup();
+    await consult(user);
+    await takeTestPhoto(user);
+    mock.setDoor({ accepting: false, reason: "maintenance" });
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    expect(
+      await screen.findByText(/いまは受け付けていません/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    await screen.findByRole("heading", { name: "おつかれさまでした" });
+    expect(path(mock)).toContain("DELETE /sessions/{sessionId}");
+  });
+});
+
+describe("consent and finishing", () => {
+  it("lets a person decline: nothing is sent and no photo is ever taken", async () => {
+    const { mock, user } = setup();
+    await user.click(
+      await screen.findByRole("button", { name: "同意しない（終了する）" }),
+    );
+    await screen.findByRole("heading", { name: "おつかれさまでした" });
+    expect(screen.getByText(/写真は送られていません/)).toBeInTheDocument();
+    expect(path(mock)).toEqual(["GET /service-status"]);
+  });
+
+  it("ends the session on the server when finishing, so the photos are deleted there too", async () => {
+    const { mock, user } = setup();
+    await consult(user);
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    await screen.findByRole("heading", { name: "一つ試す" });
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    await screen.findByRole("heading", { name: "おつかれさまでした" });
+    expect(
+      path(mock).filter((r) => r === "DELETE /sessions/{sessionId}"),
+    ).toHaveLength(1);
   });
 });

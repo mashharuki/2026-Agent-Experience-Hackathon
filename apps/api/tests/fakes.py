@@ -21,6 +21,7 @@ class FakeUploads:
     def __init__(self) -> None:
         self.presigned: list[dict] = []
         self.objects: dict[str, int] = {}
+        self.deleted_sessions: list[str] = []
 
     def presign_post(self, key: str, content_type: str, max_bytes: int, expires_s: int) -> dict:
         self.presigned.append(
@@ -41,6 +42,14 @@ class FakeUploads:
 
     def put_object(self, key: str, size: int = 1000) -> None:
         self.objects[key] = size
+
+    def delete_session_images(self, session_id: str) -> int:
+        prefix = f"uploads/{session_id}/"
+        gone = [k for k in self.objects if k.startswith(prefix)]
+        for key in gone:
+            del self.objects[key]
+        self.deleted_sessions.append(session_id)
+        return len(gone)
 
 
 class FakeQueue:

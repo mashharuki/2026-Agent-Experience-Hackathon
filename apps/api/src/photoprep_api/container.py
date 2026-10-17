@@ -4,7 +4,7 @@
 import os
 import secrets
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -15,6 +15,16 @@ class Uploads(Protocol):
     def presign_post(self, key: str, content_type: str, max_bytes: int, expires_s: int) -> dict: ...
 
     def object_size(self, key: str) -> int | None: ...
+
+    def delete_session_images(self, session_id: str) -> int: ...
+
+
+@dataclass
+class Limits:
+    """Daily session quotas (FR-022): initial values from the architecture, JST day."""
+
+    user_per_day: int = 10
+    global_per_day: int = 100
 
 
 class JobQueue(Protocol):
@@ -28,6 +38,7 @@ class Container:
     queue: JobQueue
     now: Callable[[], datetime]
     new_id: Callable[[], str]
+    limits: Limits = field(default_factory=Limits)
 
 
 def _utcnow() -> datetime:

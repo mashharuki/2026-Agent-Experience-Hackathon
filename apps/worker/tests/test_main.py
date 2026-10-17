@@ -88,3 +88,15 @@ class TestReadiness:
         set_status(world.store, accepting=True, reason="open")
         announce_stopping(world.store)
         assert get_status(world.store) == {"accepting": False, "reason": "worker_stopped"}
+
+
+def test_chatty_libraries_are_silenced_even_if_the_root_level_is_debug(world, caplog):
+    import logging
+
+    from photoprep_common.logs import quiet_libraries
+
+    quiet_libraries()
+    caplog.set_level(logging.DEBUG)
+    logging.getLogger("botocore.hooks").debug("item: 秘密の希望文SECRET")
+    logging.getLogger("boto3.resources.action").debug("Response: 秘密の希望文SECRET")
+    assert "秘密の希望文SECRET" not in caplog.text

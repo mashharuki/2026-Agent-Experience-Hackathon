@@ -16,6 +16,7 @@ import { useAuth } from "./auth/context";
 import { MockBanner } from "./components/MockBanner";
 import { type AppConfig, ConfigContext, loadConfig } from "./config";
 import { SessionFlow } from "./features/session/SessionFlow";
+import { doorFromUrl } from "./mock/doors";
 import { createMockApi } from "./mock/mock-api";
 import { theme } from "./theme";
 
@@ -52,7 +53,9 @@ export default function App({
     const base = { ...loadConfig(), ...override };
     if (base.mode === "mock") {
       // All API calls, including the signed photo upload, are answered inside this tab.
-      base.mock ??= createMockApi();
+      base.mock ??= createMockApi({
+        door: doorFromUrl(window.location.search),
+      });
       setFetchImplementation(base.mock.fetch);
     } else {
       setFetchImplementation((...args) => fetch(...args));

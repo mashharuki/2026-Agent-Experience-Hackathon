@@ -28,10 +28,13 @@ export interface ConsultResult {
 /** Screen 1: choose what to look at, optionally say what you want, and consent before any photo. */
 export function Consult({
   onSubmit,
+  onDecline,
   busy,
   error,
 }: {
   onSubmit: (result: ConsultResult) => void;
+  /** The person does not agree: leave without sending anything. */
+  onDecline: () => void;
   busy: boolean;
   error?: string;
 }) {
@@ -96,6 +99,9 @@ export function Consult({
         }
       >
         撮影へ進む
+      </Button>
+      <Button color="inherit" onClick={onDecline} disabled={busy}>
+        同意しない（終了する）
       </Button>
     </Stack>
   );

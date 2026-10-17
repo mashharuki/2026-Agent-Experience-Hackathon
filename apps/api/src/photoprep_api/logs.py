@@ -8,7 +8,7 @@ Two layers:
 
 import logging
 
-from photoprep_common.logs import ALLOWED_FIELDS, log_event  # noqa: F401 - re-exported
+from photoprep_common.logs import ALLOWED_FIELDS, log_event, quiet_libraries  # noqa: F401 - re-exported
 
 
 class _RedactFilter(logging.Filter):
@@ -21,3 +21,4 @@ def install_log_redaction() -> None:
     logging.getLogger("connexion.middleware.exceptions").addFilter(_RedactFilter())
     # Connexion logs offending values at INFO and may log bodies at DEBUG.
     logging.getLogger("connexion").setLevel(logging.WARNING)
+    quiet_libraries()

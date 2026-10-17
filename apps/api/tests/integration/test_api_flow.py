@@ -3,7 +3,7 @@
 import pytest
 
 from photoprep_api.states import state_after_job
-from tests.conftest import GOOD_SESSION, OTHER_CLAIMS
+from tests.conftest import CONSENT_VERSION, GOOD_SESSION, OTHER_CLAIMS
 
 IDEM_A = "a" * 16
 IDEM_B = "b" * 16
@@ -82,7 +82,7 @@ class TestCreateSession:
     def test_records_the_consent_version(self, api):
         new_session(api)
         consent = api.store.get("CONSENT#user-123", "META")
-        assert consent["consentVersion"] == "v1" and consent["grantedAt"]
+        assert consent["consentVersion"] == CONSENT_VERSION and consent["grantedAt"]
 
     def test_session_expires_after_24_hours(self, api):
         sid = new_session(api)

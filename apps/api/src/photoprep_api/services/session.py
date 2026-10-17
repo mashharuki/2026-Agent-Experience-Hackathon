@@ -7,6 +7,7 @@ from ..errors import AppError
 from ..repo import get_owned
 from ..states import State, check_can_start_change
 from ..store import ConditionFailed
+from .access import check_consent_version, ensure_accepting, reserve_session
 
 SESSION_TTL = timedelta(hours=24)
 MAX_COMPARISONS = 10  # more than the two changes a session allows; a runaway guard
@@ -21,12 +22,16 @@ def ttl_after(c: Container, lifetime: timedelta) -> int:
 
 
 def create_session(c: Container, sub: str, request: dict) -> dict:
+    ensure_accepting(c, new_session=True)
+    check_consent_version(request["consentVersion"])  # an invalid request must not use a quota slot
+    reserve_session(c, sub)
     now = c.now()
     session_id = c.new_id()
     item = {
         "ownerSub": sub,
         "scope": request["scope"],
         "restrictions": list(request.get("restrictions", [])),
+        "consentVersion": request["consentVersion"],
         "state": State.CONSULTING.value,
         "changesUsed": 0,
         "analysesUsed": 0,
@@ -132,3 +137,16 @@ def record_feedback(c: Container, sub: str, session_id: str, request: dict) -> N
                 "ttl": ttl_after(c, SESSION_TTL),
             },
         )
+
+
+def end_session(c: Container, sub: str, session_id: str) -> None:
+    """End a session: nothing new is accepted and its photos are deleted.
+
+    A job already running cannot be stopped and we do not claim otherwise; the worker checks the
+    session before and after its model calls and discards the result of an ended session.
+    Safe to repeat. Also the way to withdraw: ending the session removes the photos at once.
+    """
+    session = load_session(c, sub, session_id, allow_ended=True)
+    if session["state"] != State.DONE.value:
+        c.store.update(session_pk(session_id), "META", set={"state": State.DONE.value})
+    c.uploads.delete_session_images(session_id)

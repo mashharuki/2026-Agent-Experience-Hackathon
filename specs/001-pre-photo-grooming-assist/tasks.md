@@ -168,21 +168,21 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### Tests for User Story 5
 
-- [ ] T071 [P] [US5] `apps/api/tests/security/test_authz.py`: 未認証、別ユーザーの `sessionId`/`jobId`、サイズ超過、終了後、期限切れの各要求がすべて拒否されること（SC-007）
-- [ ] T072 [P] [US5] `apps/api/tests/unit/test_consent.py`: 同意なし・取消し済みではアップロード枠の発行と解析要求が拒否されること
-- [ ] T073 [P] [US5] `apps/frontend/e2e/consent_and_status.spec.ts`: 同意前に撮影が始まらないこと、受付中でないと撮影・同意へ進めず理由が表示されること、受付がセッション途中で終了した場合に新規解析が拒否され終了が案内されること
+- [x] T071 **完了 2026-10-17: US5 は API 286件・フロント35件、保護を壊す変更はすべて検出（API 16件、フロント6件。受付・同意・利用枠・終了・認可・ログ）。実AWSでは未確認。** [P] [US5] `apps/api/tests/security/test_authz.py`: 未認証、別ユーザーの `sessionId`/`jobId`、サイズ超過、終了後、期限切れの各要求がすべて拒否されること（SC-007）
+- [x] T072 [P] [US5] `apps/api/tests/unit/test_consent.py`: 同意なし・取消し済みではアップロード枠の発行と解析要求が拒否されること
+- [x] T073 [P] [US5] `apps/frontend/e2e/consent_and_status.spec.ts`: 同意前に撮影が始まらないこと、受付中でないと撮影・同意へ進めず理由が表示されること、受付がセッション途中で終了した場合に新規解析が拒否され終了が案内されること
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] `apps/api/src/photoprep_api/services/consent.py`: 同意の保存・取消し。`createSession` で `consentVersion` を必須にする
-- [ ] T075 [US5] `apps/frontend/src/screens/ConsentDialog.tsx`: 顔画像をクラウドで解析すること、**処理後に削除し失敗しても 24 時間以内に消える**こと、削除と終了の方法を平易に説明。同意しない選択で終われる。即時・厳密な物理削除は約束しない
-- [ ] T076 [US5] `apps/api/src/photoprep_api/handlers/status.py`: `getServiceStatus` の実装。T051 の受付中フラグを読む
-- [ ] T077 [US5] `apps/frontend/src/screens/Consult.tsx`・`features/session/`: 「相談する」画面を開いた時点で受付状態を確認し、受付中でなければ撮影・同意・送信へ進ませず、理由と再開の見込み（分かる場合）を表示。準備に時間がかかる場合は隠さない（FR-027）
-- [ ] T078 [US5] `apps/api/src/photoprep_api/services/quota.py`: 利用枠を DynamoDB の条件付き書き込みで原子的に予約（10 セッション／人・日、全体 100 セッション／日、1 セッション解析 3 回）。API Gateway のスロットリングや Budgets 通知だけに課金制限を任せない
-- [ ] T079 [US5] `apps/api/src/photoprep_api/handlers/sessions.py`（`endSession`）: 新規解析を拒否して画像削除を開始し、ワーカーへ取消しを伝える。実行中の外部推論は止められると約束せず、終了後の結果を UI へ適用しない
-- [ ] T080 [US5] `apps/worker/.../images.py`、`apps/api/ops/sweeper.py`: 成功・失敗・取消し時の画像削除と、取り残しの回収（署名 URL 期限＋猶予後）。S3 Lifecycle・DynamoDB TTL は補助とし、正確な時刻の手段にしない
-- [ ] T081 [US5] `apps/api/src/photoprep_api/`・`apps/cdk/lib/constructs/api.ts`: リクエストサイズ・頻度・再試行回数の上限、1 解析の Bedrock 呼び出し回数（最大 2）を強制
-- [ ] T082 [P] [US5] `apps/api/tests/unit/test_logging.py`: ログ・エラー・判断記録に顔画像、画像を復元できるデータ、希望文、認証情報が出ないこと
+- [x] T074 **（同意の版を検証し、セッションにも保存。取り消しは専用 API を設けず、セッションを終了すると写真が即時に削除される方式。アカウント単位の同意の取り消しは未実装）** [US5] `apps/api/src/photoprep_api/services/consent.py`: 同意の保存・取消し。`createSession` で `consentVersion` を必須にする
+- [x] T075 [US5] `apps/frontend/src/screens/ConsentDialog.tsx`: 顔画像をクラウドで解析すること、**処理後に削除し失敗しても 24 時間以内に消える**こと、削除と終了の方法を平易に説明。同意しない選択で終われる。即時・厳密な物理削除は約束しない
+- [x] T076 [US5] `apps/api/src/photoprep_api/handlers/status.py`: `getServiceStatus` の実装。T051 の受付中フラグを読む
+- [x] T077 [US5] `apps/frontend/src/screens/Consult.tsx`・`features/session/`: 「相談する」画面を開いた時点で受付状態を確認し、受付中でなければ撮影・同意・送信へ進ませず、理由と再開の見込み（分かる場合）を表示。準備に時間がかかる場合は隠さない（FR-027）
+- [x] T078 **（日次の枠は日本時間の0時で切り替え。全体の枠が尽きると受付状態が `quota_exhausted` になるが、進行中のセッションは止めない）** [US5] `apps/api/src/photoprep_api/services/quota.py`: 利用枠を DynamoDB の条件付き書き込みで原子的に予約（10 セッション／人・日、全体 100 セッション／日、1 セッション解析 3 回）。API Gateway のスロットリングや Budgets 通知だけに課金制限を任せない
+- [x] T079 [US5] `apps/api/src/photoprep_api/handlers/sessions.py`（`endSession`）: 新規解析を拒否して画像削除を開始し、ワーカーへ取消しを伝える。実行中の外部推論は止められると約束せず、終了後の結果を UI へ適用しない
+- [x] T080 **（API が終了時に写真を削除、ワーカーが全結果で削除、取り残しは15分周期の回収＋S3 の1日ライフサイクル。実測は T083）** [US5] `apps/worker/.../images.py`、`apps/api/ops/sweeper.py`: 成功・失敗・取消し時の画像削除と、取り残しの回収（署名 URL 期限＋猶予後）。S3 Lifecycle・DynamoDB TTL は補助とし、正確な時刻の手段にしない
+- [x] T081 **（API Gateway の制限・Lambda のタイムアウト・Bedrock 2回/解析の上限は実装済み。リクエスト本文の上限は契約の maxLength と画像サイズで担保）** [US5] `apps/api/src/photoprep_api/`・`apps/cdk/lib/constructs/api.ts`: リクエストサイズ・頻度・再試行回数の上限、1 解析の Bedrock 呼び出し回数（最大 2）を強制
+- [x] T082 [P] [US5] `apps/api/tests/unit/test_logging.py`: ログ・エラー・判断記録に顔画像、画像を復元できるデータ、希望文、認証情報が出ないこと
 - [ ] T083 [US5] 画像削除（成功・失敗・取消し・取り残し）の実測（research T-009）。実 AWS で行うため T012 の承認後。結果を `research.md` R-009 に記録
 
 **Checkpoint**: P1 の3ストーリー（US1・US2・US5）が揃い、**公開前の最小リリースの条件**を満たす。

@@ -9,6 +9,7 @@ from ..logs import log_event
 from ..repo import get_owned
 from ..states import State, check_can_request_analysis
 from ..store import ConditionFailed
+from .access import ensure_accepting, ensure_consent
 from .session import SESSION_TTL, load_session, session_pk, ttl_after
 
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
@@ -20,7 +21,9 @@ _log = logging.getLogger("photoprep.analysis")
 
 
 def create_upload(c: Container, sub: str, session_id: str, request: dict) -> dict:
-    load_session(c, sub, session_id)
+    session = load_session(c, sub, session_id)
+    ensure_consent(session)
+    ensure_accepting(c)
     upload_id = c.new_id()
     # Key, size limit and expiry are decided here, never taken from the client. The
     # client's sizeBytes is only a hint already bounded by the contract.
@@ -57,7 +60,9 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
 
     replay = c.store.get(idem_pk, "META")
     if replay is not None:
-        return replay["jobId"]
+        return replay["jobId"]  # a retry of work already accepted is fine even if the door closed
+    ensure_consent(session)
+    ensure_accepting(c)  # new work only while the service is accepting it
 
     upload = get_owned(c.store, f"UPLOAD#{request['uploadId']}", sub)
     if upload["sessionId"] != session_id:

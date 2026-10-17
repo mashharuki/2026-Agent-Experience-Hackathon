@@ -6,8 +6,13 @@ import type {
   FeedbackRequest,
   FeedbackRequestComparisonChoice,
 } from "../../api/generated/model";
-import { createSession, recordFeedback } from "../../api/generated/photoprep";
+import {
+  createSession,
+  endSession,
+  recordFeedback,
+} from "../../api/generated/photoprep";
 import { unwrap } from "../../api/unwrap";
+import { DoorGate } from "../../components/DoorGate";
 import { CONSENT_VERSION } from "../../config";
 import { Compare } from "../../screens/Compare";
 import { Consult, type ConsultResult } from "../../screens/Consult";
@@ -42,6 +47,7 @@ export function SessionFlow() {
   const [notice, setNotice] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [declined, setDeclined] = useState(false);
   const [changesUsed, setChangesUsed] = useState(0);
   const [choice, setChoice] = useState<
     FeedbackRequestComparisonChoice | undefined
@@ -89,6 +95,12 @@ export function SessionFlow() {
     setScreen("done");
   }, [replaceBefore, replaceAfter]);
 
+  // End on the server too, so the cloud copies of the photos are deleted now rather than later.
+  // Best effort: if it fails, the worker and the sweeper still remove them within a day.
+  const endOnServer = useCallback(async () => {
+    if (sessionId) await endSession(sessionId).catch(() => undefined);
+  }, [sessionId]);
+
   // React to a finished analysis exactly once, then clear it. This is a reaction to an async
   // result (an external event), so setting state here is intended.
   const { run, reset } = analysis;
@@ -113,6 +125,7 @@ export function SessionFlow() {
     }
     if (result.kind === "offer_finish") {
       setNotice(undefined);
+      void endOnServer();
       finish();
     } else if (result.kind === "grooming_tip") {
       setAdvice(result);
@@ -125,7 +138,7 @@ export function SessionFlow() {
       replaceBefore(undefined);
       setScreen((s) => (s === "advice" ? "advice" : "capture"));
     }
-  }, [run, reset, finish, replaceBefore, replaceAfter]);
+  }, [run, reset, finish, endOnServer, replaceBefore, replaceAfter]);
 
   const send = async (feedback: FeedbackRequest): Promise<boolean> => {
     if (!sessionId) return false;
@@ -176,8 +189,9 @@ export function SessionFlow() {
   };
 
   const finishNow = async () => {
-    if (await send({ type: "advice_response", adviceResponse: "finish" }))
-      finish();
+    await send({ type: "advice_response", adviceResponse: "finish" }); // records the choice
+    await endOnServer();
+    finish();
   };
 
   return (
@@ -193,7 +207,17 @@ export function SessionFlow() {
       </Typography>
 
       {screen === "consult" ? (
-        <Consult onSubmit={onConsult} busy={busy} error={error} />
+        <DoorGate>
+          <Consult
+            onSubmit={onConsult}
+            onDecline={() => {
+              setDeclined(true); // nothing has been sent, no session exists
+              setScreen("done");
+            }}
+            busy={busy}
+            error={error}
+          />
+        </DoorGate>
       ) : null}
 
       {screen === "capture" ? (
@@ -286,7 +310,9 @@ export function SessionFlow() {
 
       {screen === "done" ? (
         <Done
+          declined={declined}
           onRestart={() => {
+            setDeclined(false);
             setSessionId(undefined);
             setAdvice(undefined);
             setNextAdvice(undefined);

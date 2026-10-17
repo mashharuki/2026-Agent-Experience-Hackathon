@@ -1,15 +1,32 @@
 """boto3 adapters for the S3 and SQS ports (tested with moto)."""
 
 import json
+import os
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
+
+
+def make_s3_client(region: str | None = None):
+    """S3 client pinned to the regional endpoint.
+
+    The default signs upload forms for the global endpoint, which answers 307 for a bucket in
+    another region; a browser cannot follow that for a cross-origin POST.
+    """
+    region = region or os.environ.get("AWS_REGION", "ap-northeast-1")
+    return boto3.client(
+        "s3",
+        region_name=region,
+        endpoint_url=f"https://s3.{region}.amazonaws.com",
+        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+    )
 
 
 class S3Uploads:
     def __init__(self, bucket: str, client=None) -> None:
         self._bucket = bucket
-        self._s3 = client or boto3.client("s3")
+        self._s3 = client or make_s3_client()
 
     def presign_post(self, key: str, content_type: str, max_bytes: int, expires_s: int) -> dict:
         """Signed POST with server-decided constraints: key, content type, size range, expiry."""

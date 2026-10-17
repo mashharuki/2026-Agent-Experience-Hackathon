@@ -190,7 +190,8 @@ docker tag photoprep-worker:v1 <WorkerRepositoryUri>:v1
 docker push <WorkerRepositoryUri>:v1
 ```
 
-Deploy again with the image tag, then create your invited user and publish the frontend:
+Deploy again with the image tag (a deploy stops a running worker; add `-c photoprep:workerDesiredCount=1` to keep it
+running), then create your invited user and publish the frontend:
 
 ```sh
 cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1

@@ -1,5 +1,7 @@
 """T027/T028: end-to-end behaviour of the HTTP API over in-memory fakes (no AWS)."""
 
+import itertools
+
 import pytest
 
 from photoprep_api.states import state_after_job
@@ -9,8 +11,18 @@ IDEM_A = "a" * 16
 IDEM_B = "b" * 16
 
 
+_session_counter = itertools.count(1)
+
+
+def fresh_key() -> str:
+    """Each new session needs its own Idempotency-Key; the same key replays the same session."""
+    return f"s{next(_session_counter):015d}"
+
+
 def new_session(api, **overrides):
-    status, body, _ = api.request("POST", "/sessions", {**GOOD_SESSION, **overrides}, idem=IDEM_A)
+    status, body, _ = api.request(
+        "POST", "/sessions", {**GOOD_SESSION, **overrides}, idem=fresh_key()
+    )
     assert status == 201, body
     return body["sessionId"]
 

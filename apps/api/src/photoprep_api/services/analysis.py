@@ -16,6 +16,8 @@ MAX_IMAGE_BYTES = 2 * 1024 * 1024
 UPLOAD_URL_SECONDS = 60
 UPLOAD_RECORD_TTL = timedelta(hours=1)
 PENDING = "PENDING_DISPATCH"
+# Three analyses fit in a session; a few more forms allow for retakes and failed uploads.
+MAX_UPLOADS_PER_SESSION = 6
 
 _log = logging.getLogger("photoprep.analysis")
 
@@ -24,6 +26,15 @@ def create_upload(c: Container, sub: str, session_id: str, request: dict) -> dic
     session = load_session(c, sub, session_id)
     ensure_consent(session)
     ensure_accepting(c)
+    try:  # an atomic counter: concurrent requests cannot slip past the cap together
+        c.store.update(
+            session_pk(session_id),
+            "META",
+            add={"uploadsUsed": 1},
+            caps={"uploadsUsed": MAX_UPLOADS_PER_SESSION},
+        )
+    except ConditionFailed as err:
+        raise AppError(429, "too_many_requests") from err
     upload_id = c.new_id()
     # Key, size limit and expiry are decided here, never taken from the client. The
     # client's sizeBytes is only a hint already bounded by the contract.

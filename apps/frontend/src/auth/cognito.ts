@@ -33,6 +33,41 @@ export async function startSignIn(config: CognitoConfig): Promise<void> {
 export interface Tokens {
   accessToken: string;
   expiresAt: number;
+  /** Kept in memory only, like the access token. */
+  refreshToken?: string;
+}
+
+async function requestTokens(
+  config: CognitoConfig,
+  body: Record<string, string>,
+): Promise<{
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+}> {
+  const response = await fetch(`${config.domain}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: config.clientId, ...body }),
+  });
+  if (!response.ok) throw new Error("sign_in_failed");
+  return response.json();
+}
+
+/** A new access token from the refresh token (a public client: no secret). */
+export async function refreshTokens(
+  config: CognitoConfig,
+  refreshToken: string,
+): Promise<Tokens> {
+  const body = await requestTokens(config, {
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  return {
+    accessToken: body.access_token,
+    expiresAt: Date.now() + body.expires_in * 1000,
+    refreshToken,
+  };
 }
 
 /** Finish sign-in on /auth/callback. Tokens are kept in memory only, never stored. */
@@ -50,24 +85,15 @@ export async function completeSignIn(
     state: string;
   };
   if (params.get("state") !== state) throw new Error("sign_in_failed");
-  const response = await fetch(`${config.domain}/oauth2/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: config.clientId,
-      redirect_uri: config.redirectUri,
-      code,
-      code_verifier: verifier,
-    }),
+  const body = await requestTokens(config, {
+    grant_type: "authorization_code",
+    redirect_uri: config.redirectUri,
+    code,
+    code_verifier: verifier,
   });
-  if (!response.ok) throw new Error("sign_in_failed");
-  const body = (await response.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
   return {
     accessToken: body.access_token,
     expiresAt: Date.now() + body.expires_in * 1000,
+    refreshToken: body.refresh_token,
   };
 }

@@ -11,6 +11,7 @@ from tests.integration.test_api_flow import (
     IDEM_A,
     IDEM_B,
     finish_job,
+    fresh_key,
     new_session,
     new_upload,
     session_item,
@@ -22,7 +23,9 @@ PHOTO = {"phase": "before", "contentType": "image/png", "sizeBytes": 10}
 
 def create(api, claims=None, **overrides):
     kwargs = {"claims": claims} if claims else {}
-    return api.request("POST", "/sessions", {**GOOD_SESSION, **overrides}, idem=IDEM_A, **kwargs)
+    return api.request(
+        "POST", "/sessions", {**GOOD_SESSION, **overrides}, idem=fresh_key(), **kwargs
+    )
 
 
 class TestServiceStatus:

@@ -15,6 +15,8 @@ export interface WorkerProps {
   readonly bedrockModelId: string;
   /** Immutable tag of the worker image already pushed to the repository. */
   readonly imageTag: string;
+  /** 0 (default: stopped until the operations Lambda starts it) or 1 (keep it running). */
+  readonly desiredCount?: 0 | 1;
 }
 
 /**
@@ -128,7 +130,7 @@ export class Worker extends Construct {
     this.service = new ecs.FargateService(this, "Service", {
       cluster: this.cluster,
       taskDefinition,
-      desiredCount: 0, // stopped until the operations Lambda starts it
+      desiredCount: props.desiredCount ?? 0, // stopped until the operations Lambda starts it
       assignPublicIp: true,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [this.securityGroup],

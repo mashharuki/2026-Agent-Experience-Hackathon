@@ -13,6 +13,16 @@ export function setAccessTokenProvider(provider: AccessTokenProvider): void {
   tokenProvider = provider;
 }
 
+type UnauthorizedHandler = () => void;
+let unauthorizedHandler: UnauthorizedHandler | undefined;
+
+/** Sign-in management is told when the API rejects the token (it may have expired). */
+export function setUnauthorizedHandler(
+  handler: UnauthorizedHandler | undefined,
+): void {
+  unauthorizedHandler = handler;
+}
+
 export function currentAccessToken(): string | undefined {
   return tokenProvider();
 }
@@ -37,6 +47,16 @@ export class ApiError extends Error {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
+/** Error pages (502, 504) are not JSON: that must not turn into a SyntaxError. */
+function parseJson(text: string): { code?: string } | undefined {
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function customFetch<T>(
   url: string,
   options: RequestInit,
@@ -51,8 +71,14 @@ export async function customFetch<T>(
     headers,
   });
   const text = await response.text();
-  const data = text ? JSON.parse(text) : undefined;
+  const data = parseJson(text);
   if (!response.ok) {
+    if (response.status === 401) {
+      // API Gateway's JWT authorizer answers {"message":"Unauthorized"} with no `code`, so the
+      // status is what says the sign-in is no longer good.
+      unauthorizedHandler?.();
+      throw new ApiError(401, "unauthenticated");
+    }
     throw new ApiError(response.status, data?.code ?? "internal_error");
   }
   return { data, status: response.status, headers: response.headers } as T;

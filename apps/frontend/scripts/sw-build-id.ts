@@ -19,17 +19,27 @@ export function stampBuildId(source: string, seed: string): string {
   return source.replaceAll(PLACEHOLDER, id);
 }
 
-/** The emitted file names carry content hashes, so their list changes whenever any code does. */
-export function swBuildId(sourcePath = resolve("src/pwa/sw.js")): Plugin {
+/**
+ * The emitted file names carry content hashes, so their list changes whenever any code does.
+ * The worker's source is found from Vite's project root, so the build works from any directory.
+ */
+export function swBuildId(sourcePath?: string): Plugin {
+  let root = process.cwd();
   return {
     name: "sw-build-id",
     apply: "build",
+    configResolved(config) {
+      root = config.root;
+    },
     generateBundle(_options, bundle) {
       const seed = Object.keys(bundle).sort().join("\n");
       this.emitFile({
         type: "asset",
         fileName: "sw.js",
-        source: stampBuildId(readFileSync(sourcePath, "utf8"), seed),
+        source: stampBuildId(
+          readFileSync(sourcePath ?? resolve(root, "src/pwa/sw.js"), "utf8"),
+          seed,
+        ),
       });
     },
   };

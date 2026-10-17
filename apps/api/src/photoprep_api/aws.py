@@ -8,6 +8,14 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 
+class PartialDeleteError(Exception):
+    """S3 answered 200 but could not delete some keys (it lists them in ``Errors``)."""
+
+    def __init__(self, failed: int) -> None:
+        super().__init__(f"{failed} object(s) could not be deleted")
+        self.failed = failed
+
+
 def make_s3_client(region: str | None = None):
     """S3 client pinned to the regional endpoint.
 
@@ -58,12 +66,17 @@ class S3Uploads:
             Bucket=self._bucket, Prefix=prefix
         ):
             keys += [o["Key"] for o in page.get("Contents", [])]
+        failed = 0
         for start in range(0, len(keys), 1000):
             batch = keys[start : start + 1000]
-            self._s3.delete_objects(
+            # With Quiet=True S3 reports only the failures, in the body of a 200 response.
+            result = self._s3.delete_objects(
                 Bucket=self._bucket,
                 Delete={"Objects": [{"Key": k} for k in batch], "Quiet": True},
             )
+            failed += len(result.get("Errors", []))
+        if failed:
+            raise PartialDeleteError(failed)  # every batch was still attempted
         return len(keys)
 
 

@@ -179,7 +179,8 @@ docker tag photoprep-worker:v1 <WorkerRepositoryUri>:v1
 docker push <WorkerRepositoryUri>:v1
 ```
 
-イメージのタグを指定して再デプロイし、招待ユーザーを作って、フロントエンドを公開します：
+イメージのタグを指定して再デプロイし（デプロイは動いているワーカーを止めます。動かし続けるなら
+`-c photoprep:workerDesiredCount=1` を足します）、招待ユーザーを作って、フロントエンドを公開します：
 
 ```sh
 cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1

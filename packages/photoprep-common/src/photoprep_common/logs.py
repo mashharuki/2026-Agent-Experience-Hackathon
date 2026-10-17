@@ -15,6 +15,7 @@ ALLOWED_FIELDS = frozenset(
         "selected",
         "confidence",
         "token_count",
+        "failed_count",
         "job_id",
         "session_id",
         "phase",

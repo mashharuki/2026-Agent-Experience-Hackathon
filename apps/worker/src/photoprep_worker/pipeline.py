@@ -82,7 +82,14 @@ def heartbeat(deps: Deps, job_id: str) -> bool:
     return True
 
 
-def _restore_session(deps: Deps, session_id: str, prev_state: str) -> None:
+def _restore_session(
+    deps: Deps, session_id: str, prev_state: str, job_id: str | None = None
+) -> None:
+    """Put the session back where it was before this job, if nothing else moved it since.
+
+    Normally the session is still ANALYZING. If this job already advanced it (``lastJobId`` names
+    it) and then could not be finished, undo that too, so state and job never disagree.
+    """
     try:
         deps.store.update(
             f"SESSION#{session_id}",
@@ -90,8 +97,28 @@ def _restore_session(deps: Deps, session_id: str, prev_state: str) -> None:
             expect={"state": State.ANALYZING.value},
             set={"state": prev_state},
         )
+        return
     except ConditionFailed:
-        pass  # the user moved on (e.g. ended the session): leave it alone
+        pass  # the user moved on (e.g. ended the session), or this job had advanced it
+    if job_id is None:
+        return
+    session = deps.store.get(f"SESSION#{session_id}", "META")
+    if (
+        session is None
+        or session.get("lastJobId") != job_id
+        or session["state"] == State.DONE.value
+    ):
+        return
+    try:
+        deps.store.update(
+            f"SESSION#{session_id}",
+            "META",
+            expect={"state": session["state"], "lastJobId": job_id},
+            set={"state": prev_state},
+            remove=["lastJobId"],
+        )
+    except ConditionFailed:
+        pass  # moved again in the meantime: leave it alone
 
 
 def _finish_job(deps: Deps, job_id: str, **fields: object) -> None:
@@ -102,6 +129,12 @@ def _finish_job(deps: Deps, job_id: str, **fields: object) -> None:
         set=fields,
         remove=["leaseOwner", "leaseUntil"],
     )
+
+
+def fail_job_only(deps: Deps, job_id: str, error_class: str) -> "Outcome":
+    _finish_job(deps, job_id, status="FAILED", errorClass=error_class)
+    log_event("job_failed", job_id=job_id, error_class=error_class, outcome="failed")
+    return Outcome.FAILED
 
 
 def _delete_image(deps: Deps, key: str | None) -> None:
@@ -131,7 +164,7 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             _finish_job(deps, job_id, status="UNKNOWN", errorClass="worker_unavailable")
         except ConditionFailed:
             return Outcome.SKIPPED
-        _restore_session(deps, session_id, prev_state)
+        _restore_session(deps, session_id, prev_state, job_id)
         _delete_image(deps, key)
         log_event("job_unknown", job_id=job_id, outcome="unknown")
         return Outcome.FAILED
@@ -233,7 +266,11 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             return fail("model_error")
 
         new_state = state_after_job(advice.kind, phase, comparable)
-        session_update: dict = {"state": new_state.value, "lastAdviceKind": advice.kind}
+        session_update: dict = {
+            "state": new_state.value,
+            "lastAdviceKind": advice.kind,
+            "lastJobId": job_id,  # lets a stuck job be recovered even after the state moved on
+        }
         if phase == "before":
             session_update["baseline"] = {
                 "lighting": observation.lighting,
@@ -252,35 +289,43 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             log_event("job_cancelled", job_id=job_id, outcome="cancelled")
             return Outcome.CANCELLED
 
-        record = DecisionRecord(
-            job_id=job_id,
-            session_id=session_id,
-            question_version=decision.question_version,
-            probabilities=decision.probabilities,
-            confidence=decision.confidence,
-            decider_choice=decision.decider_choice,
-            selected=decision.selected,
-            guard_override=decision.override_reason,
-            invoked=["bedrock.observe", *[i for i in advice_invoked if i != "none"]],
-            created_at=now.isoformat(),
-        )
-        deps.store.create_if_absent(
-            f"SESSION#{session_id}",
-            f"DECISION#{job_id}",
-            {
-                **record.model_dump(),
-                "ownerSub": job["ownerSub"],
-                "ttl": int((now + RECORD_TTL).timestamp()),
-            },
-        )
-        _finish_job(deps, job_id, status="SUCCEEDED", result=advice.to_result())
-        log_event(
-            "job_done",
-            job_id=job_id,
-            selected=advice.kind,
-            confidence=decision.confidence,
-            outcome="done",
-        )
+        try:
+            record = DecisionRecord(
+                job_id=job_id,
+                session_id=session_id,
+                question_version=decision.question_version,
+                probabilities=decision.probabilities,
+                confidence=decision.confidence,
+                decider_choice=decision.decider_choice,
+                selected=decision.selected,
+                guard_override=decision.override_reason,
+                invoked=["bedrock.observe", *[i for i in advice_invoked if i != "none"]],
+                created_at=now.isoformat(),
+            )
+            deps.store.create_if_absent(
+                f"SESSION#{session_id}",
+                f"DECISION#{job_id}",
+                {
+                    **record.model_dump(),
+                    "ownerSub": job["ownerSub"],
+                    "ttl": int((now + RECORD_TTL).timestamp()),
+                },
+            )
+            _finish_job(deps, job_id, status="SUCCEEDED", result=advice.to_result())
+            log_event(
+                "job_done",
+                job_id=job_id,
+                selected=advice.kind,
+                confidence=decision.confidence,
+                outcome="done",
+            )
+        except Exception as err:  # noqa: BLE001 - the session already moved on: undo that
+            log_event("store_step_failed", job_id=job_id, error_class=type(err).__name__)
+            _restore_session(deps, session_id, prev_state, job_id)
+            try:
+                return fail_job_only(deps, job_id, "storage_error")
+            except Exception:  # noqa: BLE001 - lease expiry will mark it UNKNOWN and restore
+                return Outcome.FAILED
         return Outcome.DONE
     finally:
         _delete_image(deps, key)

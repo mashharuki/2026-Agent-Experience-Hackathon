@@ -127,3 +127,46 @@ def test_unknown_actions_are_rejected():
         wc.handle({"action": "delete_everything"})
     with pytest.raises(ValueError):
         wc.handle({})
+
+
+class TestStartOnARunningWorker:
+    """The worker opens the door once, at boot. `start` must not close a door it cannot reopen."""
+
+    def test_an_open_door_stays_open(self):
+        from photoprep_common.service_status import set_status
+
+        wc, ecs, _, store = control(desired=1)
+        set_status(store, accepting=True, reason="open")
+        wc.handle({"action": "start"})
+        assert get_status(store) == {"accepting": True, "reason": "open"}
+        assert ecs.updates == []  # nothing to scale
+
+    def test_a_drain_is_cancelled_and_the_door_reopens_because_the_worker_never_left(self):
+        wc, ecs, _, store = control(desired=1, in_flight=1)
+        from photoprep_common.service_status import set_status
+
+        set_status(store, accepting=True, reason="open")
+        wc.handle({"action": "stop"})  # draining, door closed (maintenance)
+        wc.handle({"action": "start"})
+        assert store.get("SERVICE#status", "META")["draining"] is False
+        assert get_status(store) == {"accepting": True, "reason": "open"}
+
+    def test_a_worker_that_is_still_booting_keeps_its_warming_up_door(self):
+        from photoprep_common.service_status import set_status
+
+        wc, ecs, _, store = control(desired=1)
+        set_status(
+            store,
+            accepting=False,
+            reason="warming_up",
+            expected_reopen_at="2026-10-17T10:00:00+00:00",
+        )
+        wc.handle({"action": "start"})
+        status = get_status(store)
+        assert status["accepting"] is False and status["reason"] == "warming_up"
+        assert status["expectedReopenAt"] == "2026-10-17T10:00:00+00:00"  # the estimate is kept
+
+    def test_starting_a_stopped_worker_still_closes_the_door_and_scales_up(self):
+        wc, ecs, _, store = control(desired=0)
+        wc.handle({"action": "start"})
+        assert ecs.desired == 1 and get_status(store)["reason"] == "warming_up"

@@ -32,6 +32,12 @@ pnpm run publish:plan                  # prints what would be uploaded; changes 
 pnpm run publish:apply                 # builds against the deployed API, uploads, invalidates
 ```
 
+- A deploy **stops a running worker**: the template pins the service to 0 tasks. When you deploy while the worker
+  is running (and want it to keep running), add `-c photoprep:workerDesiredCount=1`.
+- Calling `start` on a worker that is already running leaves the door as it is (the worker opens it only once, at boot);
+  it only cancels a pending drain.
+- To develop the frontend against the deployed stack, opt in with `-c photoprep:devOrigin=http://localhost:5173`; the
+  default stack trusts no local origin.
 - `cdk synth/deploy` refuses to run without the package from `pnpm build:lambda`: the Lambdas could not
   start without it (an earlier version shipped only the source files).
 - `publish:apply` builds the SPA with the deployed API and Cognito addresses and with the mock **off**,

@@ -11,7 +11,11 @@ import { Operations } from "./constructs/operations";
 import { Worker } from "./constructs/worker";
 
 export interface PhotoPrepStackProps extends cdk.StackProps {
-  /** Extra local origins for development (also used as OAuth redirect hosts). */
+  /**
+   * Extra local origins for development (also OAuth redirect hosts and CORS origins). Empty by
+   * default: a production stack must not trust a port on someone's laptop. Opt in with
+   * `-c photoprep:devOrigin=http://localhost:5173`.
+   */
   readonly devOrigins?: string[];
   /** Overrides the Lambda package (tests pass an inline stub). */
   readonly apiCode?: lambda.Code;
@@ -26,6 +30,37 @@ export interface PhotoPrepStackProps extends cdk.StackProps {
  * retains the Cognito user pool and the metadata table on stack deletion; true allows a
  * full teardown. Nothing here is deployed by the test suite.
  */
+/** `-c photoprep:devOrigin=http://localhost:5173`: one local http origin, nothing else. */
+function devOriginFromContext(scope: Construct): string[] {
+  const value = scope.node.tryGetContext("photoprep:devOrigin");
+  if (value === undefined || value === "") return [];
+  if (
+    typeof value !== "string" ||
+    !/^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?$/.test(value)
+  ) {
+    throw new Error(
+      "photoprep:devOrigin must be a local http origin such as http://localhost:5173 (no path)",
+    );
+  }
+  return [value];
+}
+
+/**
+ * `-c photoprep:workerDesiredCount=1` keeps a running worker running through a deploy. The
+ * template otherwise pins the service to 0, so every deploy would stop it (and cut off a job).
+ */
+function workerDesiredCountFromContext(scope: Construct): 0 | 1 {
+  const value = Number(
+    scope.node.tryGetContext("photoprep:workerDesiredCount") ?? 0,
+  );
+  if (value !== 0 && value !== 1) {
+    throw new Error(
+      "photoprep:workerDesiredCount must be 0 or 1 (the worker handles one job at a time)",
+    );
+  }
+  return value;
+}
+
 export class PhotoPrepStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: PhotoPrepStackProps = {}) {
     super(scope, id, props);
@@ -35,7 +70,7 @@ export class PhotoPrepStack extends cdk.Stack {
     const removalPolicy = destroyData
       ? cdk.RemovalPolicy.DESTROY
       : cdk.RemovalPolicy.RETAIN;
-    const devOrigins = props.devOrigins ?? ["http://localhost:5173"];
+    const devOrigins = props.devOrigins ?? devOriginFromContext(this);
 
     const frontend = new Frontend(this, "Frontend");
     const spaOrigin = `https://${frontend.distribution.distributionDomainName}`;
@@ -72,6 +107,7 @@ export class PhotoPrepStack extends cdk.Stack {
         "amazon.nova-lite-v1:0",
       // Pushed separately (the image carries the model weights); never a floating tag.
       imageTag: this.node.tryGetContext("photoprep:workerImageTag") ?? "unset",
+      desiredCount: workerDesiredCountFromContext(this),
     });
 
     const operations = new Operations(this, "Operations", {

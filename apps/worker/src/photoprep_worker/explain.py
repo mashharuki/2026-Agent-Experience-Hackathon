@@ -6,6 +6,8 @@ unusable explanation is an error: it is never replaced by canned advice presente
 the model had written it.
 """
 
+import re
+
 from .bedrock import Bedrock
 from .observe import SCOPE_LABEL
 from .schemas import Advice, Observation
@@ -102,8 +104,46 @@ _NONE = {"ja": "なし", "en": "none"}
 _SEPARATOR = {"ja": "、", "en": ", "}
 
 
+# What the explanation must never contain, checked after the model has written it. The prompt asks
+# for the same things; this makes it a rule of the code (FR-008) instead of a request to a model.
+_FORBIDDEN_ACTIONS = {
+    "ja": re.compile(
+        r"カット|切(?:る|って|り|ら)|抜(?:く|いて|き)|剃|脱毛|毛抜き|メイク|化粧|購入|買(?:う|って|い)"
+    ),
+    "en": re.compile(
+        r"\b(?:cut(?:ting)?|trim(?:ming)?|pluck(?:ing)?|tweez\w*|shav(?:e|ing)|wax(?:ing)?|"
+        r"dye|bleach|make-?up|buy(?:ing)?|purchase)\b",
+        re.IGNORECASE,
+    ),
+}
+_BROWS = {"ja": re.compile(r"眉"), "en": re.compile(r"\bbrows?\b|\beyebrows?\b", re.IGNORECASE)}
+_BANGS = {"ja": re.compile(r"前髪"), "en": re.compile(r"\bbangs?\b|\bfringe\b", re.IGNORECASE)}
+_RESHAPING = {
+    "ja": re.compile(r"形を(?:変|整|作)|整形|アーチ|細く|太く|ラインを(?:変|整|引)"),
+    "en": re.compile(
+        r"\breshap\w*|\b(?:change|alter|redefine|adjust)\s+(?:the\s+|your\s+)?(?:brow\s+)?shape\b|"
+        r"\barch\b|\bthinn?(?:er|ing)?\b|\bthicken\w*",
+        re.IGNORECASE,
+    ),
+}
+
+
 class ExplainError(Exception):
     """The explanation could not be produced or was unusable."""
+
+
+def _violates(text: str, restrictions: list[str], lang: str) -> bool:
+    """True if the generated text goes against a restriction or recommends a forbidden action."""
+    if _FORBIDDEN_ACTIONS[lang].search(text):
+        return True
+    mentions_brows = bool(_BROWS[lang].search(text))
+    if "no_touch_brow" in restrictions and mentions_brows:
+        return True
+    if "no_touch_bangs" in restrictions and _BANGS[lang].search(text):
+        return True
+    return (
+        "keep_brow_shape" in restrictions and mentions_brows and bool(_RESHAPING[lang].search(text))
+    )
 
 
 def _lang(language: str | None) -> str:
@@ -149,7 +189,7 @@ def _grooming_text(observation, bedrock, scope, wish, restrictions, lang) -> str
     ]
     prompt = EXPLAIN_SYSTEM[lang] + (f"\n{labels[2]}: " + sep.join(rules) if rules else "")
     text = bedrock.converse(prompt, content).strip()
-    if not text or len(text) > 400:
+    if not text or len(text) > 400 or _violates(text, restrictions, lang):
         raise ExplainError("unusable explanation")
     return text
 

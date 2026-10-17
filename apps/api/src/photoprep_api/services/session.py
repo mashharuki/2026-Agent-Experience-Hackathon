@@ -2,8 +2,10 @@
 
 from datetime import timedelta
 
+from ..aws import PartialDeleteError
 from ..container import Container
 from ..errors import AppError
+from ..logs import log_event
 from ..repo import get_owned
 from ..states import State, check_can_start_change
 from ..store import ConditionFailed
@@ -21,12 +23,28 @@ def ttl_after(c: Container, lifetime: timedelta) -> int:
     return int((c.now() + lifetime).timestamp())
 
 
-def create_session(c: Container, sub: str, request: dict) -> dict:
+def create_session(c: Container, sub: str, request: dict, idem_key: str) -> dict:
+    """Create a session. A retry with the same key returns that session and uses no new quota."""
+    idem_pk = f"IDEM#{sub}#SESSION#{idem_key}"
+    replay = c.store.get(idem_pk, "META")
+    if replay is not None:
+        return _replay(c, sub, replay)  # accepted work stays valid even if the door closed since
     ensure_accepting(c, new_session=True)
     check_consent_version(request["consentVersion"])  # an invalid request must not use a quota slot
-    reserve_session(c, sub)
     now = c.now()
     session_id = c.new_id()
+    # Claim the key before spending anything, so two concurrent retries cannot both create one.
+    if not c.store.create_if_absent(
+        idem_pk,
+        "META",
+        {"ownerSub": sub, "sessionId": session_id, "ttl": ttl_after(c, SESSION_TTL)},
+    ):
+        return _replay(c, sub, c.store.get(idem_pk, "META") or {})
+    try:
+        reserve_session(c, sub)
+    except Exception:
+        c.store.delete(idem_pk, "META")  # a refusal must not leave a key that replays nothing
+        raise
     item = {
         "ownerSub": sub,
         "scope": request["scope"],
@@ -55,6 +73,15 @@ def create_session(c: Container, sub: str, request: dict) -> dict:
             "grantedAt": now.isoformat(),
         },
     )
+    return session_view(session_id, item)
+
+
+def _replay(c: Container, sub: str, record: dict) -> dict:
+    session_id = record.get("sessionId")
+    item = c.store.get(session_pk(session_id), "META") if session_id else None
+    if item is None or item["ownerSub"] != sub:
+        # The first request is still being processed (or failed half-way): not ours to guess.
+        raise AppError(409, "conflict")
     return session_view(session_id, item)
 
 
@@ -150,4 +177,9 @@ def end_session(c: Container, sub: str, session_id: str) -> None:
     session = load_session(c, sub, session_id, allow_ended=True)
     if session["state"] != State.DONE.value:
         c.store.update(session_pk(session_id), "META", set={"state": State.DONE.value})
-    c.uploads.delete_session_images(session_id)
+    try:
+        c.uploads.delete_session_images(session_id)
+    except PartialDeleteError as err:
+        # The session is over either way. The sweeper (every 15 min) and the bucket's lifecycle
+        # rule remove what is left; say so in the logs instead of pretending it all went.
+        log_event("images_delete_failed", failed_count=err.failed)

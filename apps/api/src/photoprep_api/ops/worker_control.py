@@ -61,11 +61,22 @@ class WorkerControl:
 
     # -- actions -------------------------------------------------------------------------
     def _start(self) -> dict:
+        if self._desired() >= 1:
+            return self._start_running()
         reopen = (self._now() + WARMUP_ESTIMATE).isoformat()
         set_status(self._store, accepting=False, reason="warming_up", expected_reopen_at=reopen)
         self._scale(1)  # also cancels a drain: draining was reset by set_status
         log_event("worker_start", status=200)
         return {"action": "start"}
+
+    def _start_running(self) -> dict:
+        """A worker is already up. It opens the door once, at boot, so closing the door here
+        would leave it closed for good. Keep the door as it is; only a pending drain is
+        cancelled, and then the worker, which never left, is serving again."""
+        if self._draining():
+            set_status(self._store, accepting=True, reason="open")  # also resets draining
+        log_event("worker_start_noop", status=200)
+        return {"action": "start", "alreadyRunning": True}
 
     def _stop(self) -> dict:
         if self._idle():

@@ -1,0 +1,319 @@
+---
+
+description: "Task list for 撮る前のひと手間（撮影前の身支度アシスタント）"
+---
+
+# Tasks: 撮る前のひと手間（撮影前の身支度アシスタント）
+
+**Input**: Design documents from `/specs/001-pre-photo-grooming-assist/`
+
+**Prerequisites**: [plan.md](plan.md)、[spec.md](spec.md)、[research.md](research.md)、[data-model.md](data-model.md)、[contracts/](contracts/)、[quickstart.md](quickstart.md)、[docs/tech-stack.md](../../docs/tech-stack.md)
+
+**Tests**: 含める。仕様自体はテストを要求していないが、`AGENTS.md` と憲章が「禁止・終了・認可・画像削除・Deciderの判断の接続」の検証を求めるため、**決定的に確定できる動作のテスト**を各ストーリーに置く。モデルの判断品質の評価（`evaluation/`）は通常のテストと分けて集計する（T070）。
+
+**Organization**: ユーザーストーリー別。ただし、公開前の最小リリースは **P1 の3ストーリー（US1・US2・US5）をすべて含む**（US5 の同意・認可・画像削除を欠いたまま顔画像を扱えないため）。
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: 別ファイルで依存がなく並行して進められる
+- **[Story]**: US1〜US6（[spec.md](spec.md) のユーザーストーリー）。Setup／Foundational／Polish には付けない
+- 検証タスクは `（research T-00n）` で [research.md](research.md) の検証タスクIDを示す。**タスクID（T0nn）と research.md のID（T-00n）は別物**
+- 実AWSの作成・デプロイ、課金の発生、同意済み顔写真の使用は**ユーザーの承認・提供が前提**（該当タスクに明記）
+
+## Path Conventions
+
+[plan.md](plan.md) の構成に従う: `apps/frontend/`、`apps/api/`、`apps/worker/`、`apps/cdk/`、`packages/api-spec/`、`evaluation/`、`experiments/`。
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: プロジェクト初期化。この時点で機能は作らない。必要な依存だけ導入する。
+
+- [ ] T001 [P] `apps/api/` を uv で初期化（`pyproject.toml`、`uv.lock`、Python 3.12、pytest・Ruff 設定）。依存は API に必要なものだけとし、PyTorch・Decider を含めない
+- [ ] T002 [P] `apps/worker/` を uv で初期化（`pyproject.toml`、`uv.lock`、Python 3.12、pytest・Ruff 設定）。PyTorch CPU・Decider はここにのみ置く
+- [ ] T003 [P] `apps/frontend/package.json` に Material UI＋Emotion、TanStack Query、Vitest、Playwright を追加し、`pnpm install` で lockfile を更新（React Bits は入れない: T010）
+- [ ] T004 [P] `packages/api-spec/` に OpenAPI の lint ツールと Orval を導入（lint ツールの選定理由を `research.md` に追記）。`main: index.js` のヒントは本タスクで扱わない
+- [ ] T005 [P] `evaluation/` の構成を作成（`evaluation/dev-examples/`、`evaluation/holdout/`、`evaluation/README.md`）。顔写真・個人データをコミットしないよう `.gitignore` に画像拡張子と `evaluation/holdout/` の実データを追加
+- [ ] T006 [P] `apps/frontend/.env.example`、`apps/api/.env.example`、`apps/worker/.env.example` を**プレースホルダのみ**で作成（認証情報・トークンの値を書かない）
+- [ ] T007 `apps/cdk/package.json` で CDK CLI/lib・Node.js・TypeScript・cdk-nag の互換性を確認して固定し、`pnpm --filter cdk test` と `pnpm --filter cdk cdk synth` が通ることを確認（結果を `docs/tech-stack.md` の備考へ）
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: すべてのストーリーの前に終えるべき検証と土台。**検証ゲート（A）の結果で方式が変わり得る**ため、実装前に先に進める。
+
+**⚠️ CRITICAL**: このフェーズが完了するまでユーザーストーリーの実装に入らない（A は結果が出たものから順に着手可）。
+
+### A. 検証ゲート（research.md の T-001〜T-010 のうち実装前に判断できるもの）
+
+- [ ] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
+- [ ] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）
+- [ ] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**既定は MUI＋独自CSS（React Bits を取り込まない）**。取り込む場合はユーザー承認と OSI 要件との整合確認が前提（research T-005）
+- [ ] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）
+- [ ] T012 ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）
+- [ ] T013 [P] AWS アカウントの Bedrock モデル呼び出しログが画像・本文を保存しない設定であることを確認し、結果を `research.md` に記録（research T-010）。アカウントを変更する操作はユーザー承認のうえ実施
+- [ ] T014 Fargate 4 vCPU/16 GB 相当の環境で Decider のピーク RSS とロード・推論時間を測定し `research.md` R-004 に記録（合格: ピーク RSS 12 GB 以内。不合格なら 24 GB 案と費用を再比較）。T008 に依存。ローカル Docker での予備測定と実 Fargate での測定を区別して記録（research T-004）
+- [ ] T015 Nova Lite の画像観察品質評価を実施（`evaluation/` のハーネスを `evaluation/run_eval.py` に作成）。**同意のある本人の写真をユーザーから提供してもらう**。開発用の例（`dev-examples/`）で調整し、評価用（`holdout/`）は調整後にのみ使う。合格条件: 逆光・変更なしで根拠のない断定が 0 件。結果は `research.md` R-002（research T-002）
+
+### B. API 契約
+
+- [ ] T016 `specs/001-pre-photo-grooming-assist/contracts/openapi.draft.yaml` を `packages/api-spec/openapi.yaml`（正本）へ移し、草案側は正本へのポインタに置き換える（OpenAPI 3.0.3 のまま。3.1 専用構文を入れない）
+- [ ] T017 `packages/api-spec/openapi.yaml` に**受付状態の API** `getServiceStatus`（`GET /service-status`）を追加: 認証あり、応答は `accepting`（真偽）、`reason`（`open`/`worker_stopped`/`warming_up`/`quota_exhausted`/`maintenance`）、`expectedReopenAt`（任意）。`503` の `Error.code` に受付停止の識別子を追加。草案・`data-model.md`・`quickstart.md` の記述と整合させる（FR-027）
+- [ ] T018 `packages/api-spec/package.json` に OpenAPI の lint と Connexion 読込み確認（`apps/api` で仕様を読み込むスクリプト）を追加し、`pnpm` から実行できるようにする
+- [ ] T019 `apps/frontend/orval.config.ts` で Orval を設定し `apps/frontend/src/api/generated/` へ TS 型・クライアント・TanStack Query hooks を生成。生成物は直接編集せず、再生成後の差分検査スクリプトを追加
+
+### C. 認証・データ・API 骨格
+
+- [ ] T020 [P] `apps/cdk/lib/constructs/identity.ts`: Cognito User Pool（招待制・セルフ登録無効）、公開クライアント（secret なし）、Authorization Code＋PKCE、スコープ `photoprep/session`
+- [ ] T021 [P] `apps/cdk/lib/constructs/data.ts`: DynamoDB On-Demand（セッション・ジョブ・利用枠・同意・判断記録、TTL）、一時画像用の専用 S3（Block Public Access、SSE-S3、TLS 必須、CORS は SPA origin のみ、1 日 Lifecycle）、SQS Standard＋DLQ（visibility 120 秒、受信 3 回で DLQ）
+- [ ] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
+- [ ] T023 `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
+- [ ] T024 `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
+- [ ] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logging.py`: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ
+- [ ] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
+
+**Checkpoint**: 検証ゲートの結果が `research.md` に反映され、契約と認証・データの土台がそろっている。T012（予算）が未承認なら、以降は**ローカル・モックで進め、実 AWS へは出さない**。
+
+---
+
+## Phase 3: User Story 1 - 一つだけ試して、続けるか終えるかを決める (Priority: P1) 🎯 MVP
+
+**Goal**: 相談範囲の選択 → 最初の撮影 → 助言一つ → やってみる → 再撮影 → 前後比較 → 本人の選択 → 終了、を通しで実行できる。
+
+**Independent Test**: 同意済みの写真（または**モック・再生データと明示した**入力）で quickstart のシナリオ 1 を通し、助言が一つだけ出ること、実施中に新しい助言が増えないこと、本人の選択が記録されることを確認する。
+
+### Tests for User Story 1
+
+> 先にテストを書き、失敗することを確認してから実装する。
+
+- [ ] T027 [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
+- [ ] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
+- [ ] T029 [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
+- [ ] T030 [P] [US1] `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
+
+### Implementation for User Story 1 — API
+
+- [ ] T031 [P] [US1] `apps/api/src/photoprep_api/models.py`: Session・Job・Advice の型と DynamoDB 項目への変換
+- [ ] T032 [US1] `apps/api/src/photoprep_api/services/session.py`: セッション作成、状態遷移、`changesUsed`/`analysesUsed` の条件付き更新（T031 に依存）
+- [ ] T033 [US1] `apps/api/src/photoprep_api/handlers/sessions.py`: `createSession`（`consentVersion` 必須の検証は US5 で強化）
+- [ ] T034 [US1] `apps/api/src/photoprep_api/handlers/uploads.py`: `createUpload`（サーバーが決めたキー、JPEG/PNG、2 MiB 以下、有効期限 60 秒の署名付き POST）
+- [ ] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
+- [ ] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
+- [ ] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
+- [ ] T038 [US1] `apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）
+- [ ] T039 [US1] `apps/api/ops/dispatch.py`: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
+
+### Implementation for User Story 1 — Worker
+
+- [ ] T040 [P] [US1] `apps/worker/src/photoprep_worker/schemas.py`: Observation・Advice・DecisionRecord のスキーマ（Pydantic 等）。不正な形式は成功として扱わない
+- [ ] T041 [US1] `apps/worker/src/photoprep_worker/main.py`・`lease.py`: SQS long poll、DynamoDB の条件付きリース、ハートビート、古い・終了済みジョブの破棄
+- [ ] T042 [US1] `apps/worker/src/photoprep_worker/images.py`: S3 から画像取得・検証（サイズ・形式・期限）、処理後の削除
+- [ ] T043 [US1] `apps/worker/src/photoprep_worker/observe.py`: Bedrock Converse（`amazon.nova-lite-v1:0`、東京リージョン内、クロスリージョン推論なし）で観察。**構造化出力が使えない**ため、出力をスキーマ検証し、不正なら失敗として扱う
+- [ ] T044 [US1] `apps/worker/src/photoprep_worker/decider.py`: [contracts/decider-decision.md](contracts/decider-decision.md) の型付きの問いを Decider に渡し、選択肢の確率・confidence を受け取る。T008 の確認結果に従う
+- [ ] T045 [US1] `apps/worker/src/photoprep_worker/guards.py`: 基本ガード（画像欠如、変更回数の上限）。禁止・不確かさ・終了の追加ガードは US2/US3/US4 で拡張
+- [ ] T046 [US1] `apps/worker/src/photoprep_worker/explain.py`: `grooming_tip` の場合のみ Bedrock で短い説明文を生成（1 解析の Bedrock 呼び出しは最大 2 回、各最大 800 出力トークン）
+- [ ] T047 [US1] `apps/worker/src/photoprep_worker/pipeline.py`: 観察 → 判断 → ガード → 実行 → 結果と判断記録の保存 → 画像削除 → ack。呼び出し後に落ちた場合は自動再実行せず `UNKNOWN` にする
+- [ ] T048 [US1] `apps/worker/Dockerfile`: Python 3.12、PyTorch CPU、Decider のリビジョンとベース重み（`Qwen/Qwen3.5-2B-Base` 約 4.5 GB）を**ビルド時に固定・同梱**し、実行時ダウンロードをしない。HTTP サーバーを公開しない
+
+### Implementation for User Story 1 — Infrastructure
+
+- [ ] T049 [US1] `apps/cdk/lib/constructs/worker.ts`: ECR、ECS on Fargate（Linux/x86_64、4 vCPU/16 GB、同時処理 1）、専用 VPC の public subnet、security group は**inbound なし**、NAT Gateway・ALB なし、S3/DynamoDB の gateway endpoint、用途別の最小権限 IAM（対象キュー・画像 prefix・テーブル・特定の Bedrock モデルのみ）
+- [ ] T050 [US1] `apps/cdk/lib/constructs/operations.ts`: EventBridge Scheduler（デモ前の起動、終了時刻の停止）、T039 の再送 Lambda、取り残し画像の回収 Lambda（15 分周期）、CloudWatch のメタデータ監視、AWS Budgets 通知（T012 で決めた上限）
+- [ ] T051 [US1] `apps/api/ops/worker_control.py`: ワーカーの desired count 変更と、受付中フラグ（DynamoDB）の更新。起動後、モデルロード・疎通を確認してから受付を有効化し、停止時は受付を閉じて処理中ジョブの完了後に 0 にする
+
+### Implementation for User Story 1 — Frontend
+
+- [ ] T052 [P] [US1] `apps/frontend/src/theme.ts`、`App.tsx`: MUI のテーマとアプリ外枠（既存の雛形 CSS を整理）
+- [ ] T053 [P] [US1] `apps/frontend/src/auth/`: Cognito の Authorization Code＋PKCE（公開クライアント、トークンを永続保存しない）
+- [ ] T054 [US1] `apps/frontend/src/api/client.ts`: 認証付き HTTP 処理を生成クライアントへ注入。QueryClient で解析 POST の自動再試行を無効化し、再送時は同じ `Idempotency-Key` を使用。ログアウト時にキャッシュを破棄
+- [ ] T055 [P] [US1] `apps/frontend/src/features/camera/`: Camera API、撮影、EXIF 除去、**写真は端末メモリのみ**（query cache・永続ストレージに入れない）
+- [ ] T056 [US1] `apps/frontend/src/features/jobs/useJobPolling.ts`: 2→3→5 秒間隔、最大 60 秒。時間切れは自動再課金せず「確認待ち」を表示
+- [ ] T057 [US1] `apps/frontend/src/screens/Consult.tsx`: 相談範囲の選択（眉／前髪／まず見てほしい）と任意の希望（200 文字以内）
+- [ ] T058 [US1] `apps/frontend/src/screens/TrialCapture.tsx`: 位置合わせ、最初の撮影、観察可否の確認
+- [ ] T059 [US1] `apps/frontend/src/screens/TryOne.tsx`: 助言一つと「やってみる／別の提案／このままで終える」、実施中の待機と「整えたので確認」
+- [ ] T060 [US1] `apps/frontend/src/screens/Compare.tsx`: 前後の並置、「前が好き／後が好き／差が分からない」、「終える」を主操作に
+- [ ] T061 [US1] `apps/frontend/src/features/session/`: 四画面をつなぐフロー制御（FR-026）
+- [ ] T062 [US1] 初回の実 AWS 通しを実施（**T012 の承認後のみ**）: ワーカー起動 → quickstart シナリオ 1 → 停止。デプロイは `cdk diff` を確認してユーザー承認を得てから行う
+
+**Checkpoint**: US1 が単独で動き、シナリオ 1 を通せる。ただし公開前の条件は Phase 4・5 の完了を含む。
+
+---
+
+## Phase 4: User Story 2 - 本人の希望と制限を守る (Priority: P1)
+
+**Goal**: 本人の希望・明示的な禁止・道具・時間を、モデルの判断に依存せず守る。
+
+**Independent Test**: quickstart のシナリオ 2〜4 で、禁止された操作・買い足しを前提とする助言が一度も出ない。
+
+- [ ] T063 [US2] **要ユーザー確認**: 「明示的な禁止」をどう取得するか決める。仕様の入力は任意の一文だが、禁止は通常コードで確定的に検査する必要がある。既定案は「画面の選択（例：眉には触れない／形は変えない）で禁止を取得し、一文は Decider への希望として渡す」。決定を `spec.md` の Clarifications と `data-model.md` に反映
+- [ ] T064 [P] [US2] `apps/worker/tests/test_guards_restrictions.py`: 禁止（`no_touch_brow`、`keep_brow_shape`）に反する `grooming_tip` が拒否され、`guardOverride` の理由が記録されること、道具・時間が不足する場合に買い足しを前提とする提案が出ないことを検証
+- [ ] T065 [P] [US2] `evaluation/dev-examples/`: quickstart シナリオ 2〜4 の開発用の例（実在の顔写真を含めない。ある場合は同意のある本人のもののみで未コミット）
+- [ ] T066 [US2] `apps/frontend/src/screens/Consult.tsx`: T063 の決定に従う禁止の選択 UI
+- [ ] T067 [US2] `apps/api/src/photoprep_api/handlers/sessions.py` と `apps/worker/.../guards.py`: 禁止を保存してガードで強制（Decider が選んでも上書きし、理由を DecisionRecord に残す）
+- [ ] T068 [US2] `apps/worker/.../guards.py`・`decider.py`、`apps/frontend/src/screens/TryOne.tsx`: 道具・時間は助言に必要になった時点で `clarify` として尋ねる（最初にまとめて入力させない。FR-009）
+- [ ] T069 [US2] `apps/worker/.../guards.py`: 道具・時間が不足する場合、買い足しを前提とする助言を除外するガード
+- [ ] T070 [US2] `evaluation/run_eval.py`: **モデルの判断品質**の評価を、決定的に確定できるガードのテストと**別の集計**で出力（開発用の例と評価用データは分離）
+
+**Checkpoint**: US1＋US2 が動き、禁止と制約を破る助言が 0 件であることをテストで確認できる。
+
+---
+
+## Phase 5: User Story 5 - 画像の扱いを理解して同意し、本人だけが使える (Priority: P1)
+
+**Goal**: 同意・認証・認可・画像削除・利用枠・受付状態の確認を満たす。**FR-027（受付状態）は専用のストーリーがないため、「入口で確認する」本ストーリーに含める。**
+
+**Independent Test**: quickstart のシナリオ 11〜13・16。同意前に撮影・送信できず、未認証・他ユーザー・終了後・期限切れが拒否され、保持期間後に画像が残らず、停止中は撮影・同意へ進めない。
+
+### Tests for User Story 5
+
+- [ ] T071 [P] [US5] `apps/api/tests/security/test_authz.py`: 未認証、別ユーザーの `sessionId`/`jobId`、サイズ超過、終了後、期限切れの各要求がすべて拒否されること（SC-007）
+- [ ] T072 [P] [US5] `apps/api/tests/unit/test_consent.py`: 同意なし・取消し済みではアップロード枠の発行と解析要求が拒否されること
+- [ ] T073 [P] [US5] `apps/frontend/e2e/consent_and_status.spec.ts`: 同意前に撮影が始まらないこと、受付中でないと撮影・同意へ進めず理由が表示されること、受付がセッション途中で終了した場合に新規解析が拒否され終了が案内されること
+
+### Implementation for User Story 5
+
+- [ ] T074 [US5] `apps/api/src/photoprep_api/services/consent.py`: 同意の保存・取消し。`createSession` で `consentVersion` を必須にする
+- [ ] T075 [US5] `apps/frontend/src/screens/ConsentDialog.tsx`: 顔画像をクラウドで解析すること、**処理後に削除し失敗しても 24 時間以内に消える**こと、削除と終了の方法を平易に説明。同意しない選択で終われる。即時・厳密な物理削除は約束しない
+- [ ] T076 [US5] `apps/api/src/photoprep_api/handlers/status.py`: `getServiceStatus` の実装。T051 の受付中フラグを読む
+- [ ] T077 [US5] `apps/frontend/src/screens/Consult.tsx`・`features/session/`: 「相談する」画面を開いた時点で受付状態を確認し、受付中でなければ撮影・同意・送信へ進ませず、理由と再開の見込み（分かる場合）を表示。準備に時間がかかる場合は隠さない（FR-027）
+- [ ] T078 [US5] `apps/api/src/photoprep_api/services/quota.py`: 利用枠を DynamoDB の条件付き書き込みで原子的に予約（10 セッション／人・日、全体 100 セッション／日、1 セッション解析 3 回）。API Gateway のスロットリングや Budgets 通知だけに課金制限を任せない
+- [ ] T079 [US5] `apps/api/src/photoprep_api/handlers/sessions.py`（`endSession`）: 新規解析を拒否して画像削除を開始し、ワーカーへ取消しを伝える。実行中の外部推論は止められると約束せず、終了後の結果を UI へ適用しない
+- [ ] T080 [US5] `apps/worker/.../images.py`、`apps/api/ops/sweeper.py`: 成功・失敗・取消し時の画像削除と、取り残しの回収（署名 URL 期限＋猶予後）。S3 Lifecycle・DynamoDB TTL は補助とし、正確な時刻の手段にしない
+- [ ] T081 [US5] `apps/api/src/photoprep_api/`・`apps/cdk/lib/constructs/api.ts`: リクエストサイズ・頻度・再試行回数の上限、1 解析の Bedrock 呼び出し回数（最大 2）を強制
+- [ ] T082 [P] [US5] `apps/api/tests/unit/test_logging.py`: ログ・エラー・判断記録に顔画像、画像を復元できるデータ、希望文、認証情報が出ないこと
+- [ ] T083 [US5] 画像削除（成功・失敗・取消し・取り残し）の実測（research T-009）。実 AWS で行うため T012 の承認後。結果を `research.md` R-009 に記録
+
+**Checkpoint**: P1 の3ストーリー（US1・US2・US5）が揃い、**公開前の最小リリースの条件**を満たす。
+
+---
+
+## Phase 6: User Story 3 - 見えないものは断定せず、条件を整える (Priority: P2)
+
+**Goal**: 撮影条件が悪い場合に断定せず、調整・確認・撮り直しへ誘導する。
+
+**Independent Test**: quickstart のシナリオ 5〜8。逆光・画像欠如・変更なしの再撮影・光の大きな差で、断定的な指摘が出ない。
+
+- [ ] T084 [P] [US3] `apps/worker/tests/test_uncertainty.py`、`apps/api/tests/unit/test_no_image.py`: 画像欠如、逆光、変更なしの再撮影、前後の光の差、根拠のない「まず見てほしい」の各ケース（決定的に確定できるものはコードのテスト、モデルの判断は T090 で評価）
+- [ ] T085 [US3] `apps/api/.../handlers/analyses.py`、`apps/worker/.../pipeline.py`、`apps/frontend/src/screens/TrialCapture.tsx`: 画像が届いていない場合は助言を生成せず `no_image` で終了し、再撮影を案内（モデルに判断させない）
+- [ ] T086 [US3] `apps/worker/.../observe.py`、`compare.py`: 観察結果に `uncertain`・`lighting`・`framing` を含め、前後の比較可否（`comparable`）を判定
+- [ ] T087 [US3] `apps/worker/.../guards.py`: 不確かな点が多い場合は `capture_setup_tip` か `clarify` へ、confidence が暫定閾値 0.8 未満なら `clarify` へ退避（閾値は T090 の評価で調整。confidence を美容助言の正解確率として表示しない）
+- [ ] T088 [US3] `apps/worker/.../guards.py`: 変更なしの再撮影では新しい外見の指摘を作らない
+- [ ] T089 [US3] `apps/frontend/src/screens/Compare.tsx`、`TrialCapture.tsx`: 比較できない場合の撮り直し案内と、見えない場合の確認表示
+- [ ] T090 [US3] `evaluation/dev-examples/`・`evaluation/run_eval.py`: シナリオ 5〜8 の開発用の例と、閾値調整。調整後に `evaluation/holdout/` で一度だけ評価し、結果を `research.md` に記録
+
+---
+
+## Phase 7: User Story 4 - 上限と終了を必ず守る (Priority: P2)
+
+**Goal**: 最大二回の変更と、いつでもの終了を、助言の内容にかかわらず守る。
+
+**Independent Test**: quickstart のシナリオ 9・10。二回後・終了後に新たな提案が出ない。
+
+- [ ] T091 [P] [US4] `apps/api/tests/unit/test_limits.py`、`apps/worker/tests/test_finish_guard.py`: `changesUsed = 2` と終了選択後に `ADVICE_SHOWN` へ入らないこと、`offer_finish` に固定されることを検証
+- [ ] T092 [US4] `apps/api/.../services/session.py`、`apps/worker/.../guards.py`: 変更回数の上限を条件付き更新で強制し、上限後・終了後は `offer_finish` に固定
+- [ ] T093 [US4] `apps/frontend/src/features/session/`: 四画面すべてに「このままで終える」を置き、`endSession` を呼ぶ
+- [ ] T094 [US4] `apps/api/.../services/session.py`、`apps/frontend/src/screens/TryOne.tsx`: `TRYING` の間は新しい助言を生成せず、顔を向け直しても指摘を重ねない
+- [ ] T095 [US4] `apps/frontend/src/screens/Compare.tsx`: 「前が好き」「差が分からない」を選んだときに次の変更を強制せず、成功した利用として扱う
+
+---
+
+## Phase 8: User Story 6 - 判断の仕組みを公開成果として示す (Priority: P3)
+
+**Goal**: Decider の判断が動作に反映されることを示し、提出物（再利用可能な判断パターン、記事、デモ動画、公開リポジトリ）を揃える。
+
+**Independent Test**: quickstart のシナリオ 14。曖昧な依頼で `clarify` が選ばれ、判断記録と画面の動作が一致する。
+
+- [ ] T096 [P] [US6] `apps/worker/tests/test_decision_record.py`: 判断記録の `selected` と実際に呼ばれた処理（`invoked`）が一致し、画像を含まないこと
+- [ ] T097 [US6] `apps/worker/src/photoprep_worker/decision_pattern/`: 型付きの問い・選択肢・動作への接続を、アプリ固有の処理から切り離した再利用可能な形に抽出（FR-025）
+- [ ] T098 [US6] `apps/worker/tools/export_decisions.py`: デモ用に判断記録を書き出すスクリプト（運用者のみ・画像なし）
+- [ ] T099 [US6] `docs/decision-pattern.md`: 型付きの問い、選択肢、接続コード、使い方を説明（実測・仮説・モックを区別）
+- [ ] T100 [US6] `docs/article/draft.md`: Builder Center 記事の下書き（エージェントの役割、Decider に任せた判断、実測・仮説・モックの区別）。投稿はユーザーが行う
+- [ ] T101 [US6] `docs/demo-script.md`: 3 分未満のデモ台本。仮画像や再生データを使う場面を明示。動画の撮影・公開（YouTube 等）はユーザーが行う
+- [ ] T102 [US6] リポジトリ公開前の確認: OSI 承認ライセンス（`LICENSE`）、第三者コード・モデルの権利表示、顔写真・認証情報・秘密鍵が含まれないことの走査、タグ（`#strands-decider-2b` と `#tool-selection`）の記載。公開の操作はユーザーの承認後
+
+---
+
+## Phase 9: Polish & Cross-Cutting Concerns
+
+- [ ] T103 待ち時間（撮影操作 → 助言表示）を、処理時間・ポーリング遅延・ワーカーの起動状態に分けて測定し `research.md` R-006 に記録。中央値 10 秒以内が未達なら見直し案をユーザーに報告（research T-006、SC-005）
+- [ ] T104 実測した使用量で費用を再計算し `docs/architecture/cost-estimate.md` を更新。予算通知とは別に、利用枠と受付停止スイッチ、デモ終了時の停止が働くことを確認
+- [ ] T105 技術の確定・導入状況を `docs/tech-stack.md` の状態欄と `docs/architecture/` に反映（React Bits の判断、Connexion＋Mangum の結果、Vite+ は未着手のまま）
+- [ ] T106 新しいワークスペースに合わせて `knip.json`・`.jscpd.json` を調整し `pnpm check:quality` を実行。既存の Knip 指摘の整理は別作業とし、本機能で悪化させない
+- [ ] T107 [quickstart.md](quickstart.md) の全シナリオ（1〜16）を実行し、結果を記録（実行できなかったものは理由を明記）
+- [ ] T108 セキュリティ確認: IAM の最小権限、S3 の公開有無、認証なしの有料経路がないこと、cdk-nag の指摘、`git diff --check`、秘密情報の走査
+- [ ] T109 提出前確認: 公式 Rules を再確認（T011 の再実施）、提出期限 **2026-10-23 23:59 PDT（日本時間 2026-10-24 15:59）**、記事・動画・公開リポジトリ・タグの揃い、デモ後のワーカー停止とリソース整理
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: すぐ開始できる
+- **Foundational (Phase 2)**: Setup 完了後。A（検証ゲート）は結果が出たものから順に着手でき、B・C と並行できる
+- **User Stories (Phase 3+)**: Foundational 完了後。US1 が土台で、US2・US5 は US1 の API・ワーカーを拡張する
+- **Polish (Phase 9)**: 公開したいストーリーの完了後
+
+### 主な依存関係
+
+- T014 は T008 に、T015 は T005 とユーザー提供の写真に依存。T038 は T009 に、T044 は T008 に依存
+- T017 は T016 に、T019 は T016・T017 に、T035 は T017 の `Error.code` 追加に依存
+- T062・T083 は T012 の承認が前提
+- T066 は T063 の決定に依存
+- T076 は T051（受付中フラグ）に、T077 は T017・T076 に依存
+- T087・T090 の閾値は T015 の評価結果に依存
+
+### Parallel Opportunities
+
+- Setup のうち [P] は並行できる（T001〜T006）
+- Foundational: T008・T009・T011・T013 は並行できる。T020・T021・T022・T025 は別ファイルで並行できる
+- US1: テスト（T027〜T030）は並行できる。API のハンドラとワーカーの `schemas.py`・フロントの `theme`/`auth`/`camera` は別ファイルで並行できる
+- Phase 3 後、US2 と US5 は、同じファイル（`guards.py`、`sessions.py`、`Consult.tsx`）を触るため**同時に進める場合は担当ファイルを分ける**
+
+### Parallel Example: Foundational 検証ゲート
+
+```bash
+Task: "Decider の choice 型の問いの実機確認 in experiments/decider-spike/"      # T008
+Task: "Connexion＋Mangum の結合検証 in experiments/connexion-mangum/"            # T009
+Task: "公式 Rules の全文再確認 → research.md R-007"                              # T011
+Task: "Bedrock モデル呼び出しログの設定確認 → research.md"                       # T013
+```
+
+---
+
+## Implementation Strategy
+
+**期限の制約**: 提出期限は 2026-10-23 23:59 PDT で、本タスク作成日（2026-10-17）から約 6 日。本リストは全体で 109 タスクあり、**全部は終わらない可能性が高い**。下の優先順で進め、範囲を絞る判断はユーザーと行う。
+
+### 最優先（提出の必須条件に直結）
+
+1. T008（Decider の実機確認）と T012（予算の承認）、T011（公式 Rules）を最初に済ませる。結果次第で構成が変わる
+2. US1 の縦の一本（T027〜T062）を最小で通す。モックや再生データを使う場合は明示する
+3. US6 の提出物（T096〜T102）を後回しにしない: 記事・動画・公開リポジトリ・判断パターンは提出の必須条件
+
+### 範囲を絞る候補（ユーザーと相談して決める）
+
+- US3・US4 の一部を縮小し、シナリオ 5・9 のみに絞る
+- Playwright（T030・T073）を手動確認に置き換える
+- US2 の評価ハーネス（T070・T090）を最小限にする
+- 公開デモは「デモ前に起動し、終了後に停止」する運用で、常時公開を目指さない
+
+### MVP First
+
+Phase 1 → Phase 2（A の検証を含む）→ Phase 3（US1）→ 通しで確認 → Phase 4・5（P1 を満たす）→ 公開前の確認。
+
+### Incremental Delivery
+
+US1 → US2 → US5 → US3 → US4 → US6 の順で、各ストーリーを単独でテストして次へ進む。
+
+---
+
+## Notes
+
+- [P] = 別ファイルで依存がない
+- 生成物（Orval）は直接編集しない。仕様を変えたら再生成して差分を確認する
+- 顔写真・認証情報・秘密鍵をコミットしない。`.env.example` はプレースホルダのみ
+- 検証が済んでいない性能・品質を、デモ・記事で実測として書かない
+- 各タスクまたは論理的なまとまりごとにコミットする

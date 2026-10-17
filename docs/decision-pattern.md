@@ -62,7 +62,7 @@ decision.selected, decision.decider_choice, decision.override_reason, decision.r
 
 A runnable version with a scripted stand-in for the model is in
 [`example.py`](../apps/worker/src/photoprep_worker/decision_pattern/example.py)
-(`uv run python -m photoprep_worker.decision_pattern.example` in `apps/worker`); the tests run it
+(`PYTHONPATH=src uv run python -m photoprep_worker.decision_pattern.example` in `apps/worker`); the tests run it
 and check that exactly the chosen tool ran and that a guard can take over.
 
 ## How this app uses it

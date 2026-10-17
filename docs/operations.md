@@ -1,7 +1,9 @@
 # Operations: start, stop, spend limits and tear-down
 
-Status: **written for the infrastructure as designed; nothing has been deployed yet, so no command
-below has been run against AWS.** Values in `<angle brackets>` come from the stack outputs.
+Status: the infrastructure was deployed once on 2026-10-17 for verification and the commands below for deploying,
+starting and stopping the worker and publishing the SPA were run against AWS. **The tear-down steps were written
+from the design and have only been partly exercised** (run each `cdk` command on its own; a second one started
+while the first is still running can recreate the stack). Values in `<angle brackets>` come from the stack outputs.
 
 ## What keeps the cost down
 

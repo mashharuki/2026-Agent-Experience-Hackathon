@@ -45,9 +45,18 @@
 
 ## R-003 Connexion 3＋Flask＋Mangum（API）
 
-- **Decision**: 設計どおり「OpenAPI 3.0.3 → Connexion が検証・ルーティング → Mangum で Lambda 化」を採用候補とする。
-- **Status**: **未検証**。公式資料の事前確認は行っていない。最初に一つの小さなAPIで次を確認する（T-003）: API Gateway HTTP API v2 イベントの変換、JWT claims の引渡し、異常な本文の拒否、`validate_responses` の動作、CORS、202応答、Lambdaコールドスタート。
-- **不合格時の代替**: Connexion の AsyncApp、または FastAPI＋Pydantic（この場合は「YAMLを正本にする」要件を満たすため、生成・差分検査の追加が必要）。**黙って切り替えず、ユーザーに確認する**。
+- **ローカル検証の結果（T009、2026-10-17）**: `experiments/connexion-mangum/`（`app.py`、`test_spike.py` 23件、すべて成功）。connexion 3.3.0、mangum 0.22.0、flask 3.1.3、starlette 1.8.0、Python 3.12 を使用。**入力は、公開されている API Gateway HTTP API v2 のペイロード形式に従って自作した合成イベントで、実際のゲートウェイから取得したものではない。**
+  - **動いたこと**: 草案 `openapi.draft.yaml`（6操作）が Connexion にそのまま読み込めた。`Mangum(connexion_app)` で v2 イベントが処理できた。`validate_responses=True` と `strict_validation=True` が働いた（未定義の本文項目・クエリ、型・列挙・長さ違反、必須項目の欠落、不正JSON、`Idempotency-Key` 欠落、パス変数の長さ違反はすべて400。スキーマに反するハンドラ出力は500）。base64 本文の復号、日本語本文、202応答も問題なし。
+  - **JWT claims の引渡し**: JWT の検証は API Gateway が行い、アプリは Connexion のセキュリティ関数（環境変数 `BEARERINFO_FUNC` で指定。仕様に独自拡張を入れない）で `request.scope["aws.event"]["requestContext"]["authorizer"]["jwt"]["claims"]` を読む。**claims が無ければ401（fail closed）**。ハンドラは `user`（= `sub`）を引数で受け取れる。`x-user-sub` のような偽装ヘッダーは無視された。Bearer 文字列自体は信用・解析しない。
+  - **見つかった落とし穴（対処を実装方針に反映）**:
+    1. `x-bearerInfoFunc`（または環境変数）が無いと、`Authorization` ヘッダーがあっても**全リクエストが401**になる。→ セキュリティ関数を必ず定義する。
+    2. 検証エラーの `detail` と、Connexion のログ（WARNING の `repr(exc)`、**INFO の「Validation error: <入力値>」**）に**利用者の入力値がそのまま出る**。FR-023・憲章III（希望文をログに出さない）に反する。→ 独自のエラーハンドラ（`ProblemException`／`HTTPException`／`Exception`）でクラス名とステータスのみを記録し、ログの redact フィルターと `connexion` 名前空間を WARNING 以上にする設定で解消。テストで応答とログに入力値が出ないことを確認。
+    3. 既定のエラー応答は `application/problem+json`（`type/title/detail/status`）で、契約の `Error`（`code/message`）と**一致しない**。また Mangum は `application/problem+json` を base64 で返す。→ ハンドラで契約の `Error` と `application/json` に統一して解消。
+    4. イベントに `content-length` ヘッダーが無いと、本文があっても**400「RequestBody is required」**になる。実際の API Gateway がチャンク転送等で欠くかは未確認。→ エントリポイントで本文長から補う薄い関数を置いて解消（テスト済み）。
+  - **性能（この開発Mac）**: import＋アプリ構築 0.34秒、プロセス RSS 約51 MiB、site-packages 約40 MB。Lambda（x86_64、メモリ設定別）のコールドスタートは未測定。
+  - **未確認**: 実際の API Gateway／Lambda での動作（イベントの実形式、`content-length`、CORS プリフライト、クォータ）、x86_64 Linux 向けの ZIP 作成、Swagger UI、Mangum の `asyncio.get_event_loop` の DeprecationWarning（Python 3.12 で警告のみ）。
+- **Decision**: 設計どおり「OpenAPI 3.0.3 → Connexion が検証・ルーティング → Mangum で Lambda 化」を採用候補として継続する。上の落とし穴1〜4の対処を `apps/api` の実装要件にする（tasks T025・T038）。AsyncApp／FastAPI への切替は不要と判断できる材料は得られたが、実 AWS での確認が済むまで「確定」とは扱わない。
+- **Status**: **ローカルのコンポーネント検証は合格**。実 API Gateway／Lambda での結合は未検証（T062 の初回デプロイ時に確認）。
 
 ## R-004 Fargate 上の Decider（性能・メモリ）
 
@@ -121,7 +130,7 @@
 |---|---|---|---|
 | T-001 | Decider の `choice` API 形式と4選択肢の接続を実機で確認（**完了 2026-10-17、開発Mac・CPU**） | 型付きの問い→選択肢確率が取得できた。Fargate・品質・閾値は別タスク | R-001, FR-015 |
 | T-002 | Nova Lite の画像観察品質評価（開発用例と評価用データを分離） | 逆光・変更なしで根拠のない断定が0件 | R-002, SC-003 |
-| T-003 | Connexion＋Mangum の結合確認（最小API） | R-003 の項目がすべて確認できる | R-003 |
+| T-003 | Connexion＋Mangum の結合確認（最小API）（**ローカルは完了 2026-10-17: 23件成功**。実 API Gateway／Lambda は未確認） | R-003 の項目がすべて確認できる | R-003 |
 | T-004 | Fargate 4 vCPU/16 GB で Decider のピークRSSと遅延を測定 | ピークRSS 12 GB以内 | R-004 |
 | T-005 | React Bits のライセンス適合確認、または MUI＋CSS で代替 | OSI要件と矛盾しない | R-005 |
 | T-006 | 撮影→助言表示の待ち時間を分解して測定 | 中央値10秒以内か、見直し案をユーザーと合意 | R-006, SC-005 |

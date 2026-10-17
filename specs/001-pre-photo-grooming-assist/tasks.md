@@ -49,7 +49,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 ### A. 検証ゲート（research.md の T-001〜T-010 のうち実装前に判断できるもの）
 
 - [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
-- [ ] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）
+- [x] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）。**ローカルは完了 2026-10-17（23件成功）。実 API Gateway／Lambda での結合は T062 で確認**
 - [ ] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**既定は MUI＋独自CSS（React Bits を取り込まない）**。取り込む場合はユーザー承認と OSI 要件との整合確認が前提（research T-005）
 - [x] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）。**完了 2026-10-17: 不一致なし、憲章の修正は不要。AWS上での実動作のデモ必須、記事は公開済みであることを T062・T100・T101 で反映**
 - [ ] T012 （一部完了）ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）。**2026-10-17: 上限 $30・ワーカー30時間以内は承認済み。残り: Billing → Credits の確認（ユーザー）、項目別の積算、停止手順の `docs/` への記載。クレジット確認と積算の完了で `[x]` にする**
@@ -71,7 +71,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
 - [ ] T023 `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
 - [ ] T024 `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
-- [ ] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logging.py`: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ
+- [ ] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logging.py`: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は `experiments/connexion-mangum/app.py`）
 - [ ] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
 
 **Checkpoint**: 検証ゲートの結果が `research.md` に反映され、契約と認証・データの土台がそろっている。T012（予算）が未承認なら、以降は**ローカル・モックで進め、実 AWS へは出さない**。
@@ -102,7 +102,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
 - [ ] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
 - [ ] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
-- [ ] T038 [US1] `apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）
+- [ ] T038 [US1] `apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
 - [ ] T039 [US1] `apps/api/ops/dispatch.py`: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
 
 ### Implementation for User Story 1 — Worker

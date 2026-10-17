@@ -42,10 +42,11 @@ Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使�
 | フロント向け生成 | Orval | 推奨・導入済み・生成確認済み（`pnpm --filter frontend api:generate`） | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
 | APIドキュメント | Swagger UI | 推奨・未導入 | 同じYAMLから表示。ドキュメント公開設定とAPI認証を区別する |
 | Python依存管理 | uv、lockfile | 推奨・apps/apiで導入済み（apps/workerは未作成） | APIとワーカーの依存を分離し、再現可能にする |
-| AIワーカー | Python 3.12、PyTorch CPU | 採用・未実装 | `apps/worker/`。SQSを取得するプロセス。Flaskサーバーは不要 |
-| 判断モデル | Strands Decider 2B | 採用・未検証 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を初期候補とし、revisionを固定。判断で実行ツールを変える |
+| 共有Python | `packages/photoprep-common` | 採用・導入済み | APIとワーカーで共通の Store（DynamoDB）・状態規則・ログの許可リスト。依存は boto3 のみ |
+| AIワーカー | Python 3.12、PyTorch CPU | 採用・実装済み（`apps/worker`。モックのBedrockで96件のテスト通過。AWS上では未実行） | SQSを取得するプロセス。Flaskサーバーは不要。`pillow` で画像検証、`pydantic` でモデル出力を検証 |
+| 判断モデル | Strands Decider 2B | 採用・開発Mac(CPU)で実機確認済み・Fargateは未測定 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`（revision `216d1ccb…` を固定）とベース重み `Qwen/Qwen3.5-2B-Base`（`b1485b2f…`）をビルド時に取得。禁止はDeciderが守らないため通常コードのガードで強制 |
 | 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・未検証 | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
-| コンテナ | Docker、Amazon ECR | 採用・未実装 | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける |
+| コンテナ | Docker、Amazon ECR | Dockerfile作成済み・未ビルド・未検証 | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける。CPU版torchをLinuxで選ぶ設定はロックで確認済み |
 
 自動化の流れは **YAML → Connexionの検証・ルーティング／Orvalのクライアント生成**。
 Connexionはミドルウェアのソースや業務処理を生成するものではない。

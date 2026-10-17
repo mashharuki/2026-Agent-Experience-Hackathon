@@ -90,7 +90,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 - [x] T027 **完了 2026-10-17: テスト先行で実装。API 側の全テストは 171 件（インメモリと DynamoDB[moto] の両方で通しを実行）。T029（ワーカー）と T030（フロント E2E）は各実装の段階で行う。** [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
 - [x] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
-- [ ] T029 [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
+- [x] T029 **完了 2026-10-17: ワーカー側 96 件（モックのBedrock／Decider）。実Deciderでのアダプタ確認は `RUN_REAL_DECIDER=1 uv run pytest -m real_model`（開発Mac・CPU）。** [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
 - [ ] T030 [P] [US1] `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
 
 ### Implementation for User Story 1 — API
@@ -107,15 +107,15 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### Implementation for User Story 1 — Worker
 
-- [ ] T040 [P] [US1] `apps/worker/src/photoprep_worker/schemas.py`: Observation・Advice・DecisionRecord のスキーマ（Pydantic 等）。不正な形式は成功として扱わない
-- [ ] T041 [US1] `apps/worker/src/photoprep_worker/main.py`・`lease.py`: SQS long poll、DynamoDB の条件付きリース、ハートビート、古い・終了済みジョブの破棄
-- [ ] T042 [US1] `apps/worker/src/photoprep_worker/images.py`: S3 から画像取得・検証（サイズ・形式・期限）、処理後の削除
-- [ ] T043 [US1] `apps/worker/src/photoprep_worker/observe.py`: Bedrock Converse（`amazon.nova-lite-v1:0`、東京リージョン内、クロスリージョン推論なし）で観察。**構造化出力が使えない**ため、出力をスキーマ検証し、不正なら失敗として扱う
-- [ ] T044 [US1] `apps/worker/src/photoprep_worker/decider.py`: [contracts/decider-decision.md](contracts/decider-decision.md) の型付きの問いを Decider に渡し、選択肢の確率・confidence を受け取る。T008 の確認結果に従う
-- [ ] T045 [US1] `apps/worker/src/photoprep_worker/guards.py`: 基本ガード（画像欠如、変更回数の上限）。禁止・不確かさ・終了の追加ガードは US2/US3/US4 で拡張
-- [ ] T046 [US1] `apps/worker/src/photoprep_worker/explain.py`: `grooming_tip` の場合のみ Bedrock で短い説明文を生成（1 解析の Bedrock 呼び出しは最大 2 回、各最大 800 出力トークン）
-- [ ] T047 [US1] `apps/worker/src/photoprep_worker/pipeline.py`: 観察 → 判断 → ガード → 実行 → 結果と判断記録の保存 → 画像削除 → ack。呼び出し後に落ちた場合は自動再実行せず `UNKNOWN` にする
-- [ ] T048 [US1] `apps/worker/Dockerfile`: Python 3.12、PyTorch CPU、Decider のリビジョンとベース重み（`Qwen/Qwen3.5-2B-Base` 約 4.5 GB）を**ビルド時に固定・同梱**し、実行時ダウンロードをしない。HTTP サーバーを公開しない
+- [x] T040 **（共有コードは `packages/photoprep-common`（Store・状態規則・ログの許可リスト）に切り出し、API とワーカーで同じ実装を使う）** [P] [US1] `apps/worker/src/photoprep_worker/schemas.py`: Observation・Advice・DecisionRecord のスキーマ（Pydantic 等）。不正な形式は成功として扱わない
+- [x] T041 **（リースの確認と失効時のUNKNOWN化を実装。ハートビートはSQSの可視性延長と合わせて `main.py`）** [US1] `apps/worker/src/photoprep_worker/main.py`・`lease.py`: SQS long poll、DynamoDB の条件付きリース、ハートビート、古い・終了済みジョブの破棄
+- [x] T042 [US1] `apps/worker/src/photoprep_worker/images.py`: S3 から画像取得・検証（サイズ・形式・期限）、処理後の削除
+- [x] T043 [US1] `apps/worker/src/photoprep_worker/observe.py`: Bedrock Converse（`amazon.nova-lite-v1:0`、東京リージョン内、クロスリージョン推論なし）で観察。**構造化出力が使えない**ため、出力をスキーマ検証し、不正なら失敗として扱う
+- [x] T044 **（モデルのロードは起動時1回。T008 で確認した `engine.ask` の形を使用）** [US1] `apps/worker/src/photoprep_worker/decider.py`: [contracts/decider-decision.md](contracts/decider-decision.md) の型付きの問いを Decider に渡し、選択肢の確率・confidence を受け取る。T008 の確認結果に従う
+- [x] T045 **（基本ガードに加え、禁止・撮影条件による差し替えも実装済み。T067・T087 では拡張とテストの追加が残る）** [US1] `apps/worker/src/photoprep_worker/guards.py`: 基本ガード（画像欠如、変更回数の上限）。禁止・不確かさ・終了の追加ガードは US2/US3/US4 で拡張
+- [x] T046 [US1] `apps/worker/src/photoprep_worker/explain.py`: `grooming_tip` の場合のみ Bedrock で短い説明文を生成（1 解析の Bedrock 呼び出しは最大 2 回、各最大 800 出力トークン）
+- [x] T047 [US1] `apps/worker/src/photoprep_worker/pipeline.py`: 観察 → 判断 → ガード → 実行 → 結果と判断記録の保存 → 画像削除 → ack。呼び出し後に落ちた場合は自動再実行せず `UNKNOWN` にする
+- [x] T048 **（Dockerfile・モデル取得スクリプト `scripts/prefetch_models.py`・`.dockerignore` を作成。Docker デーモンが起動しておらず、ビルドは未実施。ロックファイルは Linux で CPU 版 torch 2.14.1+cpu を選ぶことを確認）** [US1] `apps/worker/Dockerfile`: Python 3.12、PyTorch CPU、Decider のリビジョンとベース重み（`Qwen/Qwen3.5-2B-Base` 約 4.5 GB）を**ビルド時に固定・同梱**し、実行時ダウンロードをしない。HTTP サーバーを公開しない
 
 ### Implementation for User Story 1 — Infrastructure
 

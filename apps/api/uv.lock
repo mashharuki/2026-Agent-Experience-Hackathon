@@ -590,6 +590,7 @@ dependencies = [
     { name = "boto3" },
     { name = "connexion", extra = ["flask", "uvicorn"] },
     { name = "mangum" },
+    { name = "photoprep-common" },
 ]
 
 [package.dev-dependencies]
@@ -605,6 +606,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.40" },
     { name = "connexion", extras = ["flask", "uvicorn"], specifier = ">=3.3,<4" },
     { name = "mangum", specifier = ">=0.22,<1" },
+    { name = "photoprep-common", editable = "../../packages/photoprep-common" },
 ]
 
 [package.metadata.requires-dev]
@@ -614,6 +616,17 @@ dev = [
     { name = "pytest", specifier = ">=9" },
     { name = "ruff", specifier = ">=0.14" },
 ]
+
+[[package]]
+name = "photoprep-common"
+version = "0.1.0"
+source = { editable = "../../packages/photoprep-common" }
+dependencies = [
+    { name = "boto3" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "boto3", specifier = ">=1.40" }]
 
 [[package]]
 name = "pluggy"

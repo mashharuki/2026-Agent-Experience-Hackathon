@@ -141,6 +141,7 @@ class TestRequestAnalysis:
         job = api.store.get(f"JOB#{job_id}", "META")
         assert job["status"] == "QUEUED" and "statusKey" not in job  # out of the sparse index
         assert job["ownerSub"] == "user-123" and job["sessionId"] == sid
+        assert job["prevState"] == "CONSULTING"  # restored by the worker if the job fails
         item = session_item(api, sid)
         assert item["state"] == "ANALYZING" and item["analysesUsed"] == 1
 

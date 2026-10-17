@@ -112,6 +112,8 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
             "sessionId": session_id,
             "uploadId": request["uploadId"],
             "phase": phase,
+            # Where the session returns to if the analysis fails (the worker restores it).
+            "prevState": state.value,
             "tools": list(request.get("tools", [])),
             "timeBudget": request.get("timeBudget", "normal"),
             "status": PENDING,

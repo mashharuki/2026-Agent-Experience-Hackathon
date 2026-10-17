@@ -7,6 +7,7 @@ dependencies = [
     "connexion[flask,uvicorn]>=3.3,<4",
     "mangum>=0.22,<1",
     "boto3>=1.40",
+    "photoprep-common",
 ]
 
 [dependency-groups]
@@ -19,6 +20,9 @@ dev = [
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+photoprep-common = { path = "../../packages/photoprep-common", editable = true }
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -88,22 +88,22 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 > 先にテストを書き、失敗することを確認してから実装する。
 
-- [ ] T027 [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
-- [ ] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
+- [x] T027 **完了 2026-10-17: テスト先行で実装。API 側の全テストは 171 件（インメモリと DynamoDB[moto] の両方で通しを実行）。T029（ワーカー）と T030（フロント E2E）は各実装の段階で行う。** [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
+- [x] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
 - [ ] T029 [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
 - [ ] T030 [P] [US1] `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
 
 ### Implementation for User Story 1 — API
 
-- [ ] T031 [P] [US1] `apps/api/src/photoprep_api/models.py`: Session・Job・Advice の型と DynamoDB 項目への変換
-- [ ] T032 [US1] `apps/api/src/photoprep_api/services/session.py`: セッション作成、状態遷移、`changesUsed`/`analysesUsed` の条件付き更新（T031 に依存）
-- [ ] T033 [US1] `apps/api/src/photoprep_api/handlers/sessions.py`: `createSession`（`consentVersion` 必須の検証は US5 で強化）
-- [ ] T034 [US1] `apps/api/src/photoprep_api/handlers/uploads.py`: `createUpload`（サーバーが決めたキー、JPEG/PNG、2 MiB 以下、有効期限 60 秒の署名付き POST）
-- [ ] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
-- [ ] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
-- [ ] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
-- [ ] T038 [US1] `apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
-- [ ] T039 [US1] `apps/api/ops/dispatch.py`: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
+- [x] T031 [P] [US1] `apps/api/src/photoprep_api/models.py`: Session・Job・Advice の型と DynamoDB 項目への変換
+- [x] T032 [US1] `apps/api/src/photoprep_api/services/session.py`（解析・アップロードは `services/analysis.py`、状態遷移は `states.py`、永続化の窓口は `store.py`）: セッション作成、状態遷移、`changesUsed`/`analysesUsed` の条件付き更新（T031 に依存）
+- [x] T033 [US1] `apps/api/src/photoprep_api/handlers/sessions.py`: `createSession`（`consentVersion` 必須の検証は US5 で強化）
+- [x] T034 [US1] `apps/api/src/photoprep_api/handlers/uploads.py`: `createUpload`（サーバーが決めたキー、JPEG/PNG、2 MiB 以下、有効期限 60 秒の署名付き POST）
+- [x] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
+- [x] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
+- [x] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
+- [x] T038 [US1] （ZIP の作成は未実装: x86_64 向けの依存を uv で同梱する作業が残る。CDK は仮のソースのみを配布している）`apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
+- [x] T039 [US1] `apps/api/src/photoprep_api/ops/dispatch.py`（パッケージ内に置く。CDK のハンドラ指定は `photoprep_api.ops.dispatch.handler`）: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
 
 ### Implementation for User Story 1 — Worker
 
@@ -196,7 +196,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 **Independent Test**: quickstart のシナリオ 5〜8。逆光・画像欠如・変更なしの再撮影・光の大きな差で、断定的な指摘が出ない。
 
 - [ ] T084 [P] [US3] `apps/worker/tests/test_uncertainty.py`、`apps/api/tests/unit/test_no_image.py`: 画像欠如、逆光、変更なしの再撮影、前後の光の差、根拠のない「まず見てほしい」の各ケース（決定的に確定できるものはコードのテスト、モデルの判断は T090 で評価）
-- [ ] T085 [US3] `apps/api/.../handlers/analyses.py`、`apps/worker/.../pipeline.py`、`apps/frontend/src/screens/TrialCapture.tsx`: 画像が届いていない場合は助言を生成せず `no_image` で終了し、再撮影を案内（モデルに判断させない）
+- [ ] T085 [US3] `apps/api/.../handlers/analyses.py`、`apps/worker/.../pipeline.py`、`apps/frontend/src/screens/TrialCapture.tsx`: 画像が届いていない場合は助言を生成せず `no_image` で終了し、再撮影を案内（モデルに判断させない）。現状の API は画像が無い・大きすぎる要求を `400 invalid_request` で拒否し、解析枠も消費しない（US1 で実装済み）。`no_image` の返し方はここで決める
 - [ ] T086 [US3] `apps/worker/.../observe.py`、`compare.py`: 観察結果に `uncertain`・`lighting`・`framing` を含め、前後の比較可否（`comparable`）を判定
 - [ ] T087 [US3] `apps/worker/.../guards.py`: 不確かな点が多い場合は `capture_setup_tip` か `clarify` へ、confidence が閾値未満なら `clarify` へ退避（**0.8 は根拠のない暫定値**。T008 の実機では妥当な選択も 0.685・0.688 だった。閾値は T090 の評価で決める。confidence を美容助言の正解確率として表示しない）
 - [ ] T088 [US3] `apps/worker/.../guards.py`: 変更なしの再撮影では新しい外見の指摘を作らない

@@ -99,7 +99,7 @@ CONSENT_PENDING ──同意──▶ CONSULTING ──撮影──▶ ANALYZING
    │                          │                          ├─ clarify ───────────▶ CONSULTING
    │                          │                          └─ offer_finish ──────▶ DONE
    └────────────── 終える（どの状態からも）──────────────────────────────────────────────▶ DONE
-TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING ─選択─▶ 終える ▶ DONE ／ もう一手 ▶ ADVICE_SHOWN（changesUsed < 2）
+TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING ─選択─▶ 終える ▶ DONE ／ もう一手 ▶ ANALYZING（phase=before、最新の写真で新しい解析。changesUsed < 2 のときだけ）
 ```
 
 不変条件：
@@ -107,3 +107,8 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 - `TRYING` の間は新しい助言を生成しない（FR-004）。
 - 画像が届いていない `ANALYZING` は `FAILED` にせず、再撮影を案内して `CONSULTING` へ戻す（FR-011）。
 - 終了・取消し後に返った結果は画面へ適用しない（アーキテクチャの終了伝播）。
+
+実装メモ（T027・T032、2026-10-17）:
+- 状態ごとに受け付ける撮影の種類は固定: CONSULTING／CAPTURE_ADJUST／ADVICE_SHOWN（別の提案）／COMPARING（もう一手）は `before`、TRYING は `after` のみ。ANALYZING と DONE では解析を受け付けない。
+- `changesUsed` は本人が「やってみる」を選んだ時点で増える（最大2）。`analysesUsed` は解析の受付時に増える（最大3）。どちらも条件付き更新で原子的に守る。
+- 解析が成功したときの遷移は `states.state_after_job`（助言の種類と撮影の種類、比較可否で決まる。ワーカーが同じ規則を適用する）。

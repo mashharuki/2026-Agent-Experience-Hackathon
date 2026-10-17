@@ -14,6 +14,7 @@ dev = [
     "pytest>=9",
     "ruff>=0.14",
     "openapi-spec-validator>=0.7",
+    "moto[dynamodb,s3,sqs]>=5",
 ]
 
 [tool.uv]

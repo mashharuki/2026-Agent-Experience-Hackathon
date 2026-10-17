@@ -1,11 +1,16 @@
 """Shared helpers: synthetic API Gateway HTTP API v2 events (not captured from AWS)."""
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from mangum import Mangum
 
 from photoprep_api.app import create_app
+from photoprep_api.container import Container, configure
+from photoprep_api.handlers import HANDLERS
+from photoprep_api.store import InMemoryStore
+from tests.fakes import FakeQueue, FakeUploads, FixedClock, sequential_ids
 
 ACCESS_CLAIMS = {"sub": "user-123", "scope": "photoprep/session", "token_use": "access"}
 GOOD_SESSION = {"consentVersion": "v1", "scope": "brow", "restrictions": ["no_touch_brow"]}
@@ -81,3 +86,88 @@ def invoke():
         return res["statusCode"], body, res
 
     return call
+
+
+OTHER_CLAIMS = {"sub": "user-456", "scope": "photoprep/session", "token_use": "access"}
+
+
+def _dynamo_store():
+    import boto3
+    from moto import mock_aws
+
+    from photoprep_api.store import DynamoStore
+
+    mock = mock_aws()
+    mock.start()
+    boto3.client("dynamodb", region_name="ap-northeast-1").create_table(
+        TableName="t",
+        BillingMode="PAY_PER_REQUEST",
+        AttributeDefinitions=[
+            {"AttributeName": "pk", "AttributeType": "S"},
+            {"AttributeName": "sk", "AttributeType": "S"},
+            {"AttributeName": "statusKey", "AttributeType": "S"},
+            {"AttributeName": "statusSince", "AttributeType": "S"},
+        ],
+        KeySchema=[
+            {"AttributeName": "pk", "KeyType": "HASH"},
+            {"AttributeName": "sk", "KeyType": "RANGE"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "status-index",
+                "KeySchema": [
+                    {"AttributeName": "statusKey", "KeyType": "HASH"},
+                    {"AttributeName": "statusSince", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+            }
+        ],
+    )
+    return DynamoStore("t", region="ap-northeast-1"), mock
+
+
+@pytest.fixture(params=["memory", "dynamodb"])
+def api(request):
+    """The real handlers over fakes, run on the in-memory store and on DynamoDB (moto).
+
+    ``api.call(event)`` -> (status, body, raw).
+    """
+    mock = None
+    if request.param == "dynamodb":
+        store, mock = _dynamo_store()
+    else:
+        store = InMemoryStore()
+    container = Container(
+        store=store,
+        uploads=FakeUploads(),
+        queue=FakeQueue(),
+        now=FixedClock(),
+        new_id=sequential_ids("id"),
+    )
+    configure(container)
+    mangum = Mangum(create_app(HANDLERS), lifespan="off")
+
+    def call(event):
+        res = mangum(event, LambdaContext())
+        body = res.get("body")
+        try:
+            body = json.loads(body) if body else None
+        except ValueError:
+            pass
+        return res["statusCode"], body, res
+
+    def send(method, path, body=None, *, claims=ACCESS_CLAIMS, idem=None, headers=None):
+        extra = {"idempotency-key": idem} if idem else {}
+        extra.update(headers or {})
+        return call(make_event(method, path, body, extra, claims=claims))
+
+    request.addfinalizer(lambda: mock.stop() if mock else None)
+    return SimpleNamespace(
+        call=call,
+        request=send,
+        container=container,
+        store=container.store,
+        uploads=container.uploads,
+        queue=container.queue,
+        clock=container.now,
+    )

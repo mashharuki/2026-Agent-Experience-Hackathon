@@ -10,6 +10,7 @@ import pathlib
 from collections.abc import Callable, Mapping
 
 import connexion
+from connexion.options import SwaggerUIOptions
 from connexion.resolver import Resolver
 
 from .errors import register_error_handlers
@@ -38,6 +39,8 @@ def create_app(
         resolver=Resolver(function_resolver=lambda op_id: table.get(op_id, _not_implemented)),
         validate_responses=True,
         strict_validation=True,
+        # No docs UI in the Lambda package (not installed, and it would add a public route).
+        swagger_ui_options=SwaggerUIOptions(swagger_ui=False),
     )
     register_error_handlers(app)
     return app

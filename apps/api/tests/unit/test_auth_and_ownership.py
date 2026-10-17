@@ -4,7 +4,8 @@ import pytest
 
 from photoprep_api.auth import identity_from_claims
 from photoprep_api.errors import AppError
-from photoprep_api.repo import InMemoryRepository, get_owned
+from photoprep_api.repo import get_owned
+from photoprep_api.store import InMemoryStore
 from tests.conftest import ACCESS_CLAIMS, GOOD_SESSION, IDEMPOTENCY, make_event
 
 
@@ -66,18 +67,18 @@ def test_every_operation_requires_authentication(invoke):
 
 
 def test_owner_can_read_own_record():
-    repo = InMemoryRepository()
-    repo.put("session", "s1", {"ownerSub": "alice", "state": "CONSULTING"})
-    assert get_owned(repo, "session", "s1", "alice")["state"] == "CONSULTING"
+    store = InMemoryStore()
+    store.create_if_absent("SESSION#s1", "META", {"ownerSub": "alice", "state": "CONSULTING"})
+    assert get_owned(store, "SESSION#s1", "alice")["state"] == "CONSULTING"
 
 
 def test_other_users_record_is_indistinguishable_from_missing():
-    repo = InMemoryRepository()
-    repo.put("session", "s1", {"ownerSub": "alice"})
+    store = InMemoryStore()
+    store.create_if_absent("SESSION#s1", "META", {"ownerSub": "alice"})
     with pytest.raises(AppError) as other:
-        get_owned(repo, "session", "s1", "mallory")
+        get_owned(store, "SESSION#s1", "mallory")
     with pytest.raises(AppError) as missing:
-        get_owned(repo, "session", "nope", "mallory")
+        get_owned(store, "SESSION#nope", "mallory")
     assert (
         (other.value.status, other.value.code)
         == (missing.value.status, missing.value.code)
@@ -86,7 +87,7 @@ def test_other_users_record_is_indistinguishable_from_missing():
 
 
 def test_record_without_owner_is_never_returned():
-    repo = InMemoryRepository()
-    repo.put("session", "s1", {"state": "CONSULTING"})
+    store = InMemoryStore()
+    store.create_if_absent("SESSION#s1", "META", {"state": "CONSULTING"})
     with pytest.raises(AppError):
-        get_owned(repo, "session", "s1", "alice")
+        get_owned(store, "SESSION#s1", "alice")

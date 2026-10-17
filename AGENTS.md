@@ -9,6 +9,10 @@ This repository is an early-stage AWS Agent Experience Hackathon project: a phot
 - `pnpm-workspace.yaml` declares `apps/*` and `packages/*`. These directories are not yet populated; place applications and reusable modules there when implementation begins.
 - No application source, tests, or asset directories exist yet.
 
+## Specification Workflow
+
+Use the Codex skills in `.agents/skills/speckit-*/` with the shared `.specify/` templates. Follow the sequence in `README.md`: principles, specification, clarification, plan, tasks, analysis, implementation. The constitution is initially an unfilled template; do not treat placeholders or provisional MVP details as agreed requirements.
+
 ## Build, Test, and Development Commands
 
 Use the declared package manager, `pnpm@10.32.1`.

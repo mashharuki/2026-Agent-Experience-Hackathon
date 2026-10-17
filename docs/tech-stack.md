@@ -36,17 +36,17 @@ Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使�
 | --- | --- | --- | --- |
 | API契約の正本 | OpenAPI YAML | 採用・作成済み（7操作。`pnpm --filter api-spec check` で検査） | `packages/api-spec/openapi.yaml`。Pythonから生成する仕様を正本にしない |
 | OpenAPIの版 | 3.0.3 | 推奨 | Connexion案との互換性を優先。旧3.1案を引き継がず、3.1専用構文を混在させない |
-| サーバー検証 | Connexion 3＋Flask | 推奨・apps/apiに導入済み・ローカル検証済み（実API Gateway／Lambdaは未確認） | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
+| サーバー検証 | Connexion 3＋Flask | 推奨・apps/apiに導入済み・実API Gateway／Lambdaで受付状態・セッション・アップロード枠・解析受付が動作（2026-10-17、1回） | `apps/api/`。YAMLからルーティング・入出力検証を構成。業務関数は手書き |
 | API実装言語 | Python 3.12、boto3 | 推奨・未実装 | 旧TypeScript API案を見直した案。認可、署名付きPOST、ジョブ受付・結果取得 |
-| Lambdaアダプター | Mangum | 推奨・未検証 | Connexion全体を包む。HTTP API v2イベントとJWT claimsの引渡しを検証 |
+| Lambdaアダプター | Mangum | 推奨・実Lambdaで動作確認（2026-10-17） | Connexion全体を包む。HTTP API v2イベントとJWT claimsの引渡しを実環境で確認 |
 | フロント向け生成 | Orval | 推奨・導入済み・生成確認済み（`pnpm --filter frontend api:generate`） | YAMLからTS型・HTTPクライアント・TanStack Query hooksを生成。生成物を直接編集しない |
 | APIドキュメント | Swagger UI | 推奨・未導入 | 同じYAMLから表示。ドキュメント公開設定とAPI認証を区別する |
 | Python依存管理 | uv、lockfile | 推奨・apps/apiで導入済み（apps/workerは未作成） | APIとワーカーの依存を分離し、再現可能にする |
 | 共有Python | `packages/photoprep-common` | 採用・導入済み | APIとワーカーで共通の Store（DynamoDB）・状態規則・ログの許可リスト。依存は boto3 のみ |
-| AIワーカー | Python 3.12、PyTorch CPU | 採用・実装済み（`apps/worker`。モックのBedrockで96件のテスト通過。AWS上では未実行） | SQSを取得するプロセス。Flaskサーバーは不要。`pillow` で画像検証、`pydantic` でモデル出力を検証 |
+| AIワーカー | Python 3.12、PyTorch CPU | 採用・実装済み・Fargateで実行（`apps/worker`。134件のテスト通過。実AWSで解析を1回通した） | SQSを取得するプロセス。Flaskサーバーは不要。`pillow` で画像検証、`pydantic` でモデル出力を検証 |
 | 判断モデル | Strands Decider 2B | 採用・開発Mac(CPU)で実機確認済み・Fargateは未測定 | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`（revision `216d1ccb…` を固定）とベース重み `Qwen/Qwen3.5-2B-Base`（`b1485b2f…`）をビルド時に取得。禁止はDeciderが守らないため通常コードのガードで強制 |
-| 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・未検証 | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
-| コンテナ | Docker、Amazon ECR | Dockerfile作成済み・未ビルド・未検証 | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける。CPU版torchをLinuxで選ぶ設定はロックで確認済み |
+| 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・実Bedrockで1回の解析を確認（品質は未評価） | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
+| コンテナ | Docker、Amazon ECR | ビルド・ECR登録・Fargateで起動を確認（約6 GB、2026-10-17） | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける。CPU版torchをLinuxで選ぶ設定はロックで確認済み |
 
 自動化の流れは **YAML → Connexionの検証・ルーティング／Orvalのクライアント生成**。
 Connexionはミドルウェアのソースや業務処理を生成するものではない。
@@ -57,16 +57,16 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 | 領域 | 技術 | 選定状態 | 用途・制約 |
 | --- | --- | --- | --- |
 | リージョン | 東京 `ap-northeast-1` | 採用 | CloudFrontはグローバル。初版でクロスリージョン推論を有効にしない |
-| Web配信 | Amazon S3、CloudFront OAC | 採用・未構築 | 非公開S3からSPAを配信 |
-| 認証 | Amazon Cognito User Pool | 採用・未構築 | Authorization Code＋PKCE、公開クライアント、初版は招待制 |
-| API実行 | API Gateway HTTP API、AWS Lambda | 採用・未構築 | JWT authorizer＋アプリの所有権検証。VPC外Lambda。軽量ZIP配布を推奨 |
-| 状態保存 | DynamoDB On-Demand | 採用・未構築 | セッション、所有者、ジョブ、利用枠。画像は格納しない |
-| 一時画像 | 専用の非公開S3 | 採用・未構築 | 署名付きPOST、サイズ・期限制限、処理後削除と回収処理 |
-| 非同期処理 | SQS Standard、DLQ | 採用・未構築 | job IDのみ送信。重複配送を前提にリース・冪等性を実装 |
-| ワーカー実行 | ECS on Fargate、Linux/x86_64 | 採用・性能未検証 | 初期案4 vCPU/16 GB、同時処理1。デモ前起動・終了後停止 |
-| ネットワーク | VPC、public subnet、IGW | 採用・未構築 | ワーカーはpublic IP、inboundなし。NAT Gateway・ALBを作らない |
+| Web配信 | Amazon S3、CloudFront OAC | 採用・デプロイ済み（東京、2026-10-17） | 非公開S3からSPAを配信 |
+| 認証 | Amazon Cognito User Pool | 採用・デプロイ済み（東京、2026-10-17） | Authorization Code＋PKCE、公開クライアント、初版は招待制 |
+| API実行 | API Gateway HTTP API、AWS Lambda | 採用・デプロイ済み（東京、2026-10-17） | JWT authorizer＋アプリの所有権検証。VPC外Lambda。軽量ZIP配布を推奨 |
+| 状態保存 | DynamoDB On-Demand | 採用・デプロイ済み（東京、2026-10-17） | セッション、所有者、ジョブ、利用枠。画像は格納しない |
+| 一時画像 | 専用の非公開S3 | 採用・デプロイ済み（東京、2026-10-17） | 署名付きPOST、サイズ・期限制限、処理後削除と回収処理 |
+| 非同期処理 | SQS Standard、DLQ | 採用・デプロイ済み（東京、2026-10-17） | job IDのみ送信。重複配送を前提にリース・冪等性を実装 |
+| ワーカー実行 | ECS on Fargate、Linux/x86_64 | 採用・デプロイ済み・性能は一部実測（受付開始まで124秒、ピークRSS未計測） | 初期案4 vCPU/16 GB、同時処理1。デモ前起動・終了後停止 |
+| ネットワーク | VPC、public subnet、IGW | 採用・デプロイ済み（東京、2026-10-17） | ワーカーはpublic IP、inboundなし。NAT Gateway・ALBを作らない |
 | IaC | AWS CDK v2、TypeScript、cdk-nag 3 | 採用・Identity／Data／Frontend／Api の Construct を定義済み（デプロイ未実施） | `apps/cdk`。aws-cdk-lib 2.273.0＋CLI 2.1145.0＋cdk-nag 3.0.2 の組で synth・jest 通過。cdk-nag 3 は `Validations.of().acknowledge()` を使う。Worker／Operations は US1 で追加 |
-| 監視・費用・停止 | CloudWatch、AWS Budgets、EventBridge Scheduler | 採用・未構築 | メタデータ監視、通知、画像回収、ワーカー停止。通知だけを課金制限にしない |
+| 監視・費用・停止 | CloudWatch、AWS Budgets、EventBridge Scheduler | 採用・デプロイ済み（東京、2026-10-17） | メタデータ監視、通知、画像回収、ワーカー停止。通知だけを課金制限にしない |
 
 イベントクレジットは適用確認前に費用から差し引かない。BedrockとFargate等の対象製品、
 有効期限、残高を確認し、割引前の使用量制限も維持する。

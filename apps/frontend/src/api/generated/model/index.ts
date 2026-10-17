@@ -16,6 +16,7 @@ export * from './advice';
 export * from './adviceBasis';
 export * from './adviceKind';
 export * from './createSessionRequest';
+export * from './createSessionRequestLanguage';
 export * from './createUploadRequest';
 export * from './createUploadRequestContentType';
 export * from './createUploadRequestPhase';

@@ -197,6 +197,11 @@ components:
         consentVersion: { type: string, maxLength: 32 }
         scope: { $ref: "#/components/schemas/Scope" }
         wish: { type: string, maxLength: 200 }
+        language:
+          description: 画面と助言文の言語（FR-028）。省略時は ja。
+          type: string
+          enum: [ja, en]
+          default: ja
         restrictions:
           description: 明示的な禁止。取得方法（画面の選択）は tasks T063 で確定する。
           type: array

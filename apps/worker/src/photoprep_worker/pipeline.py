@@ -210,6 +210,7 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                     restrictions=restrictions,
                     phase=phase,
                     comparable=comparable,
+                    language=session.get("language"),
                 )
 
             decision = run_decision(

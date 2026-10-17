@@ -11,6 +11,7 @@
  *
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateSessionRequestLanguage } from './createSessionRequestLanguage';
 import type { Restriction } from './restriction';
 import type { Scope } from './scope';
 
@@ -20,6 +21,8 @@ export interface CreateSessionRequest {
   scope: Scope;
   /** @maxLength 200 */
   wish?: string;
+  /** 画面と助言文の言語（FR-028）。省略時は ja。 */
+  language?: CreateSessionRequestLanguage;
   /**
      * 明示的な禁止。取得方法（画面の選択）は tasks T063 で確定する。
      * @maxItems 3

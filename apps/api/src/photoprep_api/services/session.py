@@ -30,6 +30,7 @@ def create_session(c: Container, sub: str, request: dict) -> dict:
     item = {
         "ownerSub": sub,
         "scope": request["scope"],
+        "language": request.get("language", "ja"),
         "restrictions": list(request.get("restrictions", [])),
         "consentVersion": request["consentVersion"],
         "state": State.CONSULTING.value,

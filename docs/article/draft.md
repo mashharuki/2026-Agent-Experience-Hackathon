@@ -67,7 +67,7 @@ states. This is a smoke test, not an evaluation:
   them away. We left the confidence guard off until it can be calibrated on evaluation data.
 - A call took about 4.5 s on that CPU, loading took about 80 s and about 5.7 GB of memory.
 
-[MEASURE] Decider latency and peak memory on the Fargate task (4 vCPU / 16 GB).
+[MEASURE] Decider latency and peak memory on the Fargate task (4 vCPU / 16 GB). So far: the worker was ready 124 s after the start command (image pull included); one analysis took about 9 s from acceptance to result, with a cold worker and a cold API function; peak memory is not measured. Do not publish these as typical.
 [MEASURE] Accuracy and handling of low-confidence cases on an evaluation set (consented photos only).
 [MEASURE] Latency and cost against an LLM making the same decision, if we compare at all.
 
@@ -83,10 +83,11 @@ in the browser; the cloud copy is deleted after processing (and within 24 hours 
 logs and decision records contain ids, option names and numbers, never a photo, the person's words or
 model text; the person is told about cloud analysis and agrees before the first photo.
 
-[MEASURE] Confirm on AWS that photos are really gone after success, failure and cancellation (task T083); the worker deletes them in every outcome and an S3 lifecycle rule is the 24-hour backstop, but neither has run on AWS yet.
+[MEASURE] Confirm on AWS that photos are really gone after success, failure and cancellation (task T083). So far only the success path was checked, once: the bucket held no photo some minutes after a successful analysis. Failure, cancellation and the 24-hour backstop are not yet measured.
 [TODO] Add the final architecture diagram (use `docs/architecture/diagrams/system-overview.png`).
-[TODO] State what is actually deployed at submission time. At the time of writing nothing has been
-deployed to AWS and the worker has only run locally, with Bedrock mocked in tests.
+[TODO] State what is actually deployed at submission time. As of 2026-10-17 the stack is deployed to
+ap-northeast-1 and one analysis ran end to end in a browser (sign-in, door, upload, analysis, advice);
+the try-and-compare half was not yet run on AWS. Restate this on the day of submission.
 
 ## The reusable pattern
 

@@ -6,12 +6,15 @@ This repository is an early-stage AWS Agent Experience Hackathon project: a phot
 
 - `README.md` links to the hackathon.
 - `docs/mvp.md` describes the proposed experience, architecture, scope, and validation scenarios. Read it before implementation; distinguish adopted direction from provisional details.
-- `pnpm-workspace.yaml` declares `apps/*` and `packages/*`. These directories are not yet populated; place applications and reusable modules there when implementation begins.
-- No application source, tests, or asset directories exist yet.
+- `apps/frontend/` contains the React/Vite scaffold; `apps/cdk/` contains CDK infrastructure and test scaffolds.
+- `packages/api-spec/` and `packages/shared/` are placeholder workspace packages.
+- `docs/architecture/` contains the architecture baseline, cost estimates, and editable draw.io diagrams with AWS icons. API and Python worker applications are planned, not implemented.
 
 ## Specification Workflow
 
-Use the Codex skills in `.agents/skills/speckit-*/` with the shared `.specify/` templates. Follow the sequence in `README.md`: principles, specification, clarification, plan, tasks, analysis, implementation. The constitution is initially an unfilled template; do not treat placeholders or provisional MVP details as agreed requirements.
+Use `.agents/skills/speckit-*/` and `.specify/` templates in the sequence documented in `README.md`. Follow the ratified constitution in `.specify/memory/constitution.md`. Distinguish architecture decisions from unverified performance assumptions and provisional MVP requirements.
+
+Read [the technology stack](docs/tech-stack.md) before Spec Kit planning, task generation, implementation, or analysis. Reference it in each plan's Technical Context; turn pending checks into explicit tasks. Preserve adopted choices, keep recommendations distinct from verified decisions, and update the table when choices or installation status change. Keep OpenAPI YAML authoritative and regenerate clients instead of editing generated code.
 
 ## Build, Test, and Development Commands
 
@@ -22,8 +25,12 @@ Use the declared package manager, `pnpm@10.32.1`.
 - `pnpm check`: run Biome checks with automatic fixes; review the resulting diff.
 - `pnpm exec biome check .`: run checks without writing changes.
 - `git diff --check`: detect whitespace errors in changes.
+- `pnpm --filter frontend dev`: start Vite locally.
+- `pnpm --filter frontend build`: type-check and build the SPA.
+- `pnpm --filter cdk test`: run the current Jest/CDK tests.
+- `pnpm --filter cdk cdk synth`: synthesize infrastructure locally.
 
-There are no working application build or test commands yet. Existing setup/start/stop scripts reference absent shell files; x402, facilitator, and Cloudflare commands reference absent packages. Treat these as scaffold remnants, not supported workflows. Update scripts and this guide when adding runnable components.
+Turborepo is installed, but root task orchestration is not configured. Vite handles frontend builds; Turbopack is not installed.
 
 ## Coding Style & Naming Conventions
 
@@ -31,7 +38,7 @@ Follow `biome.json`: space indentation, double quotes in JavaScript, recommended
 
 ## Testing Guidelines
 
-No testing framework, naming convention, or coverage threshold is configured. When adding executable code, document its test runner and command. Use `*.test.<extension>` for new unit tests unless the chosen framework requires otherwise.
+CDK uses Jest with `test/*.test.ts`; its existing test is only a scaffold. No coverage threshold is configured. Document additional test runners when introduced.
 
 Prioritize the scenarios in `docs/mvp.md`: missing images, explicit user restrictions, uncertain observations, changed lighting, and the two-adjustment limit. Evaluate model decisions separately from deterministic application behavior. Keep evaluation data separate from development examples.
 

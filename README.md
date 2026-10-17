@@ -4,14 +4,30 @@
 
 撮影前の眉・前髪を一つ整えて試し、前後を比べて本人が選ぶ体験を検討しています。現在の案は [MVP仕様書](docs/mvp.md)、開発上の案内は [AGENTS.md](AGENTS.md) を参照してください。
 
+## システムアーキテクチャ
+
+React/Vite・Cognito・Lambda API・Fargate AIワーカーを設計のベースラインとしています。
+実装・デプロイとモデル性能の検証はこれから行います。
+
+![システム全体図](docs/architecture/diagrams/system-overview.png)
+
+- [構成・技術スタック・選定理由](docs/architecture/README.md)
+- [技術スタック一覧・Spec Kitでの適用ルール](docs/tech-stack.md)
+- [VoidZero・UI・OpenAPI・Python APIの技術選定](docs/architecture/technology-selection.md)
+- [編集可能なdraw.io図（全体構成／AI処理の2ページ）](docs/architecture/diagrams/photo-prep.drawio)
+- [稼働時間ごとの費用の目安](docs/architecture/cost-estimate.md)
+
 ## Spec Kitで設計を進める
 
 Specify CLI **1.0.3** のCodex連携を導入済みです。
 
+後続処理では [技術スタック一覧](docs/tech-stack.md) を共通入力として参照します。
+planのTechnical Contextに採用技術を反映し、未確認事項を検証タスクにしてください。
+
 - `.agents/skills/speckit-*/`：Codexから呼び出すスキル。
 - `.specify/templates/`：仕様・計画・タスクのテンプレート。
 - `.specify/scripts/bash/`：仕様書作成を支援するスクリプト。
-- `.specify/memory/constitution.md`：プロジェクト原則。現時点では未記入のテンプレートです。
+- `.specify/memory/constitution.md`：制定済みのプロジェクト原則 v1.0.0。
 - `specs/`：今後、機能ごとの仕様・計画・タスクを作成する場所。
 
 このリポジトリを開いたCodexのチャットで、順番に次のスキルを使います。ターミナルのコマンドではありません。

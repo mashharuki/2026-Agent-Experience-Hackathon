@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "format": "pnpm exec biome format --write .",
-    "check": "pnpm exec biome check --write ."
+    "check": "pnpm exec biome check --write .",
+    "knip": "knip"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,10 @@
   "packageManager": "pnpm@10.32.1",
   "devDependencies": {
     "@biomejs/biome": "2.5.10",
-    "turbo": "^2.11.9"
+    "@types/node": "^26.6.5",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
+    "turbo": "^2.11.9",
+    "typescript": "^7.0.2"
   }
 }

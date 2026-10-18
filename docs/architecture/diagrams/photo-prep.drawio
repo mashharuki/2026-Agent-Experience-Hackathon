@@ -8,7 +8,7 @@
         <mxCell id="title" value="撮る前のひと手間  |  システムアーキテクチャ" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=30;fontColor=#172B4D;fontStyle=1;spacing=0;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="40" y="22" width="1500" height="46" />
         </mxCell>
-        <mxCell id="subtitle" value="設計ベースライン v1.1  •  2026-10-17  •  AWS Tokyo + global CDN  •  API言語はPythonを推奨・未デプロイ" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=16;fontColor=#60728A;fontStyle=0;spacing=0;" vertex="1" parent="1">
+        <mxCell id="subtitle" value="設計ベースライン v1.1  •  2026-10-17  •  AWS Tokyo + global CDN  •  東京リージョンにデプロイ済み" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=16;fontColor=#60728A;fontStyle=0;spacing=0;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="42" y="76" width="1600" height="28" />
         </mxCell>
         <mxCell id="aws" value="" style="fontFamily=Helvetica;fontColor=#172B4D;rounded=1;arcSize=8;strokeWidth=1.5;strokeColor=#D7E2EF;fillColor=#F8FAFC;dashed=0;" vertex="1" parent="1">
@@ -92,7 +92,7 @@
         <mxCell id="lambda-label" value="AWS Lambda" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=17;fontColor=#172B4D;fontStyle=1;spacing=0;" vertex="1" parent="lambda">
           <mxGeometry as="geometry" x="72" y="14" width="144" height="48" />
         </mxCell>
-        <mxCell id="lambda-body" value="Python API（推奨案）&#10;所有権・利用枠・ジョブ受付" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=14;fontColor=#42566F;fontStyle=0;spacing=0;" vertex="1" parent="lambda">
+        <mxCell id="lambda-body" value="Python API（Connexion）&#10;所有権・利用枠・ジョブ受付" style="fontFamily=Helvetica;fontColor=#172B4D;text;html=0;strokeColor=none;fillColor=none;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=14;fontColor=#42566F;fontStyle=0;spacing=0;" vertex="1" parent="lambda">
           <mxGeometry as="geometry" x="18" y="72" width="194" height="58" />
         </mxCell>
         <mxCell id="queue" value="" style="fontFamily=Helvetica;fontColor=#172B4D;rounded=1;arcSize=10;fillColor=#FFFFFF;strokeColor=#D7E2EF;strokeWidth=2;" vertex="1" parent="1">

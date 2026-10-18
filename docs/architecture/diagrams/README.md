@@ -6,11 +6,20 @@
 
 ## 出力
 
+日本語版（`photo-prep.drawio`）と英語版（`photo-prep.en.drawio`）を同じスクリプトで生成する。
+文言は `generate.py` の `L(日本語, English)` に対で書いてあるので、片方だけ直さない。
+
 ```sh
-python3 docs/architecture/diagrams/generate.py
-drawio --export --format png --page-index 1 --scale 1.5 --border 20 --theme light --output docs/architecture/diagrams/system-overview.png docs/architecture/diagrams/photo-prep.drawio
-drawio --export --format png --page-index 2 --scale 1.5 --border 20 --theme light --output docs/architecture/diagrams/decision-flow.png docs/architecture/diagrams/photo-prep.drawio
+python3 docs/architecture/diagrams/generate.py        # 日本語版
+python3 docs/architecture/diagrams/generate.py en     # English
+cd docs/architecture/diagrams
+drawio --export --format png --page-index 1 --scale 1.5 --border 20 --theme light --output system-overview.png photo-prep.drawio
+drawio --export --format png --page-index 2 --scale 1.5 --border 20 --theme light --output decision-flow.png photo-prep.drawio
+drawio --export --format png --page-index 1 --scale 1.5 --border 20 --theme light --output system-overview.en.png photo-prep.en.drawio
+drawio --export --format png --page-index 2 --scale 1.5 --border 20 --theme light --output decision-flow.en.png photo-prep.en.drawio
 ```
+
+プレゼン資料（`docs/presentation/images/`）には、英語版PNGの上端（タイトルと副題）を切り落としたものを置いている。
 
 draw.io Desktop 31.1.8で書き出し確認。生成スクリプトは標準ライブラリだけを使用する。
 GUIで編集した内容は生成スクリプトへ自動反映されないため、編集後はスクリプトを更新するか、

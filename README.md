@@ -46,11 +46,11 @@ The decision structure is extracted as a reusable pattern, see [Decision pattern
 
 ## Architecture
 
-![System architecture](docs/architecture/diagrams/system-overview.png)
+![System architecture](docs/architecture/diagrams/system-overview.en.png)
 
-> The diagram labels are in Japanese. Its subtitle still says "not deployed"; the stack has been deployed and
-> verified once since (see [Status](#status)). The editable source is
-> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio) (two pages, official AWS icons).
+> A Japanese version is [`system-overview.png`](docs/architecture/diagrams/system-overview.png). The editable
+> sources are [`photo-prep.en.drawio`](docs/architecture/diagrams/photo-prep.en.drawio) (English) and
+> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio) (Japanese): two pages each, official AWS icons.
 
 | Piece | What it does |
 | --- | --- |

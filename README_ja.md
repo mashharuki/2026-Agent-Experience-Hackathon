@@ -44,9 +44,9 @@
 
 ![システム全体図](docs/architecture/diagrams/system-overview.png)
 
-> 図の副題には「未デプロイ」とありますが、その後に一度デプロイして検証しました（[状態](#状態)）。
-> 編集できる元ファイルは [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio)
-> （2ページ・AWS公式アイコン入り）です。
+> 英語版は [`system-overview.en.png`](docs/architecture/diagrams/system-overview.en.png) です。編集できる元ファイルは
+> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio)（日本語）と
+> [`photo-prep.en.drawio`](docs/architecture/diagrams/photo-prep.en.drawio)（英語）で、どちらも2ページ・AWS公式アイコン入りです。
 
 | 構成要素 | 役割 |
 | --- | --- |

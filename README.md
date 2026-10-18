@@ -289,6 +289,7 @@ to tidy) and one small yellow dot (one small touch).
 | [`logo-lockup.svg`](docs/brand/logo-lockup.svg) | Icon with the name (follows light/dark) |
 | [`background-landscape.svg`](docs/brand/background-landscape.svg) · [dark](docs/brand/background-landscape-dark.svg) | 1920×1080, slides and video |
 | [`background-portrait.svg`](docs/brand/background-portrait.svg) · [dark](docs/brand/background-portrait-dark.svg) | 1080×1920, phone screens |
+| [`title-card.png`](docs/brand/title-card.png) · [`end-card.png`](docs/brand/end-card.png) (SVG and `-dark` variants too) | 1920×1080 video title and end cards; rebuild with `python3 docs/brand/make-cards.py` |
 
 <p>
   <img src="docs/brand/logo-mark.svg" alt="Logo mark" width="120">

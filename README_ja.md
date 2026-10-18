@@ -275,6 +275,7 @@ GitHub Spec Kit（Specify CLI 1.0.3）と、[`.specify/memory/constitution.md`](
 | [`logo-lockup.svg`](docs/brand/logo-lockup.svg) | アイコンと名前の横組み（ライト／ダーク対応） |
 | [`background-landscape.svg`](docs/brand/background-landscape.svg)・[ダーク](docs/brand/background-landscape-dark.svg) | 1920×1080。スライドや動画向け |
 | [`background-portrait.svg`](docs/brand/background-portrait.svg)・[ダーク](docs/brand/background-portrait-dark.svg) | 1080×1920。スマホ画面向け |
+| [`title-card.png`](docs/brand/title-card.png)・[`end-card.png`](docs/brand/end-card.png)（SVGと`-dark`版もあり） | 1920×1080。動画のタイトル・終了カード。`python3 docs/brand/make-cards.py` で再生成 |
 
 <p>
   <img src="docs/brand/logo-mark.svg" alt="ロゴマーク" width="120">

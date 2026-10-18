@@ -14,9 +14,6 @@ docs/output/
 .serena
 /report/
 .pnpm-store
-# Experiment virtual environments and model caches
-experiments/**/.venv/
-experiments/**/__pycache__/
 
 # Python environments and caches
 **/.venv/

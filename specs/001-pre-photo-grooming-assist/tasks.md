@@ -22,7 +22,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ## Path Conventions
 
-[plan.md](plan.md) の構成に従う: `apps/frontend/`、`apps/api/`、`apps/worker/`、`apps/cdk/`、`packages/api-spec/`、`evaluation/`、`experiments/`。
+[plan.md](plan.md) の構成に従う: `apps/frontend/`、`apps/api/`、`apps/worker/`、`apps/cdk/`、`packages/api-spec/`、`evaluation/`。
 
 ---
 
@@ -48,8 +48,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 ### A. 検証ゲート（research.md の T-001〜T-010 のうち実装前に判断できるもの）
 
-- [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/` で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
-- [x] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/` の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）。**ローカルは完了 2026-10-17（23件成功）。実 API Gateway／Lambda での結合は T062 で確認**
+- [x] T008 [P] Decider の `choice` 型の問いの実機確認と、4選択肢（`grooming_tip`/`capture_setup_tip`/`clarify`/`offer_finish`）の接続可否を `experiments/decider-spike/`（削除済み・履歴 `a1bcbf3`） で検証し、応答形式を `contracts/decider-decision.md` と `research.md` R-001 に反映（research T-001）
+- [x] T009 [P] Connexion 3＋Mangum の結合を `experiments/connexion-mangum/`（削除済み・履歴 `bbd5c24`） の最小 API で検証（API Gateway v2 イベント、JWT claims の引渡し、異常本文の拒否、`validate_responses`、CORS、202、コールドスタート）。結果を `research.md` R-003 に記録。**不合格時は代替案へ黙って切り替えず、ユーザーに確認する**（research T-003）。**ローカルは完了 2026-10-17（23件成功）。実 API Gateway／Lambda での結合は T062 で確認**
 - [x] T010 React Bits のライセンス適合を判断して `research.md` R-005 と `docs/tech-stack.md` の状態欄を更新。**決定 2026-10-17（ユーザー承認）: React Bits は採用せず、MUI＋独自CSS で演出する**（research T-005）
 - [x] T011 [P] 公式 Rules の全文を再確認し（ライセンス要件、提出物、期限 2026-10-23 23:59 PDT）、憲章との不一致があれば `research.md` R-007 に記録。憲章の修正はユーザーの合意を得て、Sync Impact Report を更新して行う（research T-007）。**完了 2026-10-17: 不一致なし、憲章の修正は不要。AWS上での実動作のデモ必須、記事は公開済みであることを T062・T100・T101 で反映**
 - [ ] T012 （一部完了）ユーザーと予算上限・使用量の制限・費用通知・超過時の停止手順を決め、Billing → Credits で対象製品・期限・残高を確認して `docs/architecture/cost-estimate.md` と `research.md` R-008 に記録。**この承認までは実 AWS リソースを作らない**（research T-008）。**2026-10-17: 上限 $30・ワーカー30時間以内は承認済み。クレジットは Community Builder の特典で $450 以上（申告）。ユーザーは上限 $30 を再確認済み。残り: 項目別の積算（最初のデプロイ前に必須）、停止手順は `docs/operations.md` に記載済み（未実行）、対象製品・有効期限の確認（ユーザー・任意。未確認でも上限の運用は変わらない）、停止手順の `docs/` への記載。クレジット確認と積算の完了で `[x]` にする**
@@ -71,7 +71,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T022 [P] `apps/cdk/lib/constructs/frontend.ts`: 非公開 S3＋CloudFront OAC（公開 S3 website endpoint を使わない）
 - [x] T023 **完了 2026-10-17（デプロイなし）: Lambda の配布物は仮（ソースのみ）。実ビルドは T038。** `apps/cdk/lib/constructs/api.ts`: HTTP API＋JWT authorizer（issuer/audience/scope）＋Lambda（VPC 外・ZIP）。**全ルートに authorizer を付け、認証なしの有料経路を作らない**。スロットリングを設定。`apps/cdk/lib/cdk-stack.ts` で Identity/Frontend/Api/Data を組み合わせる
 - [x] T024 **完了 2026-10-17: 17件。cdk-nag 3 は NagSuppressions を廃止し `Validations.of().acknowledge()` を使う（指摘ごとに個別の承認。`lib/nag.ts`）。** `apps/cdk/test/cdk.test.ts` を置き換え、CDK assertions＋cdk-nag で検証: S3 の公開なし、全ルートに authorizer、暗号化、Cognito がセルフ登録無効。既存の雛形テストを構成検証済みの証拠として扱わない
-- [x] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logs.py`（標準の `logging` と紛らわしいため改名）: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は `experiments/connexion-mangum/app.py`）
+- [x] T025 [P] `apps/api/src/photoprep_api/auth.py`、`repo.py`、`errors.py`、`logs.py`（標準の `logging` と紛らわしいため改名）: JWT claims から `sub` を取得（任意の HTTP ヘッダーを認証済みユーザーとして信用しない）、所有権確認付きのリポジトリ、画像・自由記述を含まないエラー形式、顔画像・希望文・認証情報をログに出さない構造化ログ。**Connexion は検証エラーに入力値を含めログにも出すため、独自のエラーハンドラ（契約の `Error` 形式）とログの redact を必ず実装する**（research R-003 の落とし穴2・3。参照実装は履歴 `bbd5c24` の `experiments/connexion-mangum/app.py`（フォルダは削除済み。内容は `apps/api/` に取り込み済み））
 - [x] T026 [P] `apps/api/tests/unit/test_auth_and_ownership.py`: 他ユーザーの `sub` では取得・更新できないこと、エラー応答・ログに入力値が出ないことを検証
 
 **Checkpoint**: 検証ゲートの結果が `research.md` に反映され、契約と認証・データの土台がそろっている。T012（予算）が未承認なら、以降は**ローカル・モックで進め、実 AWS へは出さない**。
@@ -102,7 +102,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T035 [US1] `apps/api/src/photoprep_api/handlers/analyses.py`: `requestAnalysis`（`Idempotency-Key`、ジョブを `PENDING_DISPATCH` で条件付き登録 → SQS に job ID のみ送信 → `QUEUED` へ条件付き更新、202）
 - [x] T036 [P] [US1] `apps/api/src/photoprep_api/handlers/jobs.py`: `getJob`（所有権確認）
 - [x] T037 [P] [US1] `apps/api/src/photoprep_api/handlers/feedback.py`: `recordFeedback`（助言への反応と前後比較の選択）
-- [x] T038 [US1] （**ZIP の作成を実装 2026-10-17**: `pnpm build:lambda`（`apps/api/scripts/build_lambda.py`）が uv.lock から Linux x86_64 の依存、アプリ、共有パッケージ、OpenAPI ファイルを同梱して検証する。実物は 31 MB。Lambda 上での起動は未確認。CDK はこの成果物が無いと synth を拒否する）`apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は `experiments/connexion-mangum/app.py`
+- [x] T038 [US1] （**ZIP の作成を実装 2026-10-17**: `pnpm build:lambda`（`apps/api/scripts/build_lambda.py`）が uv.lock から Linux x86_64 の依存、アプリ、共有パッケージ、OpenAPI ファイルを同梱して検証する。実物は 31 MB。Lambda 上での起動は未確認。CDK はこの成果物が無いと synth を拒否する）`apps/api/src/photoprep_api/lambda_handler.py`: T009 の結果に従い Connexion アプリ全体を Mangum で包む（内側の Flask だけを公開して検証を迂回しない）。`content-length` を補うエントリポイント、`BEARERINFO_FUNC` によるセキュリティ関数（claims が無ければ401）を含める。参照実装は履歴 `bbd5c24` の `experiments/connexion-mangum/app.py`（フォルダは削除済み。内容は `apps/api/` に取り込み済み）
 - [x] T039 [US1] `apps/api/src/photoprep_api/ops/dispatch.py`（パッケージ内に置く。CDK のハンドラ指定は `photoprep_api.ops.dispatch.handler`）: 1 分周期で `PENDING_DISPATCH` を再送する運用 Lambda
 
 ### Implementation for User Story 1 — Worker
@@ -275,8 +275,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 ### Parallel Example: Foundational 検証ゲート
 
 ```bash
-Task: "Decider の choice 型の問いの実機確認 in experiments/decider-spike/"      # T008
-Task: "Connexion＋Mangum の結合検証 in experiments/connexion-mangum/"            # T009
+Task: "Decider の choice 型の問いの実機確認 in experiments/decider-spike/（削除済み・履歴 a1bcbf3）"      # T008
+Task: "Connexion＋Mangum の結合検証 in experiments/connexion-mangum/（削除済み・履歴 bbd5c24）"            # T009
 Task: "公式 Rules の全文再確認 → research.md R-007"                              # T011
 Task: "Bedrock モデル呼び出しログの設定確認 → research.md"                       # T013
 ```

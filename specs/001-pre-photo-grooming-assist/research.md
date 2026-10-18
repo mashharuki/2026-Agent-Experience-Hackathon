@@ -13,7 +13,7 @@
   - 出力は型付きの問いへの回答: `noul`（真偽の確率）、`choice`（最上位の選択肢、選択肢ごとの確率、confidence）、`score`。
   - 重みは別: ベース重み `Qwen/Qwen3.5-2B-Base` 約4.5 GB を初回ロード時にHugging Faceから取得する。→ 設計の「ビルド時に固定・同梱、実行時ダウンロードなし」は妥当（実行時取得を避ける）。
   - CPU実行は可能だが「大幅に遅い」。公表されたCPU時間は64 vCPUホストの Gemma 系の値で、採用候補の Qwen 2B を 4 vCPU の Fargate で動かした値ではない。
-- **実機確認の結果（T008、2026-10-17）**: `experiments/decider-spike/`（`spike.py`、実行ログ `run_cpu.log`）で、PyPI の `strands-decider 0.1.0`（torch 2.14.1、transformers 5.20.1、Python 3.12）をこの開発Mac（Apple silicon、CPU実行、16 GB）に入れ、`StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を動かした。**Fargate（x86_64）での測定ではない。**
+- **実機確認の結果（T008、2026-10-17）**: `experiments/decider-spike/`（削除済み・履歴 `a1bcbf3`）（`spike.py`、実行ログ `run_cpu.log`）で、PyPI の `strands-decider 0.1.0`（torch 2.14.1、transformers 5.20.1、Python 3.12）をこの開発Mac（Apple silicon、CPU実行、16 GB）に入れ、`StrandsAgents/strands-decider-2B-qwen3.5-v1-2610` を動かした。**Fargate（x86_64）での測定ではない。**
   - **API形式を確認**: Python から `load_engine(checkpoint, device="cpu")` → `engine.ask(state, {名前: ChoiceQuestion(instructions=…, criteria={選択肢: 説明})})` で呼べる。`criteria` は**選択肢名→説明の辞書**で、選択肢ごとの説明を渡せる。応答は `answers[名前]` に `choice`（最上位の選択肢）、`probabilities`（選択肢ごとの確率）、`confidence` を持ち、`usage` は入力約200トークン・出力1トークン。公開資料に無かったフィールド名はこれで確定。
   - **4選択肢の問いは動作した**（日本語の状態・選択肢でも）。合成した5つの状態テキスト（写真なし）の結果:
 
@@ -45,7 +45,7 @@
 
 ## R-003 Connexion 3＋Flask＋Mangum（API）
 
-- **ローカル検証の結果（T009、2026-10-17）**: `experiments/connexion-mangum/`（`app.py`、`test_spike.py` 23件、すべて成功）。connexion 3.3.0、mangum 0.22.0、flask 3.1.3、starlette 1.8.0、Python 3.12 を使用。**入力は、公開されている API Gateway HTTP API v2 のペイロード形式に従って自作した合成イベントで、実際のゲートウェイから取得したものではない。**
+- **ローカル検証の結果（T009、2026-10-17）**: `experiments/connexion-mangum/`（削除済み・履歴 `bbd5c24`）（`app.py`、`test_spike.py` 23件、すべて成功）。connexion 3.3.0、mangum 0.22.0、flask 3.1.3、starlette 1.8.0、Python 3.12 を使用。**入力は、公開されている API Gateway HTTP API v2 のペイロード形式に従って自作した合成イベントで、実際のゲートウェイから取得したものではない。**
   - **動いたこと**: 草案 `openapi.draft.yaml`（6操作）が Connexion にそのまま読み込めた。`Mangum(connexion_app)` で v2 イベントが処理できた。`validate_responses=True` と `strict_validation=True` が働いた（未定義の本文項目・クエリ、型・列挙・長さ違反、必須項目の欠落、不正JSON、`Idempotency-Key` 欠落、パス変数の長さ違反はすべて400。スキーマに反するハンドラ出力は500）。base64 本文の復号、日本語本文、202応答も問題なし。
   - **JWT claims の引渡し**: JWT の検証は API Gateway が行い、アプリは Connexion のセキュリティ関数（環境変数 `BEARERINFO_FUNC` で指定。仕様に独自拡張を入れない）で `request.scope["aws.event"]["requestContext"]["authorizer"]["jwt"]["claims"]` を読む。**claims が無ければ401（fail closed）**。ハンドラは `user`（= `sub`）を引数で受け取れる。`x-user-sub` のような偽装ヘッダーは無視された。Bearer 文字列自体は信用・解析しない。
   - **見つかった落とし穴（対処を実装方針に反映）**:

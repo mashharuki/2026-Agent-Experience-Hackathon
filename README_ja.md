@@ -1,5 +1,7 @@
 # 撮る前のひと手間
 
+<p align="center"><img src="docs/brand/logo-lockup.svg" alt="撮る前のひと手間" width="520"></p>
+
 [English → README.md](README.md)
 
 [AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider) への応募プロジェクトです。
@@ -42,9 +44,9 @@
 
 ![システム全体図](docs/architecture/diagrams/system-overview.png)
 
-> 図の副題には「未デプロイ」とありますが、その後に一度デプロイして検証しました（[状態](#状態)）。
-> 編集できる元ファイルは [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio)
-> （2ページ・AWS公式アイコン入り）です。
+> 英語版は [`system-overview.en.png`](docs/architecture/diagrams/system-overview.en.png) です。編集できる元ファイルは
+> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio)（日本語）と
+> [`photo-prep.en.drawio`](docs/architecture/diagrams/photo-prep.en.drawio)（英語）で、どちらも2ページ・AWS公式アイコン入りです。
 
 | 構成要素 | 役割 |
 | --- | --- |
@@ -249,6 +251,7 @@ apps/cdk/                  CDKのスタックとConstruct（テストつき）
 packages/api-spec/         openapi.yaml（契約の正本）
 packages/photoprep-common/ APIとワーカーで共有する状態規則、DynamoDBのStore、ログの許可リスト
 docs/                      設計と図、技術スタック、運用、記事・デモの下書き
+docs/brand/               ロゴと背景画像（SVG）
 specs/                     この機能のSpec Kit成果物（仕様・計画・調査・タスク）
 ```
 
@@ -260,6 +263,28 @@ GitHub Spec Kit（Specify CLI 1.0.3）と、[`.specify/memory/constitution.md`](
 `specify` → `clarify` → `plan` → `tasks` → `implement` の順で、テストを先に書きます。OpenAPIのYAMLを先に変更し、
 クライアントを再生成します（`pnpm --filter frontend api:generate`）。生成物は手で編集しません。計画の前に
 [docs/tech-stack.md](docs/tech-stack.md) を読み、採用済みの選択・推奨・未検証の仮定を区別してください。
+
+## ブランド素材
+
+ロゴと背景画像は [`docs/brand/`](docs/brand/) にあるSVGファイルで、コードと同じ[MITライセンス](LICENSE)です。
+マークは、ビューファインダー（これから撮る写真）、眉一本（整える一つのこと）、黄色い小さな点（ひと手間）を表しています。
+
+| ファイル | 用途 |
+|---|---|
+| [`logo-mark.svg`](docs/brand/logo-mark.svg) | アイコンのみ |
+| [`logo-lockup.svg`](docs/brand/logo-lockup.svg) | アイコンと名前の横組み（ライト／ダーク対応） |
+| [`background-landscape.svg`](docs/brand/background-landscape.svg)・[ダーク](docs/brand/background-landscape-dark.svg) | 1920×1080。スライドや動画向け |
+| [`background-portrait.svg`](docs/brand/background-portrait.svg)・[ダーク](docs/brand/background-portrait-dark.svg) | 1080×1920。スマホ画面向け |
+| [`title-card.png`](docs/brand/title-card.png)・[`end-card.png`](docs/brand/end-card.png)（SVGと`-dark`版もあり） | 1920×1080。動画のタイトル・終了カード。`python3 docs/brand/make-cards.py` で再生成 |
+
+<p>
+  <img src="docs/brand/logo-mark.svg" alt="ロゴマーク" width="120">
+  <img src="docs/brand/background-landscape.svg" alt="横長の背景" width="360">
+  <img src="docs/brand/background-portrait.svg" alt="縦長の背景" width="120">
+</p>
+
+横組みロゴの文字は端末のフォント（Noto Sans JP、ヒラギノ、游ゴシック）に依存します。最終的な成果物に使うときは、
+文字をアウトライン化してください。アプリ自身のfaviconとPWAアイコンはまだ差し替えていません。
 
 ## ライセンス
 

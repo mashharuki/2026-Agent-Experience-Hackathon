@@ -1,5 +1,7 @@
 # A little prep before the photo (撮る前のひと手間)
 
+<p align="center"><img src="docs/brand/logo-lockup.svg" alt="A little prep before the photo (撮る前のひと手間)" width="520"></p>
+
 [日本語版はこちら → README_ja.md](README_ja.md)
 
 A submission to the [AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider).
@@ -44,11 +46,11 @@ The decision structure is extracted as a reusable pattern, see [Decision pattern
 
 ## Architecture
 
-![System architecture](docs/architecture/diagrams/system-overview.png)
+![System architecture](docs/architecture/diagrams/system-overview.en.png)
 
-> The diagram labels are in Japanese. Its subtitle still says "not deployed"; the stack has been deployed and
-> verified once since (see [Status](#status)). The editable source is
-> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio) (two pages, official AWS icons).
+> A Japanese version is [`system-overview.png`](docs/architecture/diagrams/system-overview.png). The editable
+> sources are [`photo-prep.en.drawio`](docs/architecture/diagrams/photo-prep.en.drawio) (English) and
+> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio) (Japanese): two pages each, official AWS icons.
 
 | Piece | What it does |
 | --- | --- |
@@ -260,6 +262,7 @@ apps/cdk/                  CDK stacks and constructs, with tests
 packages/api-spec/         openapi.yaml, the contract (source of truth)
 packages/photoprep-common/ State rules, DynamoDB store, log allow-list shared by API and worker
 docs/                      Architecture and diagrams, tech stack, operations, article and demo drafts
+docs/brand/               Logo and background images (SVG)
 specs/                     Spec Kit artifacts for the feature (spec, plan, research, tasks)
 ```
 
@@ -273,6 +276,29 @@ Work follows GitHub Spec Kit (Specify CLI 1.0.3) with the project constitution i
 (`pnpm --filter frontend api:generate`); generated code is never edited by hand. Read
 [docs/tech-stack.md](docs/tech-stack.md) before planning, and keep adopted choices apart from
 recommendations and unverified assumptions.
+
+## Branding
+
+The logo and background images are plain SVG files in [`docs/brand/`](docs/brand/), released under the same
+[MIT license](LICENSE) as the code. The mark shows a viewfinder (the photo to come), one brow (the one thing
+to tidy) and one small yellow dot (one small touch).
+
+| File | Use |
+|---|---|
+| [`logo-mark.svg`](docs/brand/logo-mark.svg) | Icon only |
+| [`logo-lockup.svg`](docs/brand/logo-lockup.svg) | Icon with the name (follows light/dark) |
+| [`background-landscape.svg`](docs/brand/background-landscape.svg) · [dark](docs/brand/background-landscape-dark.svg) | 1920×1080, slides and video |
+| [`background-portrait.svg`](docs/brand/background-portrait.svg) · [dark](docs/brand/background-portrait-dark.svg) | 1080×1920, phone screens |
+| [`title-card.png`](docs/brand/title-card.png) · [`end-card.png`](docs/brand/end-card.png) (SVG and `-dark` variants too) | 1920×1080 video title and end cards; rebuild with `python3 docs/brand/make-cards.py` |
+
+<p>
+  <img src="docs/brand/logo-mark.svg" alt="Logo mark" width="120">
+  <img src="docs/brand/background-landscape.svg" alt="Landscape background" width="360">
+  <img src="docs/brand/background-portrait.svg" alt="Portrait background" width="120">
+</p>
+
+The text in the lockup uses installed fonts (Noto Sans JP, Hiragino Sans, Yu Gothic); convert the text to
+outlines before using it in a final deliverable. The app's own favicon and PWA icons are not replaced yet.
 
 ## License
 

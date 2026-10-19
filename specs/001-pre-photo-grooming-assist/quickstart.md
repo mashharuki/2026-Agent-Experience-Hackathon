@@ -1,8 +1,12 @@
 # Quickstart：検証シナリオ
 
-実装後に「機能が通しで動く」ことを確かめる手順。**現時点では `apps/api`、`apps/worker`、AWS環境が
-存在しないため、実行できない。** 各シナリオの根拠は [spec.md](spec.md)、データは
-[data-model.md](data-model.md)、API は [contracts/](contracts/) を参照する。
+現在のAPI/worker/frontend/CDKは実装済み。レビュー修正後の実行結果は [検証記録](../../docs/reviews/2026-10-19-remediation-validation.md)。以下のAWSシナリオはローカル・モックの成功と分けて記録する。
+
+### ローカル回帰
+
+リポジトリルートで `pnpm --filter api-spec check`、`pnpm --filter frontend test`、`pnpm --filter frontend build`、`pnpm --filter frontend test:e2e`、`pnpm --filter cdk test`、`pnpm check:quality` を実行する。API/workerの各ディレクトリでは `uv sync --frozen` 後に `uv run pytest` と `uv run ruff check .`。ブラウザは事前に `pnpm --filter frontend exec playwright install chromium` で準備する。すべて合成画像・fakeモデルで実行できる。
+
+確認質問は「まず見てほしい」→clarify→対象を選択して回答→次の支援、禁止事項は相談画面の選択UIで確定する。通信中の終了・同じ要求の再送・部分削除失敗も回帰対象。
 
 ## 前提
 
@@ -13,7 +17,7 @@
 
 ## 実行する検証（概要）
 
-実際のコマンドは、アプリが作成された時点で `tasks.md` のタスクとして具体化する。
+実AWSでは同意のある写真と招待済みアカウントを使い、ローカル結果から推測せず実行記録を残す。
 
 | # | シナリオ | 期待する結果 | 仕様の根拠 |
 |---|---|---|---|

@@ -65,7 +65,16 @@ export function TryOne({
       ) : null}
       {notice ? <Alert severity="info">{notice}</Alert> : null}
       {run.status === "failed" ? (
-        <Alert severity="error">{run.message}</Alert>
+        <Alert
+          severity="error"
+          action={
+            run.canRecheck ? (
+              <Button onClick={onRecheck}>{t("door.recheck")}</Button>
+            ) : undefined
+          }
+        >
+          {run.message}
+        </Alert>
       ) : null}
       {run.status === "timeout" ? (
         <Alert
@@ -142,7 +151,7 @@ export function TryOne({
         )
       ) : null}
 
-      <Button color="inherit" onClick={onFinish} disabled={busy || working}>
+      <Button color="inherit" onClick={onFinish}>
         {t("capture.finish")}
       </Button>
     </Stack>

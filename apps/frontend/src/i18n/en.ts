@@ -1,6 +1,22 @@
 import type { MessageKey } from "./ja";
 
 export const en: Record<MessageKey, string> = {
+  "clarify.heading": "A quick question",
+  "clarify.scope": "Which area would you like help with?",
+  "clarify.detail": "Which part would you like help with?",
+  "clarify.submit": "Answer and continue",
+  "clarify.missing":
+    "This question cannot be answered. Please finish and start again.",
+  "clarify.captureRequired":
+    "Your answer was saved. Please take another photo because the area changed or the observation expired.",
+
+  "consult.restrictions": "What should stay unchanged?",
+  "consult.restrictionsHelp":
+    "Select restrictions here. Writing them only in the wish field does not confirm them as restrictions.",
+  "restriction.no_touch_brow": "Do not touch my brows",
+  "restriction.keep_brow_shape": "Keep my brow shape",
+  "restriction.no_touch_bangs": "Do not touch my bangs",
+
   "app.title": "A little prep before the photo",
   "app.tagline":
     "Before your photo, try one small change to your brows or bangs.",
@@ -38,7 +54,7 @@ export const en: Record<MessageKey, string> = {
   "consult.wishHelp":
     "Example: I don't want to change my brow shape, but I'd like to tidy the direction of the hairs (up to 200 characters)",
   "consult.consentText":
-    "Your photo is sent to the cloud (AWS) and analyzed to produce advice. It is deleted as soon as processing ends, and within 24 hours even if something fails. The photos you compare stay only on this device.",
+    "Your photo is sent to the cloud (AWS) and analyzed to produce advice. Photos are deleted after processing; periodic cleanup retries leftovers, with a 24-hour deletion target. Observation notes can be used for up to 10 minutes to answer a question, then deleted after answering or finishing. Periodic cleanup also removes expired notes. The photos you compare stay only on this device.",
   "consult.consentCheck": "I agree to the cloud analysis",
   "consult.submit": "Go to the photo",
   "consult.decline": "I do not agree (leave)",
@@ -80,7 +96,7 @@ export const en: Record<MessageKey, string> = {
   "done.declined":
     "You did not agree, so no photo was sent. You can start again any time.",
   "done.finished":
-    "The consultation is over. The photos disappear from this device, and the photos in the cloud are deleted.",
+    "The consultation is over. The photos disappear from this device, and deletion of cloud photos and observation notes is requested. If the request fails, periodic cleanup handles leftovers.",
   "done.restart": "Start again",
 
   "camera.preview": "Camera preview",

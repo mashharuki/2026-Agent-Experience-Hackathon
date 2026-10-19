@@ -3,10 +3,12 @@ import { Alert, Box, Typography } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Advice,
+  AnswerClarificationRequest,
   FeedbackRequest,
   FeedbackRequestComparisonChoice,
 } from "../../api/generated/model";
 import {
+  answerClarification,
   createSession,
   endSession,
   recordFeedback,
@@ -16,6 +18,7 @@ import { DoorGate } from "../../components/DoorGate";
 import { CONSENT_VERSION } from "../../config";
 import { useI18n } from "../../i18n/I18nProvider";
 import type { MessageKey } from "../../i18n/ja";
+import { Clarify } from "../../screens/Clarify";
 import { Compare } from "../../screens/Compare";
 import { Consult, type ConsultResult } from "../../screens/Consult";
 import { Done } from "../../screens/Done";
@@ -25,10 +28,11 @@ import { messageFor } from "./errors";
 import { dropPhoto, makePhoto, type Photo } from "./photos";
 import { type Phase, useAnalysis } from "./useAnalysis";
 
-type Screen = "consult" | "capture" | "advice" | "compare" | "done";
+type Screen = "consult" | "clarify" | "capture" | "advice" | "compare" | "done";
 
 const HEADINGS: Record<Screen, MessageKey> = {
   consult: "heading.consult",
+  clarify: "clarify.heading",
   capture: "heading.capture",
   advice: "heading.advice",
   compare: "heading.compare",
@@ -46,6 +50,9 @@ export function SessionFlow() {
   const [step, setStep] = useState<TryStep>("advice");
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [advice, setAdvice] = useState<Advice | undefined>();
+  const answerKey = useRef<{ payload: string; key: string } | undefined>(
+    undefined,
+  );
   const [nextAdvice, setNextAdvice] = useState<Advice | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
@@ -59,6 +66,9 @@ export function SessionFlow() {
   const [after, setAfter] = useState<Photo | undefined>();
   const analysis = useAnalysis(sessionId);
   const pendingPhase = useRef<Phase>("before");
+  const ended = useRef(false);
+  const flowVersion = useRef(0);
+  const answerController = useRef<AbortController | undefined>(undefined);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const photosRef = useRef({ before, after });
   useEffect(() => {
@@ -71,6 +81,8 @@ export function SessionFlow() {
   }, [screen]);
   useEffect(
     () => () => {
+      flowVersion.current++;
+      answerController.current?.abort();
       dropPhoto(photosRef.current.before);
       dropPhoto(photosRef.current.after);
     },
@@ -93,6 +105,13 @@ export function SessionFlow() {
   }, []);
 
   const finish = useCallback(() => {
+    ended.current = true;
+    flowVersion.current++;
+    answerController.current?.abort();
+    setBusy(false);
+    answerKey.current = undefined;
+    setAdvice(undefined);
+    setNextAdvice(undefined);
     replaceBefore(undefined);
     replaceAfter(undefined);
     setScreen("done");
@@ -108,7 +127,7 @@ export function SessionFlow() {
   // result (an external event), so setting state here is intended.
   const { run, reset } = analysis;
   useEffect(() => {
-    if (run.status !== "done") return;
+    if (ended.current || run.status !== "done") return;
     const result = run.advice;
     reset();
     if (pendingPhase.current === "after") {
@@ -132,8 +151,11 @@ export function SessionFlow() {
       setNotice(undefined);
       setStep("advice");
       setScreen("advice");
+    } else if (result.kind === "clarify") {
+      setAdvice(result);
+      setScreen("clarify");
     } else {
-      // capture_setup_tip or clarify: show the one tip and ask for a retake.
+      // capture_setup_tip: show the one tip and ask for a retake.
       setNotice(result.text);
       replaceBefore(undefined);
       setScreen((s) => (s === "advice" ? "advice" : "capture"));
@@ -142,20 +164,22 @@ export function SessionFlow() {
 
   const send = async (feedback: FeedbackRequest): Promise<boolean> => {
     if (!sessionId) return false;
+    const version = flowVersion.current;
     setBusy(true);
     setError(undefined);
     try {
       await recordFeedback(sessionId, feedback);
-      return true;
+      return !ended.current && version === flowVersion.current;
     } catch (e) {
-      setError(messageFor(e, t));
+      if (version === flowVersion.current) setError(messageFor(e, t));
       return false;
     } finally {
-      setBusy(false);
+      if (version === flowVersion.current) setBusy(false);
     }
   };
 
   const onConsult = async (result: ConsultResult) => {
+    const version = flowVersion.current;
     setBusy(true);
     setError(undefined);
     try {
@@ -164,6 +188,7 @@ export function SessionFlow() {
           {
             consentVersion: CONSENT_VERSION,
             scope: result.scope,
+            restrictions: result.restrictions,
             wish: result.wish,
             language,
           },
@@ -174,12 +199,16 @@ export function SessionFlow() {
           },
         ),
       );
+      if (ended.current || version !== flowVersion.current) {
+        void endSession(created.sessionId).catch(() => undefined);
+        return;
+      }
       setSessionId(created.sessionId);
       setScreen("capture");
     } catch (e) {
-      setError(messageFor(e, t));
+      if (version === flowVersion.current) setError(messageFor(e, t));
     } finally {
-      setBusy(false);
+      if (version === flowVersion.current) setBusy(false);
     }
   };
 
@@ -189,10 +218,52 @@ export function SessionFlow() {
     void analysis.start(phase, photo.blob);
   };
 
-  const finishNow = async () => {
-    await send({ type: "advice_response", adviceResponse: "finish" }); // records the choice
-    await endOnServer();
+  const onAnswer = async (answer: AnswerClarificationRequest) => {
+    if (!sessionId) return;
+    const version = flowVersion.current;
+    const active = new AbortController();
+    answerController.current = active;
+    const payload = JSON.stringify(answer);
+    if (answerKey.current?.payload !== payload)
+      answerKey.current = {
+        payload,
+        key: crypto.randomUUID().replaceAll("-", ""),
+      };
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await unwrap(
+        answerClarification(sessionId, answer, {
+          signal: active.signal,
+          headers: { "Idempotency-Key": answerKey.current.key },
+        }),
+      );
+      if (ended.current || version !== flowVersion.current) return;
+      pendingPhase.current = "before";
+      if ("jobId" in result) analysis.follow(result.jobId);
+      else {
+        setNotice(t("clarify.captureRequired"));
+        replaceBefore(undefined);
+        setScreen("capture");
+      }
+    } catch (failure) {
+      if (!ended.current && version === flowVersion.current)
+        setError(messageFor(failure, t));
+    } finally {
+      if (version === flowVersion.current) setBusy(false);
+    }
+  };
+
+  const finishNow = () => {
+    ended.current = true;
+    analysis.cancel();
     finish();
+    if (sessionId)
+      void recordFeedback(sessionId, {
+        type: "advice_response",
+        adviceResponse: "finish",
+      }).catch(() => undefined);
+    void endOnServer();
   };
 
   return (
@@ -212,13 +283,31 @@ export function SessionFlow() {
           <Consult
             onSubmit={onConsult}
             onDecline={() => {
-              setDeclined(true); // nothing has been sent, no session exists
-              setScreen("done");
+              setDeclined(true);
+              finish();
             }}
             busy={busy}
             error={error}
           />
         </DoorGate>
+      ) : null}
+
+      {screen === "clarify" && advice ? (
+        <Clarify
+          key={advice.clarification?.clarificationId ?? "legacy"}
+          advice={advice}
+          busy={busy}
+          run={analysis.run}
+          error={error}
+          onAnswer={onAnswer}
+          onFinish={finishNow}
+          onRecheck={analysis.recheck}
+          onRetake={() => {
+            analysis.reset();
+            replaceBefore(undefined);
+            setScreen("capture");
+          }}
+        />
       ) : null}
 
       {screen === "capture" ? (
@@ -313,6 +402,8 @@ export function SessionFlow() {
         <Done
           declined={declined}
           onRestart={() => {
+            flowVersion.current++;
+            ended.current = false;
             setDeclined(false);
             setSessionId(undefined);
             setAdvice(undefined);

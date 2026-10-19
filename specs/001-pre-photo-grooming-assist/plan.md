@@ -4,6 +4,8 @@
 
 **Input**: Feature specification from `/specs/001-pre-photo-grooming-assist/spec.md`
 
+**レビュー後の修正計画（2026-10-19、ローカル実装済み）**: [R1〜R7の修正計画](remediation-plan.md)。変更箇所、依存関係、API・状態遷移の変更案、受け入れ条件を記載。
+
 ## Summary
 
 利用者が撮影前に眉・前髪を一つだけ整えて試し、前後の写真を比べて自分で選ぶスマホ向けWebアプリ。
@@ -136,3 +138,13 @@ APIとワーカーの依存・権限を混ぜず、PyTorch／Decider重みをAPI
 常時課金のFargate、2つの言語（TypeScript／Python）、4アプリ構成は、憲章の例外ではなく
 第II原則の「常時稼働を採用する場合の記録」で扱う。理由・代替・費用・停止方法は
 [アーキテクチャ](../../docs/architecture/README.md)と[費用試算](../../docs/architecture/cost-estimate.md)に記録済み。
+
+## 2026-10-19 レビュー修正の実装追記
+
+[修正計画](remediation-plan.md)を実装方針として適用。Technical Contextは [技術一覧](../../docs/tech-stack.md) を参照。既存のReact/Vite/MUI、TanStack Query、OpenAPI/Orval、Connexion、DynamoDB/SQS、Bedrock/Decider、CDKを維持し、Playwrightを開発依存として追加した。
+
+- `CLARIFYING` と回答APIを追加。元scopeを覆うObservationだけ最大10分再利用し、回答後の判断を解析上限へ加算。処理後・終了時にメモを削除し、期限切れも定期回収する。同意文はv2。
+- API受付と利用枠はトランザクションで確定。SQSへの配送はPENDING_DISPATCHの再配送方式を維持する。
+- 待機期限、送信取消、禁止選択、画像削除失敗の監視、Knip/CIを整備した。
+- Constitution Check再確認：意味のあるDeciderの選択、既存の使用量上限、Cognito/所有権、写真と自由文のログ禁止を維持。新APIも認証必須。新差分のAWS検証・公式Rulesの最新確認は未完了。
+- [修正検証記録](../../docs/reviews/2026-10-19-remediation-validation.md)に、ローカルの成功と残るAWS検証を分けて記載する。本書の初期設計時点の状態記述を、現行の実装状況として読まない。

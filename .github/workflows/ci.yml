@@ -1,0 +1,54 @@
+name: Quality
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  javascript:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.14
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --frozen --project apps/api
+      - run: pnpm --filter api-spec check
+      - run: pnpm --filter frontend api:check
+      - name: Detect untracked generated files
+        run: test -z "$(git status --porcelain -- apps/frontend/src/api/generated)"
+      - run: pnpm exec biome check .
+      - run: pnpm --filter frontend lint
+      - run: pnpm --filter frontend test
+      - run: pnpm --filter frontend build
+      - run: pnpm --filter cdk exec jest --runInBand
+      - run: pnpm --filter cdk build
+      - run: pnpm check:quality
+      - run: pnpm --filter frontend exec playwright install --with-deps chromium
+      - run: pnpm --filter frontend test:e2e
+  python:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        app: [api, worker]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    env:
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_DEFAULT_REGION: ap-northeast-1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.14
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run ruff check . ../../packages/photoprep-common/src
+      - run: uv run pytest

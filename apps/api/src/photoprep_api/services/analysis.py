@@ -10,6 +10,7 @@ from ..repo import get_owned
 from ..states import State, check_can_request_analysis
 from ..store import ConditionFailed
 from .access import ensure_accepting, ensure_consent
+from .idempotency import check_replay, fingerprint
 from .session import SESSION_TTL, load_session, session_pk, ttl_after
 
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
@@ -71,7 +72,7 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
 
     replay = c.store.get(idem_pk, "META")
     if replay is not None:
-        return replay["jobId"]  # a retry of work already accepted is fine even if the door closed
+        return replay_job(c, replay, request)
     ensure_consent(session)
     ensure_accepting(c)  # new work only while the service is accepting it
 
@@ -80,6 +81,8 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
         raise AppError(404, "not_found")
     if upload["phase"] != phase:
         raise AppError(400, "invalid_request")
+    if upload["ttl"] <= int(c.now().timestamp()):
+        raise AppError(409, "conflict")
     if upload["used"]:
         raise AppError(409, "conflict")
     size = c.uploads.object_size(upload["key"])
@@ -91,54 +94,82 @@ def request_analysis(c: Container, sub: str, session_id: str, request: dict, ide
     check_can_request_analysis(state, phase, analyses_used=session["analysesUsed"])
 
     job_id = c.new_id()
-    if not c.store.create_if_absent(
-        idem_pk, "META", {"ownerSub": sub, "jobId": job_id, "ttl": ttl_after(c, SESSION_TTL)}
-    ):
-        return c.store.get(idem_pk, "META")["jobId"]  # lost a race with the same key
-
-    reserved_upload = False
-    try:
-        c.store.update(
-            f"UPLOAD#{request['uploadId']}", "META", expect={"used": False}, set={"used": True}
-        )
-        reserved_upload = True
-        c.store.update(
-            session_pk(session_id),
-            "META",
-            expect={"state": state.value},
-            set={"state": State.ANALYZING.value},
-            add={"analysesUsed": 1},
-            caps={"analysesUsed": 3},
-        )
-    except ConditionFailed as err:
-        if reserved_upload:
-            c.store.update(f"UPLOAD#{request['uploadId']}", "META", set={"used": False})
-        c.store.delete(idem_pk, "META")
-        raise AppError(409, "conflict") from err
-
     now = c.now().isoformat()
-    c.store.create_if_absent(
-        f"JOB#{job_id}",
-        "META",
+    job = {
+        "jobId": job_id,
+        "ownerSub": sub,
+        "sessionId": session_id,
+        "uploadId": request["uploadId"],
+        "phase": phase,
+        # Where the session returns to if the analysis fails (the worker restores it).
+        "prevState": state.value,
+        "tools": list(request.get("tools", [])),
+        "timeBudget": request.get("timeBudget", "normal"),
+        "status": PENDING,
+        # Sparse index keys: a job is findable by the re-dispatcher until it is queued.
+        "statusKey": PENDING,
+        "statusSince": now,
+        "createdAt": now,
+        "ttl": ttl_after(c, SESSION_TTL),
+    }
+    operations = [
         {
-            "jobId": job_id,
-            "ownerSub": sub,
-            "sessionId": session_id,
-            "uploadId": request["uploadId"],
-            "phase": phase,
-            # Where the session returns to if the analysis fails (the worker restores it).
-            "prevState": state.value,
-            "tools": list(request.get("tools", [])),
-            "timeBudget": request.get("timeBudget", "normal"),
-            "status": PENDING,
-            # Sparse index keys: a job is findable by the re-dispatcher until it is queued.
-            "statusKey": PENDING,
-            "statusSince": now,
-            "createdAt": now,
-            "ttl": ttl_after(c, SESSION_TTL),
+            "op": "put",
+            "pk": idem_pk,
+            "sk": "META",
+            "item": {
+                "ownerSub": sub,
+                "jobId": job_id,
+                "fingerprint": fingerprint(request),
+                "ttl": ttl_after(c, SESSION_TTL),
+            },
         },
-    )
+        {
+            "op": "update",
+            "pk": f"UPLOAD#{request['uploadId']}",
+            "sk": "META",
+            "expect": {
+                "used": False,
+                "ownerSub": sub,
+                "sessionId": session_id,
+                "phase": phase,
+                "ttl": upload["ttl"],
+            },
+            "set": {"used": True},
+        },
+        {
+            "op": "update",
+            "pk": session_pk(session_id),
+            "sk": "META",
+            "expect": {
+                "state": state.value,
+                "ownerSub": sub,
+                "consentVersion": session["consentVersion"],
+                "expiresAt": session["expiresAt"],
+            },
+            "set": {"state": State.ANALYZING.value, "activeJobId": job_id},
+            "add": {"analysesUsed": 1},
+            "caps": {"analysesUsed": 3},
+        },
+        {"op": "put", "pk": f"JOB#{job_id}", "sk": "META", "item": job},
+        {"op": "check", "pk": "SERVICE#status", "sk": "META", "expect": {"accepting": True}},
+    ]
+    try:
+        c.store.transact(operations)
+    except ConditionFailed as err:
+        replay = c.store.get(idem_pk, "META")
+        if replay is not None:
+            return replay_job(c, replay, request)
+        raise AppError(409, "conflict") from err
     dispatch(c, job_id)
+    return job_id
+
+
+def replay_job(c: Container, record: dict, request: dict) -> str:
+    check_replay(record, request)
+    job_id = record["jobId"]
+    if c.store.get(f"JOB#{job_id}", "META") is None:
+        raise AppError(409, "conflict")  # legacy partial records are never reported as accepted
     return job_id
 
 
@@ -171,7 +202,9 @@ def job_view(item: dict) -> dict:
     view = {"jobId": item["jobId"], "status": status}
     if status == "SUCCEEDED" and item.get("result"):
         view["advice"] = {
-            k: v for k, v in item["result"].items() if k in ("kind", "text", "basis", "comparable")
+            k: v
+            for k, v in item["result"].items()
+            if k in ("kind", "text", "basis", "comparable", "clarification")
         }
     if status in ("FAILED", "UNKNOWN") and item.get("errorClass"):
         view["errorClass"] = item["errorClass"]

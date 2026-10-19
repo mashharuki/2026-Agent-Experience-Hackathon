@@ -4,7 +4,10 @@
 
 import type {
   Advice,
+  Clarification,
   Job,
+  Restriction,
+  Scope,
   ServiceStatus,
   Session,
   Upload,
@@ -21,11 +24,12 @@ export interface MockDoor {
   failing?: boolean;
 }
 
-export interface MockCall {
+interface MockCall {
   method: string;
   route: string;
+  body?: unknown;
 }
-export interface MockFeedback {
+interface MockFeedback {
   adviceResponse?: string;
   comparisonChoice?: string;
 }
@@ -37,6 +41,9 @@ interface SessionItem {
   expiresAt: string;
   lastAdviceKind?: string;
   language: MockLanguage;
+  scope: Scope;
+  restrictions: Restriction[];
+  pending?: Clarification;
 }
 interface JobItem {
   id: string;
@@ -128,6 +135,17 @@ export function createMockApi(
   const feedback: MockFeedback[] = [];
 
   function resultFor(session: SessionItem, phase: string): JobItem["result"] {
+    const prohibited = session.restrictions;
+    if (
+      prohibited.includes("no_touch_brow") &&
+      prohibited.includes("no_touch_bangs")
+    )
+      return advice("last", session.language);
+    if (
+      phase === "before" &&
+      prohibited.includes(`no_touch_${session.scope}` as Restriction)
+    )
+      return advice("vague", session.language);
     if (scenario === "error") return { error: "model_error" };
     if (phase === "after")
       return advice(
@@ -154,6 +172,7 @@ export function createMockApi(
     }
     const { kind, comparable } = job.result;
     session.lastAdviceKind = kind;
+    session.pending = job.result.clarification;
     if (job.phase === "after")
       session.state = comparable ? "COMPARING" : "CAPTURE_ADJUST";
     else if (kind === "offer_finish") session.state = "DONE";
@@ -162,7 +181,7 @@ export function createMockApi(
         {
           grooming_tip: "ADVICE_SHOWN",
           capture_setup_tip: "CAPTURE_ADJUST",
-          clarify: "CONSULTING",
+          clarify: "CLARIFYING",
         }[kind] ?? "CONSULTING";
   }
 
@@ -177,7 +196,8 @@ export function createMockApi(
         ? JSON.parse(init.body)
         : undefined;
     const headers = new Headers(init.headers);
-    const route = (r: string) => calls.push({ method, route: r });
+    const route = (r: string) =>
+      calls.push({ method, route: r, ...(body ? { body } : {}) });
     // The real worker finishes jobs on its own; here that happens on the next request.
     for (const job of jobs.values()) settle(job);
 
@@ -197,6 +217,8 @@ export function createMockApi(
         return fail(400, "consent_required");
       const session: SessionItem = {
         state: "CONSULTING",
+        scope: body.scope,
+        restrictions: body.restrictions ?? [],
         changesUsed: 0,
         analysesUsed: 0,
         expiresAt: new Date(NOW().getTime() + 24 * 3600 * 1000).toISOString(),
@@ -205,7 +227,13 @@ export function createMockApi(
       const sessionId = id("sess");
       sessions.set(sessionId, session);
       sessionLanguages.push(session.language);
-      const { language: _language, ...visible } = session;
+      const {
+        language: _language,
+        scope: _scope,
+        restrictions: _restrictions,
+        pending: _pending,
+        ...visible
+      } = session;
       return respond(201, { sessionId, ...visible } as Session);
     }
     if (parts[0] === "sessions" && parts[1]) {
@@ -251,12 +279,65 @@ export function createMockApi(
         session.state = "ANALYZING";
         const jobId = id("job");
         idempotent.set(`${sessionId}:${key}`, jobId);
+        const result = resultFor(session, body.phase);
+        if (!("error" in result) && result.kind === "clarify") {
+          const allowedScopes = (["brow", "bangs"] as const).filter(
+            (target) => !session.restrictions.includes(`no_touch_${target}`),
+          );
+          result.clarification = {
+            clarificationId: jobId,
+            reason:
+              session.scope === "look_first"
+                ? "choose_scope"
+                : "specify_detail",
+            allowedScopes,
+            requiresDetail:
+              session.scope !== "look_first" &&
+              allowedScopes.includes(session.scope),
+          };
+        }
         jobs.set(jobId, {
           id: jobId,
           sessionId,
           phase: body.phase,
           startedAt: Date.now(),
-          result: resultFor(session, body.phase),
+          result,
+          applied: false,
+        });
+        return respond(202, { jobId, status: "QUEUED" });
+      }
+      if (method === "POST" && parts[2] === "clarifications") {
+        route("/sessions/{sessionId}/clarifications");
+        const key = headers.get("Idempotency-Key");
+        const replay = idempotent.get(`${sessionId}:clarify:${key}`);
+        if (replay) return respond(202, { jobId: replay, status: "QUEUED" });
+        if (!door.accepting) return fail(503, "not_accepting");
+        if (
+          !key ||
+          session.state !== "CLARIFYING" ||
+          !session.pending ||
+          session.pending.clarificationId !== body.clarificationId
+        )
+          return fail(409, "conflict");
+        if (
+          !session.pending.allowedScopes.includes(body.scope) ||
+          (session.pending.requiresDetail && !body.detail?.trim())
+        )
+          return fail(400, "invalid_request");
+        if (session.analysesUsed >= 3)
+          return fail(429, "analysis_limit_reached");
+        session.scope = body.scope;
+        session.analysesUsed++;
+        session.state = "ANALYZING";
+        session.pending = undefined;
+        const jobId = id("job");
+        idempotent.set(`${sessionId}:clarify:${key}`, jobId);
+        jobs.set(jobId, {
+          id: jobId,
+          sessionId,
+          phase: "before",
+          startedAt: Date.now(),
+          result: advice("tip", session.language),
           applied: false,
         });
         return respond(202, { jobId, status: "QUEUED" });

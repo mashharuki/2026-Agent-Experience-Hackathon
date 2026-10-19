@@ -93,8 +93,8 @@ _CLARIFY_TEXT = {
     },
 }
 _CLARIFY_RESTRICTED = {
-    "ja": "触れたくない範囲があるため、別の範囲（たとえば前髪）を見ましょうか。それとも、このまま終えますか？",
-    "en": "Since there is an area you do not want to touch, shall I look at another area (for example, the bangs)? Or would you rather finish here?",
+    "ja": "触れたくない範囲があります。下の選択肢から見てほしい範囲を選ぶか、このまま終えることができます。",
+    "en": "There is an area you do not want to touch. Choose an allowed area below, or finish here.",
 }
 _FINISH_TEXT = {
     "ja": "ここまでにしましょう。比べた中から気に入った方を選んで、撮影に進めます。",

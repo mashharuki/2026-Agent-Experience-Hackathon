@@ -9,16 +9,18 @@
  * 同意は POST /sessions に含める。
  * 認証は API Gateway の JWT authorizer が行い、全操作で必須（認証なしの有料経路を作らない）。
  *
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { AdviceBasis } from './adviceBasis';
 import type { AdviceKind } from './adviceKind';
+import type { Clarification } from './clarification';
 
 export interface Advice {
   kind: AdviceKind;
   /** @maxLength 400 */
   text?: string;
   basis?: AdviceBasis;
+  clarification?: Clarification;
   /** after撮影の場合、前後が比較可能か */
   comparable?: boolean;
 }

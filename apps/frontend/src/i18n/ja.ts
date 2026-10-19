@@ -1,5 +1,21 @@
 // Japanese is the source dictionary: its keys define MessageKey, and en.ts must match them.
 export const ja = {
+  "clarify.heading": "確認する",
+  "clarify.scope": "どちらを見てほしいですか？",
+  "clarify.detail": "気になる箇所を教えてください",
+  "clarify.submit": "回答して続ける",
+  "clarify.missing":
+    "この質問には回答できません。相談を終了し、もう一度はじめてください。",
+  "clarify.captureRequired":
+    "回答を保存しました。対象が変わったか時間が経ったため、もう一度撮影してください。",
+
+  "consult.restrictions": "変えたくないこと",
+  "consult.restrictionsHelp":
+    "禁止したいことはここで選んでください。希望欄の文章だけでは禁止事項として確定されません。",
+  "restriction.no_touch_brow": "眉には触れない",
+  "restriction.keep_brow_shape": "眉の形を変えない",
+  "restriction.no_touch_bangs": "前髪には触れない",
+
   "app.title": "撮る前のひと手間",
   "app.tagline": "撮影前に、眉か前髪を一つだけ整えて試せます。",
   "lang.label": "言語",
@@ -37,7 +53,7 @@ export const ja = {
   "consult.wishHelp":
     "例：眉の形は変えたくないが、毛の流れは整えたい（200文字まで）",
   "consult.consentText":
-    "撮影した写真は、助言をつくるためにクラウド（AWS）に送られて解析されます。処理が終わるとすぐ削除し、失敗しても24時間以内に削除されます。比べるための写真は、この端末の中にだけ残ります。",
+    "撮影した写真は、助言をつくるためにクラウド（AWS）に送られて解析されます。処理後に削除し、残存時は定期回収します（24時間以内の削除が目標です）。確認質問のため観察メモを最大10分利用し、回答・終了時に削除します。期限切れのメモも定期回収します。比べるための写真は、この端末の中にだけ残ります。",
   "consult.consentCheck": "クラウドで解析されることに同意します",
   "consult.submit": "撮影へ進む",
   "consult.decline": "同意しない（終了する）",
@@ -78,7 +94,7 @@ export const ja = {
   "done.declined":
     "同意されなかったため、写真は送られていません。いつでもまたはじめられます。",
   "done.finished":
-    "相談を終えました。ここまでの写真は、この端末から消えます。クラウドの写真も削除されます。",
+    "相談を終えました。ここまでの写真は、この端末から消えます。クラウドの写真と観察メモにも削除を要求します。通信に失敗した場合は定期回収の対象になります。",
   "done.restart": "もう一度はじめる",
 
   "camera.preview": "カメラのプレビュー",

@@ -7,6 +7,45 @@ from moto import mock_aws
 from photoprep_api.store import ConditionFailed, DynamoStore, InMemoryStore
 
 
+def test_transaction_rolls_back_every_write_on_conflict(store):
+    store.create_if_absent("SESSION", "META", {"state": "DONE", "used": 0})
+    with pytest.raises(ConditionFailed):
+        store.transact(
+            [
+                {"op": "put", "pk": "JOB", "sk": "META", "item": {"status": "PENDING"}},
+                {
+                    "op": "update",
+                    "pk": "SESSION",
+                    "sk": "META",
+                    "expect": {"state": "CONSULTING"},
+                    "add": {"used": 1},
+                },
+            ]
+        )
+    assert store.get("JOB", "META") is None
+    assert store.get("SESSION", "META")["used"] == 0
+
+
+def test_transaction_commits_native_numbers_and_all_records(store):
+    store.create_if_absent("SESSION", "META", {"state": "CONSULTING", "used": 0})
+    store.transact(
+        [
+            {"op": "put", "pk": "JOB", "sk": "META", "item": {"score": 0.7}},
+            {
+                "op": "update",
+                "pk": "SESSION",
+                "sk": "META",
+                "expect": {"state": "CONSULTING"},
+                "set": {"state": "ANALYZING"},
+                "add": {"used": 1},
+                "caps": {"used": 3},
+            },
+        ]
+    )
+    assert store.get("JOB", "META")["score"] == 0.7
+    assert store.get("SESSION", "META")["used"] == 1
+
+
 @pytest.fixture(params=["memory", "dynamodb"])
 def store(request):
     if request.param == "memory":

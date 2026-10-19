@@ -2,6 +2,8 @@
 
 from datetime import timedelta
 
+from photoprep_common.clarification import context_key
+
 from ..aws import PartialDeleteError
 from ..container import Container
 from ..errors import AppError
@@ -9,7 +11,8 @@ from ..logs import log_event
 from ..repo import get_owned
 from ..states import State, check_can_start_change
 from ..store import ConditionFailed
-from .access import check_consent_version, ensure_accepting, reserve_session
+from .access import check_consent_version, ensure_accepting, session_reservation_operations
+from .idempotency import check_replay, fingerprint
 
 SESSION_TTL = timedelta(hours=24)
 MAX_COMPARISONS = 10  # more than the two changes a session allows; a runaway guard
@@ -28,28 +31,17 @@ def create_session(c: Container, sub: str, request: dict, idem_key: str) -> dict
     idem_pk = f"IDEM#{sub}#SESSION#{idem_key}"
     replay = c.store.get(idem_pk, "META")
     if replay is not None:
+        check_replay(replay, request)
         return _replay(c, sub, replay)  # accepted work stays valid even if the door closed since
     ensure_accepting(c, new_session=True)
     check_consent_version(request["consentVersion"])  # an invalid request must not use a quota slot
     now = c.now()
     session_id = c.new_id()
-    # Claim the key before spending anything, so two concurrent retries cannot both create one.
-    if not c.store.create_if_absent(
-        idem_pk,
-        "META",
-        {"ownerSub": sub, "sessionId": session_id, "ttl": ttl_after(c, SESSION_TTL)},
-    ):
-        return _replay(c, sub, c.store.get(idem_pk, "META") or {})
-    try:
-        reserve_session(c, sub)
-    except Exception:
-        c.store.delete(idem_pk, "META")  # a refusal must not leave a key that replays nothing
-        raise
     item = {
         "ownerSub": sub,
         "scope": request["scope"],
         "language": request.get("language", "ja"),
-        "restrictions": list(request.get("restrictions", [])),
+        "restrictions": sorted(set(request.get("restrictions", []))),
         "consentVersion": request["consentVersion"],
         "state": State.CONSULTING.value,
         "changesUsed": 0,
@@ -60,19 +52,44 @@ def create_session(c: Container, sub: str, request: dict, idem_key: str) -> dict
     }
     if request.get("wish"):
         item["wish"] = request["wish"]  # never logged; kept only for the 24 h session life
-    c.store.create_if_absent(session_pk(session_id), "META", item)
-    # Latest consent version the user agreed to before any image is sent (FR-018).
-    # Replaced on every session; revocation is added with the consent flow (T074).
-    c.store.delete(f"CONSENT#{sub}", "META")
-    c.store.create_if_absent(
-        f"CONSENT#{sub}",
-        "META",
-        {
-            "ownerSub": sub,
-            "consentVersion": request["consentVersion"],
-            "grantedAt": now.isoformat(),
-        },
-    )
+    for attempt in range(3):
+        operations = session_reservation_operations(c, sub) + [
+            {
+                "op": "put",
+                "pk": idem_pk,
+                "sk": "META",
+                "item": {
+                    "ownerSub": sub,
+                    "sessionId": session_id,
+                    "fingerprint": fingerprint(request),
+                    "ttl": ttl_after(c, SESSION_TTL),
+                },
+            },
+            {"op": "put", "pk": session_pk(session_id), "sk": "META", "item": item},
+            {
+                "op": "put",
+                "pk": f"CONSENT#{sub}",
+                "sk": "META",
+                "overwrite": True,
+                "item": {
+                    "ownerSub": sub,
+                    "consentVersion": request["consentVersion"],
+                    "grantedAt": now.isoformat(),
+                },
+            },
+            {"op": "check", "pk": "SERVICE#status", "sk": "META", "expect": {"accepting": True}},
+        ]
+        try:
+            c.store.transact(operations)
+            break
+        except ConditionFailed as err:
+            replay = c.store.get(idem_pk, "META")
+            if replay:
+                check_replay(replay, request)
+                return _replay(c, sub, replay)
+            ensure_accepting(c, new_session=True)
+            if attempt == 2:
+                raise AppError(409, "conflict") from err
     return session_view(session_id, item)
 
 
@@ -176,7 +193,13 @@ def end_session(c: Container, sub: str, session_id: str) -> None:
     """
     session = load_session(c, sub, session_id, allow_ended=True)
     if session["state"] != State.DONE.value:
-        c.store.update(session_pk(session_id), "META", set={"state": State.DONE.value})
+        session = c.store.update(session_pk(session_id), "META", set={"state": State.DONE.value})
+    pending = session.get("pendingClarificationId")
+    active_id = session.get("activeJobId")
+    active_job = c.store.get(f"JOB#{active_id}", "META") if active_id else None
+    context_id = pending or (active_job or {}).get("clarificationId")
+    if context_id:
+        c.store.delete(session_pk(session_id), context_key(context_id))
     try:
         c.uploads.delete_session_images(session_id)
     except PartialDeleteError as err:

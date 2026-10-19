@@ -10,6 +10,7 @@ ADVICE_KINDS = ("grooming_tip", "capture_setup_tip", "clarify", "offer_finish")
 
 class State(StrEnum):
     CONSULTING = "CONSULTING"
+    CLARIFYING = "CLARIFYING"
     ANALYZING = "ANALYZING"
     ADVICE_SHOWN = "ADVICE_SHOWN"
     CAPTURE_ADJUST = "CAPTURE_ADJUST"
@@ -32,5 +33,5 @@ def state_after_job(kind: str, phase: str, comparable: bool | None) -> State:
     return {
         "grooming_tip": State.ADVICE_SHOWN,
         "capture_setup_tip": State.CAPTURE_ADJUST,
-        "clarify": State.CONSULTING,
+        "clarify": State.CLARIFYING,
     }[kind]

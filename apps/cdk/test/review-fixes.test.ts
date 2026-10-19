@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { Match, Template } from "aws-cdk-lib/assertions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { PhotoPrepStack } from "../lib/cdk-stack";
 
@@ -16,6 +16,37 @@ function build(context: Record<string, unknown> = {}) {
   });
   return Template.fromStack(stack);
 }
+
+describe("cleanup failures are observable", () => {
+  it("counts individual S3 failures and alarms on them", () => {
+    const template = build();
+    template.hasResourceProperties("AWS::Logs::MetricFilter", {
+      MetricTransformations: [
+        {
+          MetricName: "SweeperDeletionFailures",
+          MetricNamespace: "PhotoPrep",
+          MetricValue: "$.failed_count",
+        },
+      ],
+    });
+    template.hasResourceProperties("AWS::CloudWatch::Alarm", {
+      MetricName: "SweeperDeletionFailures",
+      Namespace: "PhotoPrep",
+      Threshold: 1,
+      EvaluationPeriods: 1,
+      AlarmActions: Match.anyValue(),
+    });
+  });
+
+  it("gives the sweeper the table name to remove expired observation notes", () => {
+    build().hasResourceProperties("AWS::Lambda::Function", {
+      Handler: "photoprep_api.ops.sweeper.handler",
+      Environment: {
+        Variables: Match.objectLike({ TABLE_NAME: Match.anyValue() }),
+      },
+    });
+  });
+});
 
 describe("no development origin in a production stack by default", () => {
   it("keeps localhost out of the whole template", () => {

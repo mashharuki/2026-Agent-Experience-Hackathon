@@ -10,7 +10,9 @@ PK = "SERVICE#status"
 SK = "META"
 
 # The reasons that are part of the public API contract (ServiceStatus.reason).
-REASONS = frozenset({"open", "worker_stopped", "warming_up", "quota_exhausted", "maintenance"})
+REASONS = frozenset(
+    {"open", "worker_stopped", "warming_up", "quota_exhausted", "maintenance"}
+)
 
 
 def get_status(store: Store) -> dict:
@@ -36,7 +38,9 @@ def set_status(
     reported to users as ``maintenance``."""
     if reason not in REASONS:
         raise ValueError(f"reason is not part of the contract: {reason}")
-    store.create_if_absent(PK, SK, {"accepting": accepting, "reason": reason, "draining": draining})
+    store.create_if_absent(
+        PK, SK, {"accepting": accepting, "reason": reason, "draining": draining}
+    )
     fields: dict = {"accepting": accepting, "reason": reason, "draining": draining}
     remove = []
     if expected_reopen_at:

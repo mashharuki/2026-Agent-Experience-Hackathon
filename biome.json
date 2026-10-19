@@ -7,7 +7,12 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/src/api/generated"]
+    "includes": [
+      "**",
+      "!**/src/api/generated",
+      "!.claude",
+      "!docs/architecture/diagrams/aws-icons"
+    ]
   },
   "formatter": {
     "enabled": true,

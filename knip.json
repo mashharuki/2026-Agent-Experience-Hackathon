@@ -1,7 +1,18 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "tags": ["-lintignore"],
+  "ignoreBinaries": ["uv"],
+  "ignoreExportsUsedInFile": true,
   "workspaces": {
-    ".": {}
+    ".": {},
+    "apps/frontend": {
+      "ignoreIssues": {
+        "src/api/generated/**": ["exports", "types"]
+      }
+    },
+    "apps/cdk": {
+      "entry": ["bin/cdk.ts", "test/**/*.test.ts"],
+      "ignoreDependencies": ["ts-node"]
+    },
+    "packages/*": {}
   }
 }

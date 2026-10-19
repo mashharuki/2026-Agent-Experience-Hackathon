@@ -35,6 +35,10 @@ export const ROUTES: ReadonlyArray<{
   { method: apigwv2.HttpMethod.POST, path: "/sessions/{sessionId}/uploads" },
   { method: apigwv2.HttpMethod.POST, path: "/sessions/{sessionId}/analyses" },
   { method: apigwv2.HttpMethod.POST, path: "/sessions/{sessionId}/feedback" },
+  {
+    method: apigwv2.HttpMethod.POST,
+    path: "/sessions/{sessionId}/clarifications",
+  },
   { method: apigwv2.HttpMethod.GET, path: "/jobs/{jobId}" },
 ];
 

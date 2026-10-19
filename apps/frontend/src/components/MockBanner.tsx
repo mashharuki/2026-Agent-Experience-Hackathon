@@ -46,11 +46,13 @@ export function MockBanner({ mock }: { mock?: MockApi }) {
               variant="caption"
               component="label"
               htmlFor="mock-scenario"
+              id="mock-scenario-label"
             >
               {t("mock.scenario")}
             </Typography>
             <Select
               id="mock-scenario"
+              labelId="mock-scenario-label"
               size="small"
               value={scenario}
               onChange={(event) => {

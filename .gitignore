@@ -26,3 +26,9 @@ apps/cdk/cdk.context.json
 
 # Built Lambda package (scripts/build_lambda.py) and frontend output
 apps/api/build/
+
+# Browser test output and private configuration
+**/playwright-report/
+**/test-results/
+**/.env.*
+!**/.env.example

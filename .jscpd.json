@@ -12,7 +12,12 @@
     "css",
     "yaml"
   ],
-  "ignore": ["**/node_modules/**", "**/dist/**", "**/*.min.js"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.min.js",
+    "**/src/api/generated/**"
+  ],
   "reporters": ["console", "json"],
   "output": "report",
   "threshold": 5,

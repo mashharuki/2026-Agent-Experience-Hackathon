@@ -1,3 +1,4 @@
+import { withDeadline } from "./deadline";
 import type { Upload } from "./generated/model";
 
 /**
@@ -8,13 +9,23 @@ export async function uploadPhoto(
   upload: Upload,
   photo: Blob,
   doFetch: typeof fetch = (...args) => fetch(...args),
+  signal?: AbortSignal,
 ): Promise<void> {
   const form = new FormData();
   for (const [name, value] of Object.entries(upload.fields)) {
     form.append(name, value);
   }
   form.append("file", photo);
-  const response = await doFetch(upload.url, { method: "POST", body: form });
+  const response = await withDeadline(
+    (boundedSignal) =>
+      doFetch(upload.url, {
+        method: "POST",
+        body: form,
+        signal: boundedSignal,
+      }),
+    signal,
+    30_000,
+  );
   if (!response.ok) {
     throw new Error("upload_failed");
   }

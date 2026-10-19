@@ -70,7 +70,7 @@ class TestGuardsAreApplied:
             "restriction",
         )
         assert len(world.bedrock.calls) == 1  # no explanation was generated for a blocked tip
-        assert world.session()["state"] == "CONSULTING"
+        assert world.session()["state"] == "CLARIFYING"
 
     def test_an_unobservable_photo_gets_a_capture_tip_not_a_judgement(self, world):
         world.seed()
@@ -304,7 +304,7 @@ class TestTheDecisionDecidesWhatRuns:
         [
             ("grooming_tip", ["bedrock.observe", "bedrock.explain"], "ADVICE_SHOWN"),
             ("capture_setup_tip", ["bedrock.observe"], "CAPTURE_ADJUST"),
-            ("clarify", ["bedrock.observe"], "CONSULTING"),
+            ("clarify", ["bedrock.observe"], "CLARIFYING"),
             ("offer_finish", ["bedrock.observe"], "DONE"),
         ],
     )

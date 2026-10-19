@@ -1,5 +1,7 @@
 # Operations: start, stop, spend limits and tear-down
 
+> 2026-10-19レビュー修正：回答API・ジョブ種別・回収監視の差分はローカル検証済み、AWS未反映。[検証記録](reviews/2026-10-19-remediation-validation.md)を参照。以下の旧検証手順と今回の切替手順を区別する。
+
 Status: the infrastructure was deployed once on 2026-10-17 for verification and the commands below for deploying,
 starting and stopping the worker and publishing the SPA were run against AWS. **The tear-down steps were written
 from the design and have only been partly exercised** (run each `cdk` command on its own; a second one started
@@ -101,3 +103,18 @@ aws lambda invoke --function-name <WorkerControlFunction> --payload '{"action":"
 1. Stop the worker. 2. Export what you want to keep (`apps/worker/tools/export_decisions.py`).
 3. Deploy once with `-c photoprep:destroyData=true`, then `cdk destroy`. 4. Delete the ECR images and any
 leftover log groups. 5. Check Billing for resources that remain (public IPv4 addresses, ECR storage).
+
+## レビュー修正版の切替と障害対応（2026-10-19）
+
+1. 新規受付を閉じてdrainする。旧workerを残したまま回答ジョブを配送しない。
+2. APIのLambdaパッケージ、workerイメージを再ビルドし、新ルート・状態・ジョブ種別とCDKの監視・回収権限を揃える。
+3. フロントを公開し、PWAの更新を確認。既存のv1同意セッションは終了・新しい同意で再開始する。
+4. 招待ユーザーで回答→判断、待機中終了、所有権拒否、終了後の写真・観察メモ削除、回収通知を確認してから受付を開く。検証後はワーカーを停止する。
+
+回収処理は `attempted/deleted/failed/retried` を返す。S3個別エラーの一時失敗は最大2回追加再試行し、権限エラーは繰り返さない。`SweeperDeletionFailures` とSweeper Lambda Errorsを既存SNSへ通知する。failed_count>0ならIAM・バケットポリシー・暗号化設定を確認し、修正後に回収を再実行する。ログに画像キーや観察文章を貼らない。
+
+確認用Observationは10分で利用不可となり、回答完了・終了・定期回収で削除する。DynamoDB TTLやS3 Lifecycleは即時物理削除を保証しない。目標時間の超過・回収障害を成功扱いせず、通知から調査する。
+
+旧版でIDEMだけが残る場合、jobIdの実在・SESSIONの状態・配送履歴を読み取りで調べる。存在しないジョブを再実行したり利用枠を推測で返却せず、対象セッションを終了して再開始を案内する。新しい原子的な受付では同じ不整合を作らない。
+
+巻き戻す場合も受付停止・drainを先に行い、新しい回答ジョブを旧workerへ渡さない。新状態のセッションは終了させる。

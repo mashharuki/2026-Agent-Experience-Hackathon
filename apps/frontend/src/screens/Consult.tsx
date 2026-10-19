@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import type { Scope } from "../api/generated/model";
+import type { Restriction, Scope } from "../api/generated/model";
 import { useI18n } from "../i18n/I18nProvider";
 import type { MessageKey } from "../i18n/ja";
 
@@ -25,6 +25,7 @@ const OPTIONS: { value: Scope; key: MessageKey }[] = [
 export interface ConsultResult {
   scope: Scope;
   wish?: string;
+  restrictions: Restriction[];
 }
 
 /** Screen 1: choose what to look at, optionally say what you want, and consent before any photo. */
@@ -43,6 +44,7 @@ export function Consult({
   const { t } = useI18n();
   const [scope, setScope] = useState<Scope | "">("");
   const [wish, setWish] = useState("");
+  const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [consent, setConsent] = useState(false);
 
   return (
@@ -65,6 +67,32 @@ export function Consult({
         </RadioGroup>
       </FormControl>
 
+      <FormControl component="fieldset">
+        <FormLabel component="legend">{t("consult.restrictions")}</FormLabel>
+        {(["no_touch_brow", "keep_brow_shape", "no_touch_bangs"] as const).map(
+          (restriction) => (
+            <FormControlLabel
+              key={restriction}
+              label={t(`restriction.${restriction}`)}
+              control={
+                <Checkbox
+                  checked={restrictions.includes(restriction)}
+                  onChange={(event) => {
+                    setRestrictions((current) =>
+                      event.target.checked
+                        ? [...current, restriction]
+                        : current.filter((r) => r !== restriction),
+                    );
+                  }}
+                />
+              }
+            />
+          ),
+        )}
+        <Typography variant="caption">
+          {t("consult.restrictionsHelp")}
+        </Typography>
+      </FormControl>
       <TextField
         label={t("consult.wishLabel")}
         helperText={t("consult.wishHelp")}
@@ -98,12 +126,13 @@ export function Consult({
         size="large"
         disabled={!scope || !consent || busy}
         onClick={() =>
-          scope && onSubmit({ scope, wish: wish.trim() || undefined })
+          scope &&
+          onSubmit({ scope, restrictions, wish: wish.trim() || undefined })
         }
       >
         {t("consult.submit")}
       </Button>
-      <Button color="inherit" onClick={onDecline} disabled={busy}>
+      <Button color="inherit" onClick={onDecline}>
         {t("consult.decline")}
       </Button>
     </Stack>

@@ -146,8 +146,10 @@ export class Operations extends Construct {
       60,
       {
         IMAGE_BUCKET: data.imageBucket.bucketName,
+        TABLE_NAME: data.table.tableName,
       },
     );
+    data.table.grant(sweeper, "dynamodb:Query", "dynamodb:DeleteItem");
     // Lists the uploads/ prefix (LastModified comes with the listing) and deletes old objects.
     grantUploadAccess(sweeper, data.imageBucket, { delete: true });
     new events.Rule(this, "SweepEvery15Minutes", {
@@ -179,6 +181,7 @@ export class Operations extends Construct {
     for (const [name, fn] of [
       ["WorkerControl", this.workerControl],
       ["Redispatch", redispatch],
+      ["Sweeper", sweeper],
     ] as const) {
       new cloudwatch.Alarm(this, `${name}Errors`, {
         alarmDescription: `${name} Lambda is failing`,
@@ -190,6 +193,32 @@ export class Operations extends Construct {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }).addAlarmAction(notify);
     }
+
+    const deletionFailures = new logs.MetricFilter(
+      this,
+      "SweeperDeletionFailures",
+      {
+        logGroup: sweeper.logGroup,
+        filterPattern: logs.FilterPattern.all(
+          logs.FilterPattern.stringValue("$.event", "=", "sweep"),
+          logs.FilterPattern.numberValue("$.failed_count", ">", 0),
+        ),
+        metricNamespace: "PhotoPrep",
+        metricName: "SweeperDeletionFailures",
+        metricValue: "$.failed_count",
+      },
+    );
+    new cloudwatch.Alarm(this, "SweeperPartialDeletionFailure", {
+      metric: deletionFailures.metric({
+        period: cdk.Duration.minutes(15),
+        statistic: "Sum",
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator:
+        cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(notify);
 
     // --- budget (notification only) -----------------------------------------------------
     if (props.alertEmail) {

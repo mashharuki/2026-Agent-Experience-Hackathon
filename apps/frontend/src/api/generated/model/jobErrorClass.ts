@@ -9,7 +9,7 @@
  * 同意は POST /sessions に含める。
  * 認証は API Gateway の JWT authorizer が行い、全操作で必須（認証なしの有料経路を作らない）。
  *
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export type JobErrorClass = typeof JobErrorClass[keyof typeof JobErrorClass];
@@ -21,5 +21,6 @@ export const JobErrorClass = {
   quota_exceeded: 'quota_exceeded',
   worker_unavailable: 'worker_unavailable',
   model_error: 'model_error',
+  storage_error: 'storage_error',
   cancelled: 'cancelled',
 } as const;

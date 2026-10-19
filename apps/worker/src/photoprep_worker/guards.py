@@ -25,6 +25,8 @@ class GuardContext:
     changes_used: int
     lighting: str
     framing: str
+    analyses_used: int = 0
+    clarified: bool = False
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,16 @@ class GuardResult:
 
 
 # Only "grooming_tip" can do harm (it tells a person to do something), so only it is guarded.
+
+
+def exhausted(choice: Choice, ctx: GuardContext) -> Override | None:
+    if {"no_touch_brow", "no_touch_bangs"}.issubset(ctx.restrictions):
+        return Override("offer_finish", "restriction")
+    if ctx.analyses_used >= 3 and choice.selected in {"grooming_tip", "clarify"}:
+        return Override("offer_finish", "analysis_limit")
+    if ctx.clarified and choice.selected == "clarify":
+        return Override("offer_finish", "clarification_limit")
+    return None
 
 
 def change_limit(choice: Choice, ctx: GuardContext) -> Override | None:
@@ -75,7 +87,7 @@ def low_confidence(minimum: float) -> Guard:
 
 def guards_for(min_confidence: float = 0.0) -> list[Guard]:
     """In priority order: limit, then restriction, then what cannot be seen, then confidence."""
-    return [change_limit, restriction, unobservable, low_confidence(min_confidence)]
+    return [exhausted, change_limit, restriction, unobservable, low_confidence(min_confidence)]
 
 
 def apply_guards(choice: Choice, ctx: GuardContext, min_confidence: float = 0.0) -> GuardResult:

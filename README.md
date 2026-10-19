@@ -31,12 +31,14 @@ The decision structure is extracted as a reusable pattern, see [Decision pattern
   Compare and choose.
 - **One suggestion at a time**, at most **two changes** and **three analyses** per session. You can finish
   at any moment, from any screen.
-- **Your restrictions are honored in code**, not just in a prompt (for example "do not touch my brows").
+- **Choose explicit restrictions** before capture (for example "do not touch my brows"). They are passed to code guards; the optional wish text does not confirm a structured restriction.
+- **Answer clarifying questions** without another upload when a valid observation covers the chosen area. This uses one of the same three analysis slots.
 - **Honest about what cannot be seen**: backlight, dim light, a face out of frame or a photo that cannot be
   compared with the earlier one lead to a single shooting tip or a retake, never to a confident claim.
 - **Privacy by design**: the photo is sent to the cloud only after you agree, is deleted right after
-  processing (and when you end the session), and the photos used for comparison stay in the browser's memory
-  on your device. Logs contain ids and option names, never photos or your words.
+  processing (and deletion is requested when you end the session), with periodic cleanup for failures.
+  Observation notes may be reused for up to ten minutes for a clarification, then removed after answering,
+  finishing, or periodic cleanup. Photos used for comparison stay in the browser's memory on your device. Logs contain ids and option names, never photos or your words.
 - **Japanese and English** UI and advice, switchable at any time (the advice follows the chosen language).
 - **Installable (PWA)**: add it to the home screen. The service worker only caches the static app shell; it
   never touches the API, S3, Cognito, the sign-in callback or photos.
@@ -240,17 +242,17 @@ aws cloudformation describe-stacks --stack-name PhotoPrepStack --region ap-north
 
 ## Status
 
-A dated, honest record (2026-10-17). Details in [`specs/001-pre-photo-grooming-assist/`](specs/001-pre-photo-grooming-assist/)
+A dated record (local remediation checks: 2026-10-19; AWS measurements: 2026-10-17). Details in [`specs/001-pre-photo-grooming-assist/`](specs/001-pre-photo-grooming-assist/)
 (spec, plan, research, tasks).
 
 | Item | State |
 | --- | --- |
-| Code | API, worker, frontend and infrastructure implemented with tests first. Tests: API 324, worker 150, frontend 110, CDK 42 (all local, Bedrock mocked) |
+| Code | API, worker, frontend and infrastructure implemented with tests first. Local checks: API 378, worker 177, frontend 136, CDK 51, mock browser E2E 3; three optional tests skipped. See [validation record](docs/reviews/2026-10-19-remediation-validation.md). The latest changes have not been deployed to AWS |
 | Deployed to AWS | **Yes, once, for verification** (Tokyo). Sign-in, the door, photo upload, one real analysis (Nova Lite + Decider on Fargate) and the advice screen worked end to end, in English and Japanese. The compare-and-finish half has not been run on AWS. The environment is torn down after verification, so there is no public URL |
 | Measured on AWS | One analysis took about 9 seconds from acceptance to result (single sample, cold worker). The worker was ready 124 seconds after being started. **Not measured**: Decider peak memory and latency on Fargate, image deletion beyond the success path, quality of the advice (in either language) |
 | Known defects found only on AWS | Four, all fixed with tests: a token race after sign-in, a Lambda import error, a missing "open the door" call in the worker, and S3 upload forms signed for the global endpoint |
 | Demo video and article | Drafts only ([article](docs/article/draft.md), [script](docs/demo-script.md)) with `[MEASURE]`/`[TODO]` markers; not published |
-| Not done | Playwright end-to-end tests; the parts of "restrictions", "uncertain observations" and "limits" that need real photos; the Knip clean-up |
+| Not done | AWS validation of the latest changes; the parts of "restrictions", "uncertain observations" and "limits" that need real photos. Knip and mock Playwright checks now pass; the new CI workflow has not run on GitHub yet |
 
 ## Repository layout
 

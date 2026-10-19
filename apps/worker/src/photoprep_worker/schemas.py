@@ -32,11 +32,14 @@ class Advice(BaseModel):
     text: str = Field(min_length=1, max_length=400)
     basis: Literal["observation", "user_request"]
     comparable: bool | None = None
+    clarification: dict | None = None
 
     def to_result(self) -> dict:
         result = {"kind": self.kind, "text": self.text, "basis": self.basis}
         if self.comparable is not None:
             result["comparable"] = self.comparable
+        if self.clarification is not None:
+            result["clarification"] = self.clarification
         return result
 
 

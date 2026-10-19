@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+import { setFetchImplementation } from "../api/custom-fetch";
 
 Object.defineProperty(navigator, "languages", {
   value: ["ja-JP"],
@@ -13,6 +14,7 @@ Object.defineProperty(navigator, "language", {
 
 afterEach(() => {
   cleanup();
+  setFetchImplementation((...args) => fetch(...args));
   sessionStorage.clear();
   localStorage.clear();
 });

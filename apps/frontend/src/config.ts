@@ -18,7 +18,7 @@ export interface AppConfig {
 }
 
 export const SCOPES = "openid email photoprep/session";
-export const CONSENT_VERSION = "2026-10-v1";
+export const CONSENT_VERSION = "2026-10-v2";
 
 export function loadConfig(): AppConfig {
   const env = import.meta.env;

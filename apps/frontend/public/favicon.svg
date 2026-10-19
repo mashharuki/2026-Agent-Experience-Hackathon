@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Photo Prep: favicon</title>
   <rect width="64" height="64" rx="14" fill="#1976d2"/>
   <ellipse cx="32" cy="34" rx="15" ry="20" fill="none" stroke="#fff" stroke-width="3"/>
   <path d="M21 28c2-3 6-3 8 0M35 28c2-3 6-3 8 0" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="25" cy="35" r="1.6" fill="#fff"/><circle cx="39" cy="35" r="1.6" fill="#fff"/>

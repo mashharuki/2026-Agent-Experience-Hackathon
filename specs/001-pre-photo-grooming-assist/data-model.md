@@ -116,3 +116,11 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 - 解析が成功したときの遷移は `states.state_after_job`（助言の種類と撮影の種類、比較可否で決まる。ワーカーが同じ規則を適用する）。
 - 設計の修正（フロント実装中、2026-10-17）: 当初は「もう一手」を比較後の新しい解析（`before`）で始めていたため、2回の変更に解析が4回必要になり、上限の3回を超えた。「整えたので確認」（`after`）の解析が比較可否と**次の提案**を返すようにし、「もう一手」は比較画面に出る次の提案をそのまま「やってみる」（`advice_response: try`、COMPARING から可）で始める。これで2回の変更が3回の解析（前・後・後）に収まる。
 - `after` の解析は、助言の種類が `offer_finish`（変更の上限など）でも、比較できるなら COMPARING に進む（本人は必ず前後を比べられる）。比較できなければ CAPTURE_ADJUST（撮り直し）。
+
+## 2026-10-19 修正実装
+
+- SESSIONに `activeJobId`、`pendingClarificationId` を追加。beforeのclarify後は `CLARIFYING` となり、回答APIで `ANALYZING` または `CONSULTING` へ進む。
+- `SESSION#id / CLARIFICATION#jobId` に質問、元scope、構造化Observation、10分の利用期限を保存する。画像は保存しない。Observationも個人データとして扱いログへ出さない。回答処理が終わったとき・終了時に削除し、期限切れレコードは回収LambdaとTTLで回収する。期限の10分は利用可能期間であり、TTLによる物理削除時刻の保証ではない。
+- 回答ジョブは `inputKind: clarification` と `clarificationId` を持ち、uploadIdを持たない。入力種別未設定の旧ジョブは画像ジョブとして扱う。
+- 解析受付のIDEM・UPLOAD・SESSION・JOBは同じトランザクションで確定。セッション作成のIDEM・利用枠・SESSION・同意も一括確定する。
+- IDEMのfingerprintで同じキーの異なる入力を拒否する。回答による再判断もanalysesUsedへ1回加算する。

@@ -188,7 +188,7 @@ class TestQuota:
         status, body, _ = create(api, claims=other)
         assert (status, body["code"]) == (429, "quota_exceeded")
         # The refused person's own count was given back: the slot used for the attempt is not lost.
-        count = api.store.get("QUOTA#USER#user-789#2026-10-18", "META")["count"]
+        count = (api.store.get("QUOTA#USER#user-789#2026-10-18", "META") or {"count": 0})["count"]
         assert count == 0
 
     def test_people_already_in_a_session_are_not_cut_off_when_the_overall_quota_runs_out(self, api):
@@ -207,7 +207,7 @@ class TestQuota:
         sid = new_session(api)
         for n in range(3):
             body = start_analysis(api, sid, new_upload(api, sid), idem=f"{n}" * 16)[1]
-            finish_job(api, body["jobId"], "clarify")
+            finish_job(api, body["jobId"], "capture_setup_tip")
         assert start_analysis(api, sid, new_upload(api, sid), idem="9" * 16)[0] == 429
 
 

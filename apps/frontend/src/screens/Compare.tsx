@@ -101,12 +101,7 @@ export function Compare({
       ) : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
 
-      <Button
-        variant="contained"
-        size="large"
-        onClick={onFinish}
-        disabled={busy}
-      >
+      <Button variant="contained" size="large" onClick={onFinish}>
         {t("compare.finish")}
       </Button>
       {canTryAgain && nextAdvice ? (

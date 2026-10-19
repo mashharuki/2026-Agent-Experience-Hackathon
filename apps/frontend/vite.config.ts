@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), swBuildId()],
   test: {
     environment: "jsdom",
+    exclude: ["e2e/**", "node_modules/**"],
     setupFiles: ["./src/test/setup.ts"],
     css: false,
     // Real hooks and a mock API; nothing here talks to the network.

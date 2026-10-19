@@ -1,8 +1,9 @@
 """operationId -> handler function table used by the Connexion resolver."""
 
-from . import analyses, feedback, jobs, sessions, status, uploads
+from . import analyses, clarifications, feedback, jobs, sessions, status, uploads
 
 HANDLERS = {
+    "answerClarification": clarifications.answer_clarification,
     "getServiceStatus": status.get_service_status,
     "createSession": sessions.create_session,
     "endSession": sessions.end_session,

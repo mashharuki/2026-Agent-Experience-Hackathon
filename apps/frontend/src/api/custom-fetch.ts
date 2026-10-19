@@ -1,3 +1,4 @@
+import { withDeadline } from "./deadline";
 // Hand-written HTTP layer injected into the generated client (never generated).
 // - Adds the Cognito access token.
 // - Never retries: analysis POSTs must not be re-sent automatically (cost control).
@@ -66,20 +67,23 @@ export async function customFetch<T>(
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  const response = await fetchImplementation(`${baseUrl}${url}`, {
-    ...options,
-    headers,
-  });
-  const text = await response.text();
-  const data = parseJson(text);
-  if (!response.ok) {
-    if (response.status === 401) {
-      // API Gateway's JWT authorizer answers {"message":"Unauthorized"} with no `code`, so the
-      // status is what says the sign-in is no longer good.
-      unauthorizedHandler?.();
-      throw new ApiError(401, "unauthenticated");
+  return withDeadline(async (signal) => {
+    const response = await fetchImplementation(`${baseUrl}${url}`, {
+      ...options,
+      signal,
+      headers,
+    });
+    const text = await response.text();
+    const data = parseJson(text);
+    if (!response.ok) {
+      if (response.status === 401) {
+        // API Gateway's JWT authorizer answers {"message":"Unauthorized"} with no `code`, so the
+        // status is what says the sign-in is no longer good.
+        unauthorizedHandler?.();
+        throw new ApiError(401, "unauthenticated");
+      }
+      throw new ApiError(response.status, data?.code ?? "internal_error");
     }
-    throw new ApiError(response.status, data?.code ?? "internal_error");
-  }
-  return { data, status: response.status, headers: response.headers } as T;
+    return { data, status: response.status, headers: response.headers } as T;
+  }, options.signal);
 }

@@ -220,7 +220,7 @@ class TestRequestAnalysis:
             upload = new_upload(api, sid)
             status, body, _ = start_analysis(api, sid, upload, idem=f"{n}" * 16)
             assert status == 202, body
-            finish_job(api, body["jobId"], "clarify")
+            finish_job(api, body["jobId"], "capture_setup_tip")
         status, body, _ = start_analysis(api, sid, new_upload(api, sid), idem="9" * 16)
         assert (status, body["code"]) == (429, "analysis_limit_reached")
         assert len(api.queue.sent) == 3

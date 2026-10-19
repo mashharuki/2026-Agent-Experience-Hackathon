@@ -14,7 +14,7 @@ from photoprep_api.store import InMemoryStore
 from tests.fakes import FakeQueue, FakeUploads, FixedClock, sequential_ids
 
 ACCESS_CLAIMS = {"sub": "user-123", "scope": "photoprep/session", "token_use": "access"}
-CONSENT_VERSION = "2026-10-v1"  # the wording the app currently shows (services/access.py)
+CONSENT_VERSION = "2026-10-v2"  # the wording the app currently shows (services/access.py)
 GOOD_SESSION = {
     "consentVersion": CONSENT_VERSION,
     "scope": "brow",

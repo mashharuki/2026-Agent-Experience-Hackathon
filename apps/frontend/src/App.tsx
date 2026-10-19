@@ -10,16 +10,13 @@ import {
 } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { setFetchImplementation } from "./api/custom-fetch";
 import { AuthProvider } from "./auth/AuthProvider";
 import { useAuth } from "./auth/context";
 import { LanguageSwitch } from "./components/LanguageSwitch";
 import { MockBanner } from "./components/MockBanner";
-import { type AppConfig, ConfigContext, loadConfig } from "./config";
+import { type AppConfig, ConfigContext } from "./config";
 import { SessionFlow } from "./features/session/SessionFlow";
 import { I18nProvider, useI18n } from "./i18n/I18nProvider";
-import { doorFromUrl } from "./mock/doors";
-import { createMockApi } from "./mock/mock-api";
 import { OfflineNotice, UpdateBanner } from "./pwa/PwaNotices";
 import { theme } from "./theme";
 
@@ -61,24 +58,7 @@ function Gate() {
   return <SessionFlow />;
 }
 
-export default function App({
-  config: override,
-}: {
-  config?: Partial<AppConfig>;
-}) {
-  const [config] = useState<AppConfig>(() => {
-    const base = { ...loadConfig(), ...override };
-    if (base.mode === "mock") {
-      // All API calls, including the signed photo upload, are answered inside this tab.
-      base.mock ??= createMockApi({
-        door: doorFromUrl(window.location.search),
-      });
-      setFetchImplementation(base.mock.fetch);
-    } else {
-      setFetchImplementation((...args) => fetch(...args));
-    }
-    return base;
-  });
+export default function App({ config }: { config: AppConfig }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({

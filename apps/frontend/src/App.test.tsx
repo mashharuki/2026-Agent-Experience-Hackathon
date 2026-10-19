@@ -4,7 +4,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
+import { setFetchImplementation } from "./api/custom-fetch";
 import { createMockApi, type MockScenario } from "./mock/mock-api";
+import { createAppRuntime } from "./runtime";
 import { liveObjectUrls } from "./test/setup";
 
 function setup(
@@ -14,7 +16,11 @@ function setup(
   const mock = createMockApi({ latencyMs: 0, scenario });
   if (door) mock.setDoor(door);
   const user = userEvent.setup();
-  render(<App config={{ mode: "mock", mock, pollDelay: () => 5 }} />);
+  render(
+    <App
+      config={createAppRuntime({ mode: "mock", mock, pollDelay: () => 5 })}
+    />,
+  );
   return { mock, user };
 }
 
@@ -49,6 +55,49 @@ describe("the mock is always announced", () => {
 });
 
 describe("screen 1: consult", () => {
+  it("can end and restart before session creation returns without applying the old response", async () => {
+    const { user, mock } = setup();
+    let release: (() => void) | undefined;
+    let delay = true;
+    setFetchImplementation((input, init) =>
+      String(input).endsWith("/sessions") && init?.method === "POST" && delay
+        ? new Promise<Response>((resolve) => {
+            release = () => {
+              void mock.fetch(input, init).then(resolve);
+            };
+          })
+        : mock.fetch(input, init),
+    );
+    await consult(user);
+    await user.click(
+      screen.getByRole("button", { name: "同意しない（終了する）" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "もう一度はじめる" }),
+    );
+    delay = false;
+    release?.();
+    await waitFor(() =>
+      expect(mock.calls.some((call) => call.method === "DELETE")).toBe(true),
+    );
+    expect(
+      screen.getByRole("heading", { name: "相談する" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "試し撮り" }),
+    ).not.toBeInTheDocument();
+  });
+  it("sends explicit restrictions with the session", async () => {
+    const { user, mock } = setup();
+    await user.click(
+      await screen.findByRole("checkbox", { name: "眉の形を変えない" }),
+    );
+    await consult(user);
+    const call = mock.calls.find(
+      (c) => c.method === "POST" && c.route === "/sessions",
+    );
+    expect(call?.body).toMatchObject({ restrictions: ["keep_brow_shape"] });
+  });
   it("cannot continue without a scope and the cloud-analysis consent", async () => {
     const { user, mock } = setup();
     const next = await screen.findByRole("button", { name: "撮影へ進む" });
@@ -188,6 +237,73 @@ describe("the full journey", () => {
 });
 
 describe("conditions that need a different next step", () => {
+  it("answers a clarification without sending another photo", async () => {
+    const { user, mock } = setup("vague");
+    await consult(user, "まず見てほしい");
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    await screen.findByRole("heading", { name: "確認する" });
+    await user.click(screen.getByRole("radio", { name: "眉" }));
+    await user.click(screen.getByRole("button", { name: "回答して続ける" }));
+    await screen.findByRole("heading", { name: "一つ試す" });
+    expect(
+      mock.calls.filter((call) => call.route.endsWith("/uploads")),
+    ).toHaveLength(1);
+    expect(
+      mock.calls.find((call) => call.route.endsWith("/clarifications"))?.body,
+    ).toMatchObject({ scope: "brow" });
+  });
+
+  it("can finish during polling and ignores a late success", async () => {
+    const { user, mock } = setup();
+    let complete: (() => void) | undefined;
+    setFetchImplementation((input, init) =>
+      String(input).includes("/jobs/")
+        ? new Promise<Response>((resolve) => {
+            complete = () => {
+              void mock.fetch(input, init).then(resolve);
+            };
+          })
+        : mock.fetch(input, init),
+    );
+    await consult(user);
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    await waitFor(() => expect(complete).toBeDefined());
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    await screen.findByRole("button", { name: "もう一度はじめる" });
+    complete?.();
+    await waitFor(() => expect(liveObjectUrls()).toBe(0));
+    expect(
+      screen.queryByRole("heading", { name: "一つ試す" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a GET failure and rechecks the same job without another analysis", async () => {
+    const { user, mock } = setup();
+    let failing = true;
+    setFetchImplementation((input, init) =>
+      String(input).includes("/jobs/") && failing
+        ? Promise.resolve(new Response("{}", { status: 503 }))
+        : mock.fetch(input, init),
+    );
+    await consult(user);
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    const recheck = await screen.findByRole("button", { name: "もう一度確認" });
+    failing = false;
+    await user.click(recheck);
+    await screen.findByRole("heading", { name: "一つ試す" });
+    expect(
+      mock.calls.filter((call) => call.route.endsWith("/analyses")),
+    ).toHaveLength(1);
+  });
   it("shows one capture tip and lets the user retake instead of judging", async () => {
     const { user } = setup("backlight");
     await consult(user);

@@ -9,7 +9,7 @@
  * 同意は POST /sessions に含める。
  * 認証は API Gateway の JWT authorizer が行い、全操作で必須（認証なしの有料経路を作らない）。
  *
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export type SessionState = typeof SessionState[keyof typeof SessionState];
@@ -17,6 +17,7 @@ export type SessionState = typeof SessionState[keyof typeof SessionState];
 
 export const SessionState = {
   CONSULTING: 'CONSULTING',
+  CLARIFYING: 'CLARIFYING',
   ANALYZING: 'ANALYZING',
   ADVICE_SHOWN: 'ADVICE_SHOWN',
   CAPTURE_ADJUST: 'CAPTURE_ADJUST',

@@ -2,53 +2,40 @@
 
 ## Project Structure & Module Organization
 
-This repository is an early-stage AWS Agent Experience Hackathon project: a photo-preparation assistant that helps users try one grooming adjustment and compare results.
+This AWS hackathon project helps a person try one grooming adjustment before a photo and compare the result.
 
-- `README.md` links to the hackathon.
-- `docs/mvp.md` describes the proposed experience, architecture, scope, and validation scenarios. Read it before implementation; distinguish adopted direction from provisional details.
-- `apps/frontend/` contains the React/Vite scaffold; `apps/cdk/` contains CDK infrastructure and test scaffolds.
-- `packages/api-spec/` and `packages/shared/` are placeholder workspace packages.
-- `docs/architecture/` contains the architecture baseline, cost estimates, and editable draw.io diagrams with AWS icons. API and Python worker applications are planned, not implemented.
+- `apps/frontend/`: React/Vite SPA, MUI screens, TanStack Query, bilingual UI, mock API and PWA.
+- `apps/api/`: Python Connexion/Flask API, Lambda adapter, operations handlers and pytest tests.
+- `apps/worker/`: Python SQS worker, Bedrock observation, Decider selection, guards and Docker image.
+- `apps/cdk/`: TypeScript AWS CDK infrastructure and Jest assertions.
+- `packages/api-spec/openapi.yaml`: authoritative API contract; `packages/photoprep-common/`: shared Python persistence, states and logging.
+- `specs/001-pre-photo-grooming-assist/`: requirements, plans, tasks and validation scenarios. `docs/architecture/` contains AWS diagrams and cost assumptions.
 
 ## Specification Workflow
 
-Use `.agents/skills/speckit-*/` and `.specify/` templates in the sequence documented in `README.md`. Follow the ratified constitution in `.specify/memory/constitution.md`. Distinguish architecture decisions from unverified performance assumptions and provisional MVP requirements.
-
-Read [the technology stack](docs/tech-stack.md) before Spec Kit planning, task generation, implementation, or analysis. Reference it in each plan's Technical Context; turn pending checks into explicit tasks. Preserve adopted choices, keep recommendations distinct from verified decisions, and update the table when choices or installation status change. Keep OpenAPI YAML authoritative and regenerate clients instead of editing generated code.
+Follow `.specify/memory/constitution.md` and `.agents/skills/speckit-*/`. Read `docs/tech-stack.md`, the feature spec and `remediation-plan.md` before changes. Reference the stack in Technical Context. Update requirements, contracts, generated clients and tasks together. Keep implemented behavior distinct from AWS validation and model-quality evidence.
 
 ## Build, Test, and Development Commands
 
-Use the declared package manager, `pnpm@10.32.1`.
+Use `pnpm@10.32.1`, Python 3.12 and uv.
 
-- `pnpm install`: install declared dependencies.
-- `pnpm format`: format supported files with Biome, writing changes.
-- `pnpm check`: run Biome checks with automatic fixes; review the resulting diff.
-- `pnpm exec biome check .`: run checks without writing changes.
-- `pnpm knip`: detect unused files, exports, and dependencies using `knip.json`.
-- `pnpm jscpd`: detect duplication in `apps/` and `packages/`; write reports to ignored `report/`.
-- `pnpm check:quality`: run Knip, then jscpd if Knip passes; neither applies code fixes.
-- `git diff --check`: detect whitespace errors in changes.
-- `pnpm --filter frontend dev`: start Vite locally.
-- `pnpm --filter frontend build`: type-check and build the SPA.
-- `pnpm --filter cdk test`: run the current Jest/CDK tests.
-- `pnpm --filter cdk cdk synth`: synthesize infrastructure locally.
+- `pnpm install --frozen-lockfile`: install JavaScript dependencies.
+- `pnpm --filter frontend dev` / `build`: run Vite / type-check and build.
+- `pnpm --filter frontend test` / `test:e2e`: run Vitest / Playwright with synthetic mock data.
+- `pnpm --filter api-spec check`: validate OpenAPI and Connexion loading.
+- `pnpm --filter frontend api:generate`: regenerate Orval clients; never edit generated code.
+- In `apps/api/` and `apps/worker/`: `uv sync --frozen`, `uv run pytest`, `uv run ruff check .`.
+- `pnpm --filter cdk test` / `build`: check infrastructure and TypeScript.
+- `pnpm exec biome check .`, `pnpm --filter frontend lint`, `pnpm check:quality`, `git diff --check`: non-mutating checks. `pnpm format` writes formatting changes.
 
-Turborepo is installed, but root task orchestration is not configured. Vite handles frontend builds; Turbopack is not installed.
+## Coding Style & Testing
 
-## Coding Style & Naming Conventions
-
-Follow `biome.json`: space indentation, double quotes in JavaScript, recommended lint rules, and organized imports. Let Biome determine formatting for supported files. Use descriptive module names and preserve documented decision identifiers such as `grooming_tip`, `capture_setup_tip`, `clarify`, and `offer_finish`.
-
-## Testing Guidelines
-
-CDK uses Jest with `test/*.test.ts`; its existing test is only a scaffold. No coverage threshold is configured. Document additional test runners when introduced.
-
-Prioritize the scenarios in `docs/mvp.md`: missing images, explicit user restrictions, uncertain observations, changed lighting, and the two-adjustment limit. Evaluate model decisions separately from deterministic application behavior. Keep evaluation data separate from development examples.
+Follow Biome for JS/TS and Ruff for Python. Use descriptive names; preserve `grooming_tip`, `capture_setup_tip`, `clarify`, and `offer_finish`. Test observable behavior, ownership, restrictions, atomic acceptance, cancellation and deletion failures. Run shared Store contracts against memory and moto. Evaluate real model quality separately from deterministic fake-model tests; no coverage percentage is configured.
 
 ## Commit & Pull Request Guidelines
 
-History contains brief messages such as `init`, `update`, and `ベースを作成`; no formal convention is established. Write specific, action-oriented commit subjects. PRs should describe the change, validation performed, relevant issues, and remaining limitations. Include screenshots for UI changes.
+Use specific, action-oriented subjects. PRs should explain behavior, validation and limitations, link relevant issues and include screenshots for UI changes. `.github/workflows/ci.yml` checks contracts, code generation, quality, tests and mock browser flows.
 
-## Architecture & Configuration
+## Security & Operations
 
-The proposed design assigns observation and explanation to Bedrock, support selection to Decider, and explicit restrictions and termination to ordinary code. Preserve user choice. Never commit credentials or personal face photos; document configuration with placeholder values. Explain cloud image processing before capture.
+Keep Cognito authentication and server ownership checks on every API. Apply restrictions and limits in code. Never commit credentials, personal face photos or observation text. Do not log user content. Explain cloud processing and short-lived observation reuse before capture. Ended sessions must reject new work and ignore late results. Cloud deployment and paid model checks require the documented budget and shutdown procedures.

@@ -16,6 +16,9 @@ ALLOWED_FIELDS = frozenset(
         "confidence",
         "token_count",
         "failed_count",
+        "attempted_count",
+        "deleted_count",
+        "retried_count",
         "job_id",
         "session_id",
         "phase",
@@ -42,4 +45,6 @@ def log_event(event: str, **fields: object) -> None:
     unknown = set(fields) - ALLOWED_FIELDS
     if unknown:
         raise ValueError(f"field not allowed in logs: {sorted(unknown)}")
-    _logger.info(json.dumps({"event": event, **fields}, ensure_ascii=False, default=str))
+    _logger.info(
+        json.dumps({"event": event, **fields}, ensure_ascii=False, default=str)
+    )

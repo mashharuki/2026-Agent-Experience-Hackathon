@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Pre-Photo Grooming Assist API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     API 契約の正本（specs/001-pre-photo-grooming-assist の FR・data-model に対応）。
     Python 側から仕様を生成しない。クライアントは Orval で再生成し、生成物を直接編集しない。
@@ -116,6 +116,36 @@ paths:
         "409": { $ref: "#/components/responses/Error" }
         "429": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
+  /sessions/{sessionId}/clarifications:
+    post:
+      operationId: answerClarification
+      summary: 確認質問に回答し、観察の再利用が可能なら判断を受け付ける
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnswerClarificationRequest" }
+      responses:
+        "200":
+          description: 回答は保存済み。対象変更または期限切れのため再撮影が必要
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClarificationCaptureRequired" }
+        "202":
+          description: 回答を反映した判断ジョブ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JobAccepted" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
   /sessions/{sessionId}/feedback:
     post:
       operationId: recordFeedback
@@ -215,7 +245,7 @@ components:
         sessionId: { type: string }
         state:
           type: string
-          enum: [CONSULTING, ANALYZING, ADVICE_SHOWN, CAPTURE_ADJUST, TRYING, COMPARING, DONE]
+          enum: [CONSULTING, CLARIFYING, ANALYZING, ADVICE_SHOWN, CAPTURE_ADJUST, TRYING, COMPARING, DONE]
         changesUsed: { type: integer, minimum: 0, maximum: 2 }
         analysesUsed: { type: integer, minimum: 0, maximum: 3 }
         expiresAt: { type: string, format: date-time }
@@ -269,7 +299,7 @@ components:
         advice: { $ref: "#/components/schemas/Advice" }
         errorClass:
           type: string
-          enum: [no_image, unreadable_image, quota_exceeded, worker_unavailable, model_error, cancelled]
+          enum: [no_image, unreadable_image, quota_exceeded, worker_unavailable, model_error, storage_error, cancelled]
     Advice:
       type: object
       additionalProperties: false
@@ -278,7 +308,35 @@ components:
         kind: { $ref: "#/components/schemas/AdviceKind" }
         text: { type: string, maxLength: 400 }
         basis: { type: string, enum: [observation, user_request] }
+        clarification: { $ref: "#/components/schemas/Clarification" }
         comparable: { type: boolean, description: after撮影の場合、前後が比較可能か }
+    Clarification:
+      type: object
+      additionalProperties: false
+      required: [clarificationId, reason, allowedScopes, requiresDetail]
+      properties:
+        clarificationId: { type: string, minLength: 8, maxLength: 64 }
+        reason: { type: string, enum: [choose_scope, specify_detail, restricted_scope] }
+        allowedScopes:
+          type: array
+          maxItems: 2
+          items: { type: string, enum: [brow, bangs] }
+        requiresDetail: { type: boolean }
+    AnswerClarificationRequest:
+      type: object
+      additionalProperties: false
+      required: [clarificationId, scope]
+      properties:
+        clarificationId: { type: string, minLength: 8, maxLength: 64 }
+        scope: { type: string, enum: [brow, bangs] }
+        detail: { type: string, minLength: 1, maxLength: 200 }
+    ClarificationCaptureRequired:
+      type: object
+      additionalProperties: false
+      required: [status, session]
+      properties:
+        status: { type: string, enum: [capture_required] }
+        session: { $ref: "#/components/schemas/Session" }
     FeedbackRequest:
       type: object
       additionalProperties: false

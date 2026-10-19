@@ -10,7 +10,7 @@ from ..errors import AppError
 
 # The wording the app currently shows before the first photo. A request that agrees to any
 # other version (a stale page, a made-up value) is refused.
-CONSENT_VERSION = "2026-10-v1"
+CONSENT_VERSION = "2026-10-v2"
 ACCEPTED_CONSENT_VERSIONS = frozenset({CONSENT_VERSION})
 
 _JST = timedelta(hours=9)  # the daily quota resets at midnight in Japan
@@ -86,3 +86,25 @@ def public_status(c: Container) -> dict:
     if status["accepting"] and global_quota_used_up(c):
         return {"accepting": False, "reason": "quota_exhausted"}
     return status
+
+
+def session_reservation_operations(c: Container, sub: str) -> list[dict]:
+    operations = []
+    for key, cap in (
+        (f"QUOTA#USER#{sub}#{_day(c)}", c.limits.user_per_day),
+        (f"QUOTA#GLOBAL#{_day(c)}", c.limits.global_per_day),
+    ):
+        previous = c.store.get(key, "META")
+        count = previous["count"] if previous else 0
+        if count >= cap:
+            raise AppError(429, "quota_exceeded")
+        operation = {
+            "op": "put",
+            "pk": key,
+            "sk": "META",
+            "item": {"count": count + 1, "ttl": int((c.now() + _QUOTA_TTL).timestamp())},
+        }
+        if previous:
+            operation.update(overwrite=True, expect={"count": count})
+        operations.append(operation)
+    return operations

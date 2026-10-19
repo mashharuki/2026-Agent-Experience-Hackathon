@@ -91,7 +91,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [x] T027 **完了 2026-10-17: テスト先行で実装。API 側の全テストは 171 件（インメモリと DynamoDB[moto] の両方で通しを実行）。T029（ワーカー）と T030（フロント E2E）は各実装の段階で行う。** [P] [US1] `apps/api/tests/unit/test_session_state.py`: [data-model.md](data-model.md) の状態遷移と不変条件（TRYING 中は助言なし、DONE 後は ADVICE_SHOWN に入らない）を検証
 - [x] T028 [P] [US1] `apps/api/tests/contract/test_openapi_contract.py`: `packages/api-spec/openapi.yaml` と実装の応答（status・必須項目・エラー形式）を照合
 - [x] T029 **完了 2026-10-17: ワーカー側 96 件（モックのBedrock／Decider）。実Deciderでのアダプタ確認は `RUN_REAL_DECIDER=1 uv run pytest -m real_model`（開発Mac・CPU）。** [P] [US1] `apps/worker/tests/test_pipeline.py`: Bedrock・Decider を**モックと明示した**フェイクに差し替え、観察 → 判断 → 説明 → 画像削除 → 結果保存の順序を検証（モデル品質の根拠にしない）
-- [ ] T030 [P] [US1] （jsdom の画面通しテスト `apps/frontend/src/App.test.tsx` で代替済み。Playwright の導入は未実施） `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
+- [x] T030 [P] [US1] （2026-10-19：`apps/frontend/e2e/flow.spec.ts` に合成画像・モックのブラウザE2Eを実装、3件成功） `apps/frontend/e2e/flow.spec.ts`: Playwright で四画面の通し（再生 API を使用。モックである旨をテスト名に含める）
 
 ### Implementation for User Story 1 — API
 
@@ -239,8 +239,8 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 
 - [ ] T103 待ち時間（撮影操作 → 助言表示）を、処理時間・ポーリング遅延・ワーカーの起動状態に分けて測定し `research.md` R-006 に記録。中央値 10 秒以内が未達なら見直し案をユーザーに報告（research T-006、SC-005）。**（1回だけの観測 2026-10-17: 解析の受付から結果取得まで約9秒、うち撮影前のアップロード枠発行が3.4秒（Lambdaのコールド）。内訳の分解と複数回の計測は未実施のため未完了）**
 - [ ] T104 実測した使用量で費用を再計算し `docs/architecture/cost-estimate.md` を更新。予算通知とは別に、利用枠と受付停止スイッチ、デモ終了時の停止が働くことを確認
-- [ ] T105 技術の確定・導入状況を `docs/tech-stack.md` の状態欄と `docs/architecture/` に反映（React Bits の判断、Connexion＋Mangum の結果、Vite+ は未着手のまま）
-- [ ] T106 新しいワークスペースに合わせて `knip.json`・`.jscpd.json` を調整し `pnpm check:quality` を実行。既存の Knip 指摘の整理は別作業とし、本機能で悪化させない
+- [x] T105 （2026-10-19：技術一覧・現行状態を更新。AWSの新差分は未確認） 技術の確定・導入状況を `docs/tech-stack.md` の状態欄と `docs/architecture/` に反映（React Bits の判断、Connexion＋Mangum の結果、Vite+ は未着手のまま）
+- [x] T106 （2026-10-19：Knip・jscpd成功） 新しいワークスペースに合わせて `knip.json`・`.jscpd.json` を調整し `pnpm check:quality` を実行。既存の Knip 指摘の整理は別作業とし、本機能で悪化させない
 - [ ] T107 [quickstart.md](quickstart.md) の全シナリオ（1〜16）を実行し、結果を記録（実行できなかったものは理由を明記）
 - [ ] T108 セキュリティ確認: IAM の最小権限、S3 の公開有無、認証なしの有料経路がないこと、cdk-nag の指摘、`git diff --check`、秘密情報の走査
 - [ ] T109 提出前確認: 公式 Rules を再確認（T011 の再実施）、提出期限 **2026-10-23 23:59 PDT（日本時間 2026-10-24 15:59）**、記事・動画・公開リポジトリ・タグの揃い、デモ後のワーカー停止とリソース整理
@@ -355,3 +355,16 @@ US1 → US2 → US5 → US3 → US4 → US6 の順で、各ストーリーを単
 10. 1セッションあたりの署名付きアップロードを6件までにする（超えると429）。
 
 未確認: 実 AWS では再デプロイしていないため、1・5・6 の挙動は AWS 上では確かめていない。検査の語彙（7）は日本語と英語の主要な表現のみで、網羅ではない。
+
+## Phase 11: レビュー修正（2026-10-19）
+
+修正範囲と受け入れ条件は [remediation-plan.md](remediation-plan.md)。既存の未完了のAWS検証・提出タスクとは分ける。
+
+- [x] T117 [R6] 初期化をrender外へ移し、StrictModeでシナリオと通信先の一致を検証する。
+- [x] T118 [R3] Storeのトランザクション、解析・セッション受付の原子性、冪等性、競合・障害復旧を検証する。
+- [x] T119 [R4] 独立した通信期限、エラー処理、終了・取消・遅延応答の抑制を実装する。
+- [x] T120 [R1] 禁止事項の選択UIからAPI・ガードへ接続し、禁止選択・説明を拒否する。
+- [x] T121 [R2] YAML・状態・回答API・workerの観察再利用・回答フォームを実装し、認可・上限・再送を検証する。
+- [x] T122 [R5] S3部分失敗の集計、限定再試行、監視と回収手順を追加する。
+- [x] T123 [R7] Knip、CI、ブラウザE2E、技術一覧・ガイド・検証文書を更新する。
+- [ ] T124 [全体] AWS受け入れ検証：新API・認可・トランザクション・終了・削除・監視を確認する（ローカル検証と区別）。

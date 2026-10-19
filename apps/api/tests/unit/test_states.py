@@ -97,7 +97,7 @@ def test_third_change_is_refused():
     [
         ("grooming_tip", "before", None, State.ADVICE_SHOWN),
         ("capture_setup_tip", "before", None, State.CAPTURE_ADJUST),
-        ("clarify", "before", None, State.CONSULTING),
+        ("clarify", "before", None, State.CLARIFYING),
         ("offer_finish", "before", None, State.DONE),
         ("grooming_tip", "after", True, State.COMPARING),
         ("clarify", "after", True, State.COMPARING),

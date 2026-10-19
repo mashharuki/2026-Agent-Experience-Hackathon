@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./../App";
 import { createMockApi } from "./../mock/mock-api";
+import { createAppRuntime } from "../runtime";
 import { STORAGE_KEY } from "./languages";
 
 const JAPANESE = /[ぁ-んァ-ン一-龥]/;
@@ -11,7 +12,11 @@ const JAPANESE = /[ぁ-んァ-ン一-龥]/;
 function setup() {
   const mock = createMockApi({ latencyMs: 0 });
   const user = userEvent.setup();
-  render(<App config={{ mode: "mock", mock, pollDelay: () => 5 }} />);
+  render(
+    <App
+      config={createAppRuntime({ mode: "mock", mock, pollDelay: () => 5 })}
+    />,
+  );
   return { mock, user };
 }
 
@@ -95,7 +100,11 @@ describe("the journey in English", () => {
     localStorage.setItem(STORAGE_KEY, "en");
     const mock = createMockApi({ latencyMs: 0, scenario: "error" });
     const user = userEvent.setup();
-    render(<App config={{ mode: "mock", mock, pollDelay: () => 5 }} />);
+    render(
+      <App
+        config={createAppRuntime({ mode: "mock", mock, pollDelay: () => 5 })}
+      />,
+    );
     await user.click(await screen.findByRole("radio", { name: "Bangs" }));
     await user.click(screen.getByRole("checkbox", { name: /I agree/ }));
     await user.click(screen.getByRole("button", { name: "Go to the photo" }));

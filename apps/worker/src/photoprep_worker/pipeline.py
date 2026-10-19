@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from photoprep_common.clarification import CONTEXT_INDEX, CONTEXT_LIFETIME, context_key, question
 from photoprep_common.logs import log_event
 from photoprep_common.states import State, state_after_job
 from photoprep_common.store import ConditionFailed, Store
@@ -90,11 +91,15 @@ def _restore_session(
     Normally the session is still ANALYZING. If this job already advanced it (``lastJobId`` names
     it) and then could not be finished, undo that too, so state and job never disagree.
     """
+    active = deps.store.get(f"SESSION#{session_id}", "META")
+    expected = {"state": State.ANALYZING.value}
+    if active and active.get("activeJobId") and job_id:
+        expected["activeJobId"] = job_id
     try:
         deps.store.update(
             f"SESSION#{session_id}",
             "META",
-            expect={"state": State.ANALYZING.value},
+            expect=expected,
             set={"state": prev_state},
         )
         return
@@ -107,6 +112,7 @@ def _restore_session(
         session is None
         or session.get("lastJobId") != job_id
         or session["state"] == State.DONE.value
+        or (session.get("activeJobId") and session["activeJobId"] != job_id)
     ):
         return
     try:
@@ -150,10 +156,11 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
     if job is None or job["status"] in TERMINAL:
         return Outcome.SKIPPED
 
-    upload = deps.store.get(f"UPLOAD#{job['uploadId']}", "META")
+    upload = deps.store.get(f"UPLOAD#{job.get('uploadId', '')}", "META")
     key = upload["key"] if upload else None
     session_id, prev_state = job["sessionId"], job["prevState"]
     now = deps.now()
+    source_context = job.get("clarificationId")
 
     if job["status"] == "RUNNING":
         if job.get("leaseUntil", "") > now.isoformat():
@@ -166,6 +173,8 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             return Outcome.SKIPPED
         _restore_session(deps, session_id, prev_state, job_id)
         _delete_image(deps, key)
+        if source_context:
+            deps.store.delete(f"SESSION#{session_id}", context_key(source_context))
         log_event("job_unknown", job_id=job_id, outcome="unknown")
         return Outcome.FAILED
 
@@ -192,23 +201,37 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
     ):
         _finish_job(deps, job_id, status="CANCELLED", errorClass="cancelled")
         _delete_image(deps, key)
+        if source_context:
+            deps.store.delete(f"SESSION#{session_id}", context_key(source_context))
         log_event("job_cancelled", job_id=job_id, outcome="cancelled")
         return Outcome.CANCELLED
 
     def fail(error_class: str) -> Outcome:
         _finish_job(deps, job_id, status="FAILED", errorClass=error_class)
-        _restore_session(deps, session_id, prev_state)
+        _restore_session(deps, session_id, prev_state, job_id)
         log_event("job_failed", job_id=job_id, error_class=error_class, outcome="failed")
         return Outcome.FAILED
 
     try:
-        raw = deps.images.get(key) if key else None
-        if raw is None:
-            return fail("no_image")
-        try:
-            image = prepare_image(raw)
-        except ImageError:
-            return fail("unreadable_image")
+        image = None
+        cached = None
+        if source_context:
+            context = deps.store.get(f"SESSION#{session_id}", context_key(source_context))
+            if (
+                not context
+                or context.get("answerJobId") != job_id
+                or context["expiresAt"] <= now.isoformat()
+            ):
+                return fail("model_error")
+            cached = Observation.model_validate(context["observation"])
+        else:
+            raw = deps.images.get(key) if key else None
+            if raw is None:
+                return fail("no_image")
+            try:
+                image = prepare_image(raw)
+            except ImageError:
+                return fail("unreadable_image")
 
         bedrock = BudgetedBedrock(deps.bedrock())
         phase = job["phase"]
@@ -217,7 +240,7 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
         wish = session.get("wish")
 
         try:
-            observation = observe(bedrock, image, scope)
+            observation = cached if cached is not None else observe(bedrock, image, scope)
             comparable = (
                 is_comparable(session.get("baseline"), observation) if phase == "after" else None
             )
@@ -257,6 +280,8 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                     changes_used=session["changesUsed"],
                     lighting=observation.lighting,
                     framing=observation.framing,
+                    analyses_used=session.get("analysesUsed", 0),
+                    clarified=bool(source_context),
                 ),
                 handlers={kind: tool(kind) for kind in NEXT_SUPPORT.options},
             )
@@ -276,13 +301,43 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                 "lighting": observation.lighting,
                 "framing": observation.framing,
             }
-        try:
-            deps.store.update(
-                f"SESSION#{session_id}",
-                "META",
-                expect={"state": State.ANALYZING.value},
-                set=session_update,
+        expected = {"state": State.ANALYZING.value}
+        if session.get("activeJobId"):
+            expected["activeJobId"] = job_id
+        writes = []
+        if advice.kind == "clarify" and phase == "before":
+            advice.clarification = question(job_id, scope, restrictions)
+            until = now + CONTEXT_LIFETIME
+            session_update["pendingClarificationId"] = job_id
+            writes.append(
+                {
+                    "op": "put",
+                    "pk": f"SESSION#{session_id}",
+                    "sk": context_key(job_id),
+                    "item": {
+                        "ownerSub": job["ownerSub"],
+                        "sourceJobId": job_id,
+                        "scope": scope,
+                        "observation": observation.model_dump(),
+                        "question": advice.clarification,
+                        "expiresAt": until.isoformat(),
+                        "ttl": int(until.timestamp()),
+                        "statusKey": CONTEXT_INDEX,
+                        "statusSince": until.isoformat(),
+                    },
+                }
             )
+        writes.append(
+            {
+                "op": "update",
+                "pk": f"SESSION#{session_id}",
+                "sk": "META",
+                "expect": expected,
+                "set": session_update,
+            }
+        )
+        try:
+            deps.store.transact(writes)
         except ConditionFailed:
             # The session ended (or moved on) while the models ran: discard the result.
             _finish_job(deps, job_id, status="CANCELLED", errorClass="cancelled")
@@ -299,7 +354,10 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                 decider_choice=decision.decider_choice,
                 selected=decision.selected,
                 guard_override=decision.override_reason,
-                invoked=["bedrock.observe", *[i for i in advice_invoked if i != "none"]],
+                invoked=[
+                    *(["bedrock.observe"] if not source_context else []),
+                    *[i for i in advice_invoked if i != "none"],
+                ],
                 created_at=now.isoformat(),
             )
             deps.store.create_if_absent(
@@ -329,3 +387,5 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
         return Outcome.DONE
     finally:
         _delete_image(deps, key)
+        if source_context:
+            deps.store.delete(f"SESSION#{session_id}", context_key(source_context))

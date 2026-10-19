@@ -1,13 +1,15 @@
 // End-to-end journey through the four screens with the REAL generated client, real hooks
 // and the MOCK API (no network). Nothing here says anything about model quality.
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { setFetchImplementation } from "./api/custom-fetch";
 import { createMockApi, type MockScenario } from "./mock/mock-api";
 import { createAppRuntime } from "./runtime";
 import { liveObjectUrls } from "./test/setup";
+
+afterEach(() => vi.restoreAllMocks());
 
 function setup(
   scenario: MockScenario = "normal",
@@ -128,6 +130,9 @@ describe("screen 1: consult", () => {
 
 describe("the full journey", () => {
   it("consult -> trial photo -> one suggestion -> try -> recheck -> compare -> choose -> finish", async () => {
+    const download = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
     const { user, mock } = setup();
     await consult(user);
 
@@ -147,6 +152,11 @@ describe("the full journey", () => {
       screen.queryByRole("button", { name: "別の提案" }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "整えたので確認" }));
+    const beforeGuide = path(mock);
+    await user.click(
+      screen.getByRole("switch", { name: "前の写真を重ねて位置を合わせる" }),
+    );
+    expect(path(mock)).toEqual(beforeGuide);
     await takeTestPhoto(user);
     await user.click(
       await screen.findByRole("button", { name: "この写真で確認する" }),
@@ -155,6 +165,16 @@ describe("the full journey", () => {
     await screen.findByRole("heading", { name: "比べて選ぶ" });
     expect(screen.getByRole("img", { name: "整える前" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "整えた後" })).toBeInTheDocument();
+    const beforeLocalActions = path(mock);
+    await user.click(
+      screen.getByRole("button", { name: "一枚ずつ切り替える" }),
+    );
+    await user.click(screen.getByRole("button", { name: "整えた後" }));
+    await user.click(screen.getByRole("button", { name: "前の写真を保存" }));
+    await user.click(screen.getByRole("button", { name: "後の写真を保存" }));
+    await user.click(screen.getByRole("button", { name: "並べて見る" }));
+    expect(download).toHaveBeenCalledTimes(2);
+    expect(path(mock)).toEqual(beforeLocalActions);
     await user.click(screen.getByRole("radio", { name: "前が好き" }));
     await user.click(screen.getByRole("button", { name: "終える" }));
 
@@ -212,6 +232,7 @@ describe("the full journey", () => {
       c.route.endsWith("/analyses"),
     ).length;
     await user.click(screen.getByRole("button", { name: "もう一手試す" }));
+    expect(liveObjectUrls()).toBe(1); // the after photo is promoted; the old baseline is released
 
     // Straight to tidying up: no extra photo and no extra analysis were needed.
     await user.click(
@@ -344,6 +365,59 @@ describe("conditions that need a different next step", () => {
 });
 
 describe("photos stay in this browser tab", () => {
+  it("can save an unchanged photo without sending it for analysis", async () => {
+    const download = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    const { user, mock } = setup();
+    await consult(user);
+    await takeTestPhoto(user);
+    const calls = path(mock);
+    await user.click(screen.getByRole("button", { name: "この写真を保存" }));
+    expect(download).toHaveBeenCalledOnce();
+    expect(path(mock)).toEqual(calls);
+    expect(calls.some((c) => c.includes("/analyses"))).toBe(false);
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    await screen.findByRole("heading", { name: "おつかれさまでした" });
+    expect(liveObjectUrls()).toBe(0);
+    expect(
+      screen.getByText(/自分で保存したファイルは端末に残ります/),
+    ).toBeInTheDocument();
+  });
+
+  it("does not mix a late capture into a restarted session", async () => {
+    let complete: BlobCallback | undefined;
+    const encode = vi
+      .spyOn(HTMLCanvasElement.prototype, "toBlob")
+      .mockImplementationOnce((callback) => {
+        complete = callback;
+      });
+    const { user } = setup();
+    await consult(user);
+    await takeTestPhoto(user);
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    await user.click(
+      await screen.findByRole("button", { name: "もう一度はじめる" }),
+    );
+    await consult(user);
+    await takeTestPhoto(user);
+    const current = screen
+      .getByRole("img", { name: "撮影した写真" })
+      .getAttribute("src");
+    const urls = liveObjectUrls();
+    await act(async () => {
+      complete?.(new Blob(["old-session"]));
+    });
+    expect(screen.getByRole("img", { name: "撮影した写真" })).toHaveAttribute(
+      "src",
+      current,
+    );
+    expect(liveObjectUrls()).toBe(urls);
+    encode.mockRestore();
+    await user.click(screen.getByRole("button", { name: "このままで終える" }));
+    expect(liveObjectUrls()).toBe(0);
+  });
+
   it("never writes photos to web storage and releases every object URL at the end", async () => {
     const { user } = setup();
     await consult(user);

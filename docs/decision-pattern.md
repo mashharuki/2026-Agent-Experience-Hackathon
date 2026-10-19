@@ -84,7 +84,12 @@ this is a smoke test, not an evaluation:
 - With a state that said "do not touch the brows", the Decider still chose `grooming_tip`
   (probability 0.57). The guard replaced it with `clarify` and recorded `restriction`.
 - Sensible choices had confidences of 0.69 (a correct `capture_setup_tip`) and 0.69 (a correct
-  `clarify`). A fixed threshold of 0.8 would have rejected them, so the confidence guard is off until
-  it is calibrated on evaluation data.
+  `clarify`). These warn against assuming a universal threshold of 0.8. The current confidence
+  guard applies only to `grooming_tip`, so it would not reject these two examples. It is disabled
+  by default until evaluated for that action.
 
 Not measured: speed and memory on Fargate, accuracy on real data, any comparison with an LLM, cost.
+
+The [local evaluation plan](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md) adds
+synthetic cases, rules/v1/v2 comparisons, and aligned decision inputs. This is planned work;
+no results from that evaluation are available yet. AWS validation follows the local work.

@@ -107,3 +107,11 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 ## レビュー修正の検証範囲（2026-10-19）
 
 確認質問の回答API、短命な観察の再利用、原子的な受付、待機中の終了、画像回収の部分失敗検出を追加した。詳細と実行結果は [検証記録](reviews/2026-10-19-remediation-validation.md)。今回差分はローカル・モック検証までで、AWSでの検証済みという意味ではない。Vite+、Swagger UI、追加言語は今回導入していない。
+
+## 追加実装・モデル実験（計画、未実装）
+
+[評価計画](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md)は既存のPython／pytest／Pydantic／JSONLとCPU Deciderを使う。評価SaaSや新規クラウド基盤は導入しない。合成ケース、オフラインのルール／状態文v1／v2比較、同一入力からのガード適用、モデル応答検査を追加予定。本番既定のv2化はローカル比較後の採用条件による。Bedrock・実写真・AWS性能の確認は後段とし、この計画作成を実装・検証済みとは扱わない。
+
+## 比較・任意保存（実装済み・ローカル検証）
+
+[比較・任意保存](../specs/001-pre-photo-grooming-assist/photo-completion-plan.md)は既存React／MUIと端末内のBlob URLを使う。任意ガイド、並置／A・B切替、明示した前／後／変更なし画像の保存要求を実装した。新規API・S3保存・写真の自動キャッシュは追加していない。[検証記録](reviews/2026-10-19-photo-completion-validation.md)に合成映像での撮影・JPEG・ダウンロード内容の確認を記載。終了時はメモリを解放し、本人が保存したファイルは端末に残る。iOS／Android実機での保存操作は未確認。

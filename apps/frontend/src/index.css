@@ -30,14 +30,44 @@ body {
 }
 
 .preview {
+  display: block;
   width: 100%;
+  height: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   background: #1f2937;
   transform: scaleX(
     -1
   ); /* mirror the live preview like a mirror; captured photos are not mirrored */
+}
+
+.camera-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #1f2937;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.reference-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.comparison-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #1f2937;
 }
 
 .photo {

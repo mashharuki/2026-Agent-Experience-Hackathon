@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import type { Advice } from "../api/generated/model";
 import { PhotoCapture } from "../components/PhotoCapture";
+import { PhotoDownloads } from "../components/PhotoDownloads";
 import { Waiting } from "../components/Waiting";
 import type { Photo } from "../features/session/photos";
 import type { AnalysisRun } from "../features/session/useAnalysis";
@@ -19,6 +20,7 @@ export type TryStep = "advice" | "trying" | "recheck";
 export function TryOne({
   step,
   advice,
+  beforePhoto,
   afterPhoto,
   run,
   notice,
@@ -34,6 +36,7 @@ export function TryOne({
 }: {
   step: TryStep;
   advice?: Advice;
+  beforePhoto?: Photo;
   afterPhoto?: Photo;
   run: AnalysisRun;
   notice?: string;
@@ -147,10 +150,16 @@ export function TryOne({
             </Stack>
           </>
         ) : (
-          <PhotoCapture onCaptured={onAfterCaptured} />
+          <PhotoCapture
+            onCaptured={onAfterCaptured}
+            referenceUrl={beforePhoto?.url}
+          />
         )
       ) : null}
 
+      {step === "advice" && beforePhoto ? (
+        <PhotoDownloads current={beforePhoto} />
+      ) : null}
       <Button color="inherit" onClick={onFinish}>
         {t("capture.finish")}
       </Button>

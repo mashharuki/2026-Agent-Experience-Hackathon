@@ -1,45 +1,94 @@
-import { Alert, Button, Stack } from "@mui/material";
-import { useEffect, useState } from "react";
+import {
+  Alert,
+  Button,
+  FormControlLabel,
+  Stack,
+  Switch,
+  Typography,
+} from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 import { useConfig } from "../config";
 import { captureFrame } from "../features/camera/capture";
 import { createTestImage } from "../features/camera/testImage";
 import { useCamera } from "../features/camera/useCamera";
 import { useI18n } from "../i18n/I18nProvider";
 
-/** Live preview + shutter. Photos are held in memory by the caller and never stored. */
+/** Live preview + shutter. The caller owns photos in memory; no automatic persistence. */
 export function PhotoCapture({
   onCaptured,
+  referenceUrl,
 }: {
   onCaptured: (photo: Blob) => void;
+  referenceUrl?: string;
 }) {
   const config = useConfig();
   const { t } = useI18n();
   const { videoRef, status, start } = useCamera();
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  const lifetime = useRef({ active: false });
+  const capturing = useRef(false);
 
   useEffect(() => {
+    const current = { active: true };
+    lifetime.current = current;
     void start();
+    return () => {
+      current.active = false;
+    };
   }, [start]);
 
-  const shoot = async () => {
-    if (!videoRef.current) return;
+  const take = async (create: () => Promise<Blob>) => {
+    if (capturing.current) return;
+    capturing.current = true;
+    const current = lifetime.current;
     setBusy(true);
+    setFailed(false);
     try {
-      onCaptured(await captureFrame(videoRef.current));
+      const blob = await create();
+      if (current.active) onCaptured(blob);
+    } catch {
+      if (current.active) setFailed(true);
     } finally {
-      setBusy(false);
+      capturing.current = false;
+      if (current.active) setBusy(false);
     }
   };
 
   return (
     <Stack spacing={2}>
-      <video
-        ref={videoRef}
-        className="preview"
-        playsInline
-        muted
-        aria-label={t("camera.preview")}
-      />
+      <div className="camera-frame">
+        <video
+          ref={videoRef}
+          className="preview"
+          playsInline
+          muted
+          aria-label={t("camera.preview")}
+        />
+        {referenceUrl && showGuide ? (
+          <img
+            className="reference-guide"
+            src={referenceUrl}
+            alt={t("camera.reference")}
+          />
+        ) : null}
+      </div>
+      {referenceUrl ? (
+        <Stack>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showGuide}
+                onChange={(_, checked) => setShowGuide(checked)}
+              />
+            }
+            label={t("camera.guide")}
+          />
+          <Typography variant="caption">{t("camera.guideHelp")}</Typography>
+        </Stack>
+      ) : null}
+      {failed ? <Alert severity="error">{t("camera.failed")}</Alert> : null}
       {status === "denied" ? (
         <Alert severity="info">{t("camera.denied")}</Alert>
       ) : null}
@@ -49,7 +98,10 @@ export function PhotoCapture({
       <Button
         variant="contained"
         size="large"
-        onClick={shoot}
+        onClick={() => {
+          const video = videoRef.current;
+          if (video) void take(() => captureFrame(video));
+        }}
         disabled={status !== "ready" || busy}
       >
         {t("camera.shoot")}
@@ -57,8 +109,9 @@ export function PhotoCapture({
       {config.mode === "mock" ? (
         <Button
           variant="outlined"
-          onClick={async () =>
-            onCaptured(await createTestImage(t("camera.testImageLabel")))
+          disabled={busy}
+          onClick={() =>
+            void take(() => createTestImage(t("camera.testImageLabel")))
           }
         >
           {t("camera.testImage")}

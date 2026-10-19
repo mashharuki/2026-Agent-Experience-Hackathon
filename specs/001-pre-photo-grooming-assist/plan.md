@@ -6,6 +6,10 @@
 
 **レビュー後の修正計画（2026-10-19、ローカル実装済み）**: [R1〜R7の修正計画](remediation-plan.md)。変更箇所、依存関係、API・状態遷移の変更案、受け入れ条件を記載。
 
+**追加実装・モデル実験の計画（2026-10-19、未実装）**: [model-evaluation-plan.md](model-evaluation-plan.md)。評価ハーネス、状態文v1／v2、オフライン実Decider比較、採用ゲートを定義。AWS検証はローカル実装・実験結果を確認した後の別工程とする。
+
+**プロダクトの方向性の反映（2026-10-19、ローカル実装・検証済み）**：[比較・選択・任意保存](photo-completion-plan.md)。①＋③のUIを実装し、[検証結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)を記録。次はT125〜T140のローカルモデル実験、その結果確認後にT124のAWS検証の順で進める。
+
 ## Summary
 
 利用者が撮影前に眉・前髪を一つだけ整えて試し、前後の写真を比べて自分で選ぶスマホ向けWebアプリ。
@@ -20,23 +24,23 @@ React/ViteのSPAが端末で撮影し、同意後にだけ画像を一時S3へ�
 
 設計の土台は[アーキテクチャ](../../docs/architecture/README.md)（承認済み）。本計画は、それを
 機能仕様に結び付け、**未検証の事項を採用済みとして扱わず検証タスクに落とす**ことを目的とする。
-今回の計画作業ではコードの追加、依存関係の導入、AWSへのデプロイを行っていない。
+初期計画の策定時にはコードを追加していない。その後の実装状態は冒頭の追記と[技術一覧](../../docs/tech-stack.md)を参照する。
 
 ## Technical Context
 
 技術の状態は [docs/tech-stack.md](../../docs/tech-stack.md) の区分（採用／推奨／条件付き／既存）に従う。
 下の「状態」列は同書の区分と、本計画で行った確認（[research.md](research.md)）の結果を併記する。
 
-**Language/Version**: フロント TypeScript／React 19／Vite 8（採用・導入済み）。API・ワーカー Python 3.12（推奨・未実装）。IaC TypeScript／AWS CDK v2（採用・雛形あり）
+**Language/Version**: フロント TypeScript／React 19／Vite 8。API・ワーカー Python 3.12。IaC TypeScript／AWS CDK v2（いずれも実装済み。今回の検証範囲は冒頭の記録を参照）
 
 **Primary Dependencies**:
-- フロント：Material UI＋Emotion（採用・未導入）、TanStack Query（採用・未導入）、Orval 生成クライアント（推奨・未導入）、演出は MUI＋独自CSS（React Bits は採用しない。R-005）
-- API：Connexion 3＋Flask＋Mangum＋boto3（推奨・**結合未検証**。R-003）
-- ワーカー：PyTorch CPU、Strands Decider 2B（採用・**未検証**）、Bedrock Converse／Amazon Nova Lite（条件付き）
+- フロント：Material UI＋Emotion、TanStack Query、Orval 生成クライアント（導入・ローカル検証済み）、演出は MUI＋独自CSS（React Bits は採用しない。R-005）
+- API：Connexion 3＋Flask＋Mangum＋boto3（導入・ローカル結合検証済み。最新差分のAWS確認はT124）
+- ワーカー：PyTorch CPU、Strands Decider 2B、Bedrock Converse／Amazon Nova Lite（導入済み。新たな選択品質の比較はT125〜T140で未実施）
 
-**Storage**: DynamoDB On-Demand（セッション・ジョブ・利用枠。画像なし）。一時画像は専用の非公開S3。比較用写真は端末メモリのみ
+**Storage**: DynamoDB On-Demand（セッション・ジョブ・利用枠。画像なし）。一時画像は専用の非公開S3。比較用写真は端末メモリのみ。本人が明示操作した場合だけファイルを書き出す
 
-**Testing**: Vitest／Playwright（フロント、推奨・未導入）、pytest／Ruff（Python、推奨・未導入）、Jest＋CDK assertions＋cdk-nag（IaC、雛形のみ）、OpenAPI契約テスト（未整備）。モデルの判断品質は決定的な通常コードのテストと分けて評価する
+**Testing**: Vitest／Playwright（フロント）、pytest／Ruff（Python）、Jest＋CDK assertions＋cdk-nag（IaC）、OpenAPI契約検証（導入済み。今回の実行範囲は検証記録を参照）。モデルの判断品質は決定的な通常コードのテストと分けて評価する
 
 **Target Platform**: スマホのWebブラウザ（Camera API）。AWS東京 `ap-northeast-1`（CloudFrontはグローバル）。ワーカーは Fargate Linux/x86_64
 

@@ -2,6 +2,8 @@
 
 現在のAPI/worker/frontend/CDKは実装済み。レビュー修正後の実行結果は [検証記録](../../docs/reviews/2026-10-19-remediation-validation.md)。以下のAWSシナリオはローカル・モックの成功と分けて記録する。
 
+**今回の順序（2026-10-19ユーザー指定）**：[比較・任意保存](photo-completion-plan.md)のT141〜T145、[追加実装・ローカルモデル実験](model-evaluation-plan.md)のT125〜T140の順で進め、両方の結果確認後にAWSのシナリオへ移る。追加UIはローカル実装・検証済み（[結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)）。モデル評価CLIは未実装。
+
 ### ローカル回帰
 
 リポジトリルートで `pnpm --filter api-spec check`、`pnpm --filter frontend test`、`pnpm --filter frontend build`、`pnpm --filter frontend test:e2e`、`pnpm --filter cdk test`、`pnpm check:quality` を実行する。API/workerの各ディレクトリでは `uv sync --frozen` 後に `uv run pytest` と `uv run ruff check .`。ブラウザは事前に `pnpm --filter frontend exec playwright install chromium` で準備する。すべて合成画像・fakeモデルで実行できる。
@@ -49,3 +51,30 @@
 - Decider の選択が変わると、呼ばれる処理も変わることを判断記録で示す（FR-024）。
 - デモ・記事は、実測・仮説・モックを区別する。仮画像や再生データを使う場合は明示する。
 - 応募直前に、公式Rules全文（ライセンス、提出物、期限）を再確認する（T-007）。
+## 追加：ローカルの判断評価（2026-10-19計画）
+
+**以下のCLI・データは未実装。T125〜T140の実装後に使う検証手順であり、現在実行できるという案内ではない。**
+設計は[評価計画](model-evaluation-plan.md)、引数・出力は[CLI契約](contracts/model-evaluation.md)を正本とする。
+
+前提：Python 3.12、workerの`uv sync --frozen`が完了、合成ケースと固定manifest、実モデル実験では指定revisionのhead／LoRA／tokenizer／ベース重みを含むローカルキャッシュが必要。キャッシュ不足時は取得せず終了する。依存準備のネットワーク利用と、実験中の通信0を区別する。
+
+実装後、`apps/worker/`で次の順に検証する。
+
+```bash
+# モデル・AWSを呼ばず、dev／holdoutの型と分割を確認
+uv run --frozen --offline python -m tools.evaluate_decisions validate --cases-dir evaluation/cases
+
+# ルールの結果と集計を確認。新規の出力先を指定
+uv run --frozen --offline python -m tools.evaluate_decisions run --backend rules --split dev --cases-dir evaluation/cases --out ../../report/model-evaluation/rules-dev
+
+# ローカル実モデルの開発比較。cacheは実在する検証済みの場所へ置き換える
+uv run --frozen --offline python -m tools.evaluate_decisions run --backend decider --paired-versions v1,v2 --split dev --cases-dir evaluation/cases --model-cache /absolute/path/to/model-cache --repeats 3 --max-calls 60 --max-seconds 1800 --out ../../report/model-evaluation/paired-dev
+```
+
+期待結果：`manifest.json`、`trials.jsonl`、`summary.json`、`failures.md`が新規runへ作られる。エラー・中断は非0終了し、未実行を残す。ルール／fakeの結果にモデル由来のconfidenceを作らない。予測へ正解ラベルを渡さない。
+
+スモーク後にdevで候補を固定し、holdoutは30件×3反復×2版、最大180回で実行する。devと同じコマンドの`--split`を`holdout`、`--max-calls`を180、新しい`--out`へ変える。結果は同一データ・モデル・ガード条件で比較する。
+
+追加回帰はworkerのpytest／Ruffと、影響した既存フローで行う。通常CIにはfakeとデータ検査のみを組み込み、実モデルを自動実行しない。固定評価の結果が採用条件を満たした場合だけ本番既定をv2へ変える。
+
+**AWSへ進む前の条件：** 計画G1〜G4の実装・実モデル結果・採否・残課題を報告する。それ以前にBedrock比較、ECS起動、デプロイ、ECR登録、AWSデータの取得を行わない。これらは後続T124の検証とする。

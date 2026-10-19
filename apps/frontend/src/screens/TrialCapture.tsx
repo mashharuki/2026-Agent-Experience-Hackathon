@@ -1,5 +1,6 @@
 import { Alert, Button, Stack, Typography } from "@mui/material";
 import { PhotoCapture } from "../components/PhotoCapture";
+import { PhotoDownloads } from "../components/PhotoDownloads";
 import { Waiting } from "../components/Waiting";
 import type { Photo } from "../features/session/photos";
 import type { AnalysisRun } from "../features/session/useAnalysis";
@@ -55,6 +56,7 @@ export function TrialCapture({
       {photo ? (
         <>
           <img className="photo" src={photo.url} alt={t("capture.photoAlt")} />
+          <PhotoDownloads current={photo} />
           {busy ? (
             <Waiting
               text={

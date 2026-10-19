@@ -47,6 +47,8 @@ export const en: Record<MessageKey, string> = {
   "door.reopen": "We expect to reopen around {time}.",
 
   "consult.scopeLabel": "What should we look at?",
+  "consult.journey":
+    "Take a photo, try one step if you wish, then compare. You can save a photo you choose, or finish without changing or saving anything.",
   "consult.brow": "Brows",
   "consult.bangs": "Bangs",
   "consult.lookFirst": "Take a look first",
@@ -54,7 +56,7 @@ export const en: Record<MessageKey, string> = {
   "consult.wishHelp":
     "Example: I don't want to change my brow shape, but I'd like to tidy the direction of the hairs (up to 200 characters)",
   "consult.consentText":
-    "Your photo is sent to the cloud (AWS) and analyzed to produce advice. Photos are deleted after processing; periodic cleanup retries leftovers, with a 24-hour deletion target. Observation notes can be used for up to 10 minutes to answer a question, then deleted after answering or finishing. Periodic cleanup also removes expired notes. The photos you compare stay only on this device.",
+    "Your photo is sent to the cloud (AWS) and analyzed to produce advice. Photos are deleted after processing; periodic cleanup retries leftovers, with a 24-hour deletion target. Observation notes can be used for up to 10 minutes to answer a question, then deleted after answering or finishing. Periodic cleanup also removes expired notes. Comparison photos are held on your device only while the screen is open. Files you choose to save remain on your device after finishing.",
   "consult.consentCheck": "I agree to the cloud analysis",
   "consult.submit": "Go to the photo",
   "consult.decline": "I do not agree (leave)",
@@ -83,6 +85,10 @@ export const en: Record<MessageKey, string> = {
     "The conditions differ from the earlier photo, so they cannot be compared. Please retake it.",
 
   "compare.beforeLabel": "Before",
+  "compare.mode": "Comparison layout",
+  "compare.side": "View side by side",
+  "compare.single": "Switch one at a time",
+  "compare.view": "Photo to view",
   "compare.afterLabel": "After",
   "compare.question": "Which do you prefer?",
   "compare.preferBefore": "I prefer before",
@@ -93,13 +99,29 @@ export const en: Record<MessageKey, string> = {
   "compare.nextLabel": "If you like, one more step",
   "compare.nextButton": "Try one more",
 
+  "save.help":
+    "Saving is optional. Choose a photo to save separately from your preference answer. Saved files remain on your device after finishing.",
+  "save.current": "Save this photo",
+  "save.before": "Save before photo",
+  "save.after": "Save after photo",
+  "save.requested":
+    "The save action was started. Check your browser's download location. If the file is missing, try again.",
+  "save.failed":
+    "We could not start the save action. You can try again or finish as you are.",
+
   "done.declined":
     "You did not agree, so no photo was sent. You can start again any time.",
   "done.finished":
-    "The consultation is over. The photos disappear from this device, and deletion of cloud photos and observation notes is requested. If the request fails, periodic cleanup handles leftovers.",
+    "The consultation is over. Photos held by this screen were discarded. Files you chose to save remain on your device. Deletion of cloud photos and observation notes is requested. If the request fails, periodic cleanup handles leftovers.",
   "done.restart": "Start again",
 
   "camera.preview": "Camera preview",
+  "camera.reference": "Before photo for alignment",
+  "camera.guide": "Overlay the before photo for alignment",
+  "camera.guideHelp":
+    "Aim for the same angle, distance and light. The guide is not included in your photo and does not guarantee matching conditions.",
+  "camera.failed":
+    "We could not take the photo. You can try again or finish as you are.",
   "camera.denied":
     "Camera access is not allowed. Please allow it in your browser settings.",
   "camera.unavailable": "We could not use the camera.",

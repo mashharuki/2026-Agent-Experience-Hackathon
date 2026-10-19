@@ -154,7 +154,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T067 [US2] `apps/api/src/photoprep_api/handlers/sessions.py` と `apps/worker/.../guards.py`: 禁止を保存してガードで強制（Decider が選んでも上書きし、理由を DecisionRecord に残す）
 - [ ] T068 [US2] `apps/worker/.../guards.py`・`decider.py`、`apps/frontend/src/screens/TryOne.tsx`: 道具・時間は助言に必要になった時点で `clarify` として尋ねる（最初にまとめて入力させない。FR-009）
 - [ ] T069 [US2] `apps/worker/.../guards.py`: 道具・時間が不足する場合、買い足しを前提とする助言を除外するガード
-- [ ] T070 [US2] `evaluation/run_eval.py`: **モデルの判断品質**の評価を、決定的に確定できるガードのテストと**別の集計**で出力（開発用の例と評価用データは分離）
+- [ ] T070 [US2] **モデルの判断品質**の評価をガードのテストと別集計にする。実装場所と手順はPhase 12のT125〜T138へ具体化（旧案`evaluation/run_eval.py`からworker内の評価モジュール／CLIへ整理）。元タスクを完了扱いにはしない。
 
 **Checkpoint**: US1＋US2 が動き、禁止と制約を破る助言が 0 件であることをテストで確認できる。
 
@@ -201,7 +201,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T087 [US3] `apps/worker/.../guards.py`: 不確かな点が多い場合は `capture_setup_tip` か `clarify` へ、confidence が閾値未満なら `clarify` へ退避（**0.8 は根拠のない暫定値**。T008 の実機では妥当な選択も 0.685・0.688 だった。閾値は T090 の評価で決める。confidence を美容助言の正解確率として表示しない）
 - [ ] T088 [US3] `apps/worker/.../guards.py`: 変更なしの再撮影では新しい外見の指摘を作らない
 - [ ] T089 [US3] `apps/frontend/src/screens/Compare.tsx`、`TrialCapture.tsx`: 比較できない場合の撮り直し案内と、見えない場合の確認表示
-- [ ] T090 [US3] `evaluation/dev-examples/`・`evaluation/run_eval.py`: シナリオ 5〜8 の開発用の例と、閾値調整。調整後に `evaluation/holdout/` で一度だけ評価し、結果を `research.md` に記録
+- [ ] T090 [US3] 開発用／固定評価の分離と閾値の検討。Phase 12のケース・結果を使う。初回比較はconfidence閾値0を維持し、`grooming_tip`だけの閾値実験は必要性が確認された後に別計画で行う。未校正の0.8を自動適用しない。
 
 ---
 
@@ -367,4 +367,50 @@ US1 → US2 → US5 → US3 → US4 → US6 の順で、各ストーリーを単
 - [x] T121 [R2] YAML・状態・回答API・workerの観察再利用・回答フォームを実装し、認可・上限・再送を検証する。
 - [x] T122 [R5] S3部分失敗の集計、限定再試行、監視と回収手順を追加する。
 - [x] T123 [R7] Knip、CI、ブラウザE2E、技術一覧・ガイド・検証文書を更新する。
-- [ ] T124 [全体] AWS受け入れ検証：新API・認可・トランザクション・終了・削除・監視を確認する（ローカル検証と区別）。
+- [ ] T124 [全体] AWS受け入れ検証：新API・認可・トランザクション・終了・削除・監視、撮影ガイド・比較・任意保存を確認する。2026-10-19のユーザー指定により、T145の端末内UI回帰とT140のローカル実モデル結果を確認してから着手する。OSへの保存の成否はローカルモックの成功と分ける。
+
+## Phase 12: 追加実装・ローカルモデル実験（2026-10-19計画）
+
+全件未着手。[model-evaluation-plan.md](model-evaluation-plan.md)のEV-001〜006／G1〜G4に従う。今回は計画立案のみ。
+**順序：A→B→C→D→E→結果確認後にT124。** コードとfakeの成功、実モデルの品質、AWSでの確認を別に扱う。
+
+### A：評価の土台
+
+- [ ] T125 [EV-001/002] `apps/worker/evaluation/schemas.py`と`tests/test_evaluation_cases.py`：ケース・manifest・結果の型、ラベル非混入、重複／群跨ぎ／矛盾の拒否を実装。契約は`contracts/model-evaluation.md`。
+- [ ] T126 [EV-002] `apps/worker/evaluation/cases/{dev,holdout}.jsonl`とmanifest：合成10＋30件、5群、許容集合、支援可能性、作成・レビュー方法とhashを固定。ライフサイクル拒否試験と分離する。依存T125。
+- [ ] T127 [EV-001/004] `evaluation/runner.py`と`tools/evaluate_decisions.py`：validate／run／compare、fake、共通ガードと副作用なしハンドラー、部分結果、実行上限、時間監督を実装。通信とAWSクライアント生成を禁止した試験で完了。依存T125。
+- [ ] T128 [EV-001] `evaluation/backends.py`：ラベルを参照しない固定`rules-v1`を実装し、四択・曖昧な意味を解釈しない限界を記録。既存ガードと組み合わせる。依存T125。
+- [ ] T129 [EV-001/002/005] `evaluation/{metrics,reporting}.py`、`tests/test_evaluation_reporting.py`、`.github/workflows/ci.yml`：分母、失敗／未実行、群別・方式別・反復別集計、全終了fakeの不合格、入力本文の非出力、通常CIのfake限定を実装。依存T126〜T128。
+
+### B：ローカル実モデルの基準値
+
+- [ ] T130 [EV-004] `evaluation/model_cache.py`／`backends.py`：既存の二つの固定revisionとhead／LoRA／tokenizer／ベース重みを検査し、オフラインで一度ロード。キャッシュ欠落・版違いは即時失敗、自動取得なし。依存T127。
+- [ ] T131 [EV-004] `tests/test_evaluation_offline.py`と実験記録：通信0・並列1・回数／壁時計上限・中断保存を検証後、実モデル5件のローカルスモークを実施。品質評価へ混ぜない。依存T129、T130。
+- [ ] T132 [EV-001/005] v1の状態文golden fixture、問い・ガードhashを保存し、dev10件×3反復の基準値を記録。ルールも集計する。依存T126、T128、T131。
+
+### C：状態整合と防御的検査
+
+- [ ] T133 [EV-003] `decision_inputs.py`、`decider.py`：確定済み共通入力、v1再現とv2状態文、残枠・確認回答済み・比較可否を実装。四択の説明とガードは変えず、本番既定はv1。依存T132。
+- [ ] T134 [EV-003] `decision_pattern/decider.py`と対応テスト：不正な選択肢、キー欠落、NaN／Infinity、範囲・合計・最上位の不整合を拒否し、失敗時ハンドラー0件を保証。依存T125。既存呼出しとの互換性を確認。
+- [ ] T135 [EV-003/006] `pipeline.py`と`test_pipeline.py`／`test_clarifications.py`等：モデルとガードの入力源を統一し、現在受付分を含む回数・観察再利用・比較・終了後破棄の回帰を検証。依存T133、T134。
+
+### D：モデル比較と採否
+
+- [ ] T136 [EV-001/002] dev10件×3反復×v1／v2を比較して必要なら状態文を調整。T132の実装前の基準値とは分け、現在の同一adapter／ガードで比較する。追加調整分は初回275回の基本計画と別に記録。holdoutを見ずに候補・実行設定・採否条件を固定。依存T135。
+- [ ] T137 [EV-001/002/004] 固定holdout30件×3反復×v1／v2をローカルで実行し、ルールも比較。同じモデル・ガード・閾値0。入力本文や実写真を出力せず、部分runは部分として記録。依存T136。
+- [ ] T138 [EV-005/006] `docs/reviews/`に実測レポート：群別の適合率・違反・不要な退避・失敗・実行条件と限界、v2採用／不採用をG3で判断。評価データを見て調整したら新しい評価セットを準備。依存T137。
+
+### E：採否反映・AWS検証への引継ぎ
+
+- [ ] T139 [EV-006] 採用なら本番既定と`DecisionRecord.question_version`をv2へ更新し回帰、不採用ならv1維持を明記。confidence閾値は0。`docs/decision-pattern.md`／技術一覧／researchを実際の結果へ同期。依存T138。
+- [ ] T140 [EV-006] ローカル実装・実験の完了証拠、残課題、AWSで確認する差分を整理。G4で移行可否を判定し、ユーザーへ結果を報告。**T124のAWS操作はここでは実施しない。** 依存T139。
+
+## Phase 13: 比較して選んだ一枚を持ち帰る（2026-10-19計画）
+
+①＋③へのユーザーの支持を反映し、T141〜T145をローカル実装・検証済み（[結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)）。[photo-completion-plan.md](photo-completion-plan.md)参照。番号は追加順であり、実装順は**T141〜T145→Phase 12→T124**。
+
+- [x] T141 [FR-030/031] 四画面内の比較・保存・終了の流れを設計し、表示中の写真・保存ボタンの対象・好みのフィードバックを分離。保存済みファイルが端末に残る説明も日英で揃える。APIの変更なし。
+- [x] T142 [FR-031] `features/camera/`と再撮影画面：基準写真を参考にする任意の位置合わせガイド、左右向きと縦横比、オフでも撮影できる経路を実装。撮影Blobにガイドを焼き込まない。依存T141。
+- [x] T143 [FR-031] `screens/Compare.tsx`：並置／A・B切替、同じ表示枠、前後ラベル、選択の保持。表示切替で推論しない。依存T141。
+- [x] T144 [FR-030] `features/session/photos.ts`と保存ヘルパー、`SessionFlow.tsx`：明示した前／後／変更なし画像の任意保存、失敗時の再操作、参照URL解放、保存せず終了を実装。撮影中の終了・再開始では遅延画像を破棄する。初回`offer_finish`の既存終了処理を保ち、無変更の保存は解析前プレビュー・終了前の助言画面に設ける。保存要求をOSへの保存完了として扱わない。依存T141。
+- [x] T145 [FR-030/031] Vitest／Playwright：合成画像で保存ファイルと元Blobの一致、ガイドの向き・画素への非重畳、比較切替、無変更・保存せず終了、通信失敗時の保存、終了後の遅延撮影・応答と参照解放、追加通信0を確認。仕様・技術一覧・検証記録を同期。依存T142〜T144。

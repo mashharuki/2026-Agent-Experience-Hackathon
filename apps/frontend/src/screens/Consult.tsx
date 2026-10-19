@@ -49,6 +49,7 @@ export function Consult({
 
   return (
     <Stack spacing={3} component="form" onSubmit={(e) => e.preventDefault()}>
+      <Typography variant="body2">{t("consult.journey")}</Typography>
       <FormControl>
         <FormLabel id="scope-label">{t("consult.scopeLabel")}</FormLabel>
         <RadioGroup

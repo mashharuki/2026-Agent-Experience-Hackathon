@@ -71,9 +71,6 @@ export function SessionFlow() {
   const answerController = useRef<AbortController | undefined>(undefined);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const photosRef = useRef({ before, after });
-  useEffect(() => {
-    photosRef.current = { before, after };
-  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: move focus to the new heading whenever the screen changes
   useEffect(() => {
@@ -83,26 +80,37 @@ export function SessionFlow() {
     () => () => {
       flowVersion.current++;
       answerController.current?.abort();
-      dropPhoto(photosRef.current.before);
-      dropPhoto(photosRef.current.after);
+      for (const photo of new Set(Object.values(photosRef.current)))
+        dropPhoto(photo);
+      photosRef.current = { before: undefined, after: undefined };
     },
     [],
   );
 
-  const replaceBefore = useCallback((photo: Photo | undefined) => {
-    setBefore((old) => {
-      if (old && old !== photo && old !== photosRef.current.after)
-        dropPhoto(old);
-      return photo;
-    });
-  }, []);
-  const replaceAfter = useCallback((photo: Photo | undefined) => {
-    setAfter((old) => {
-      if (old && old !== photo && old !== photosRef.current.before)
-        dropPhoto(old);
-      return photo;
-    });
-  }, []);
+  const replacePhotos = useCallback(
+    (next: { before: Photo | undefined; after: Photo | undefined }) => {
+      const previous = photosRef.current;
+      photosRef.current = next;
+      for (const old of new Set(Object.values(previous))) {
+        if (old && old !== next.before && old !== next.after) dropPhoto(old);
+      }
+      setBefore(next.before);
+      setAfter(next.after);
+    },
+    [],
+  );
+  const replaceBefore = useCallback(
+    (photo: Photo | undefined) => {
+      replacePhotos({ ...photosRef.current, before: photo });
+    },
+    [replacePhotos],
+  );
+  const replaceAfter = useCallback(
+    (photo: Photo | undefined) => {
+      replacePhotos({ ...photosRef.current, after: photo });
+    },
+    [replacePhotos],
+  );
 
   const finish = useCallback(() => {
     ended.current = true;
@@ -112,10 +120,9 @@ export function SessionFlow() {
     answerKey.current = undefined;
     setAdvice(undefined);
     setNextAdvice(undefined);
-    replaceBefore(undefined);
-    replaceAfter(undefined);
+    replacePhotos({ before: undefined, after: undefined });
     setScreen("done");
-  }, [replaceBefore, replaceAfter]);
+  }, [replacePhotos]);
 
   // End on the server too, so the cloud copies of the photos are deleted now rather than later.
   // Best effort: if it fails, the worker and the sweeper still remove them within a day.
@@ -316,6 +323,7 @@ export function SessionFlow() {
           run={analysis.run}
           notice={notice}
           onCaptured={(blob) => {
+            if (ended.current) return;
             setNotice(notice);
             replaceBefore(makePhoto(blob));
           }}
@@ -333,6 +341,7 @@ export function SessionFlow() {
         <TryOne
           step={step}
           advice={advice}
+          beforePhoto={before}
           afterPhoto={after}
           run={analysis.run}
           notice={notice}
@@ -355,7 +364,9 @@ export function SessionFlow() {
           }}
           onFinish={finishNow}
           onStartRecheck={() => setStep("recheck")}
-          onAfterCaptured={(blob) => replaceAfter(makePhoto(blob))}
+          onAfterCaptured={(blob) => {
+            if (!ended.current) replaceAfter(makePhoto(blob));
+          }}
           onSendAfter={() => analyse("after", after)}
           onRetakeAfter={() => {
             analysis.reset();
@@ -385,8 +396,7 @@ export function SessionFlow() {
               !(await send({ type: "advice_response", adviceResponse: "try" }))
             )
               return;
-            replaceBefore(after);
-            setAfter(undefined);
+            replacePhotos({ before: after, after: undefined });
             setChoice(undefined);
             setAdvice(nextAdvice);
             setNextAdvice(undefined);

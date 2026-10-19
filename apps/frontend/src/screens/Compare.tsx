@@ -9,12 +9,16 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
 import type {
   Advice,
   FeedbackRequestComparisonChoice,
 } from "../api/generated/model";
+import { PhotoDownloads } from "../components/PhotoDownloads";
 import type { Photo } from "../features/session/photos";
 import { useI18n } from "../i18n/I18nProvider";
 import type { MessageKey } from "../i18n/ja";
@@ -51,30 +55,53 @@ export function Compare({
   onTryAgain: () => void;
 }) {
   const { t } = useI18n();
+  const [mode, setMode] = useState<"side" | "single">("side");
+  const [view, setView] = useState<"before" | "after">("before");
+  const images = { before, after };
   return (
     <Stack spacing={2}>
+      <ToggleButtonGroup
+        exclusive
+        value={mode}
+        aria-label={t("compare.mode")}
+        onChange={(_, value: "side" | "single" | null) => {
+          if (value) setMode(value);
+        }}
+      >
+        <ToggleButton value="side">{t("compare.side")}</ToggleButton>
+        <ToggleButton value="single">{t("compare.single")}</ToggleButton>
+      </ToggleButtonGroup>
+      {mode === "single" ? (
+        <ToggleButtonGroup
+          exclusive
+          value={view}
+          aria-label={t("compare.view")}
+          onChange={(_, value: "before" | "after" | null) => {
+            if (value) setView(value);
+          }}
+        >
+          <ToggleButton value="before">{t("compare.beforeLabel")}</ToggleButton>
+          <ToggleButton value="after">{t("compare.afterLabel")}</ToggleButton>
+        </ToggleButtonGroup>
+      ) : null}
       <Stack direction="row" spacing={1}>
-        <Stack sx={{ flex: 1 }} spacing={0.5}>
-          <img
-            className="photo"
-            src={before.url}
-            alt={t("compare.beforeLabel")}
-          />
-          <Typography variant="caption" align="center">
-            {t("compare.beforeLabel")}
-          </Typography>
-        </Stack>
-        <Stack sx={{ flex: 1 }} spacing={0.5}>
-          <img
-            className="photo"
-            src={after.url}
-            alt={t("compare.afterLabel")}
-          />
-          <Typography variant="caption" align="center">
-            {t("compare.afterLabel")}
-          </Typography>
-        </Stack>
+        {(["before", "after"] as const)
+          .filter((target) => mode === "side" || target === view)
+          .map((target) => (
+            <Stack key={target} sx={{ flex: 1, minWidth: 0 }} spacing={0.5}>
+              <img
+                className="comparison-photo"
+                src={images[target].url}
+                alt={t(`compare.${target}Label`)}
+              />
+              <Typography variant="caption" align="center">
+                {t(`compare.${target}Label`)}
+              </Typography>
+            </Stack>
+          ))}
       </Stack>
+
+      <PhotoDownloads before={before} after={after} />
 
       <FormControl>
         <FormLabel id="choice-label">{t("compare.question")}</FormLabel>

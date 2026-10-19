@@ -124,3 +124,18 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 - 回答ジョブは `inputKind: clarification` と `clarificationId` を持ち、uploadIdを持たない。入力種別未設定の旧ジョブは画像ジョブとして扱う。
 - 解析受付のIDEM・UPLOAD・SESSION・JOBは同じトランザクションで確定。セッション作成のIDEM・利用枠・SESSION・同意も一括確定する。
 - IDEMのfingerprintで同じキーの異なる入力を拒否する。回答による再判断もanalysesUsedへ1回加算する。
+
+## 2026-10-19 ローカル評価用の型（設計・未実装）
+
+本番の保存エンティティ・TTL・状態遷移・外部APIは変更しない。[評価契約](contracts/model-evaluation.md)の型は合成JSONLとignoredな実験出力だけに置く。
+
+- **DecisionInputs**：既存セッション・ジョブから作る一判断分の共通入力。scope／wish／restrictions／Observation／tools／changes_used／analyses_used／clarified／phase／last_advice／comparable。新しい永続化データではない。状態文とガードの入力源を揃える。
+- **EvaluationCase**：case_id・group_id・split・category・合成inputs・許容する生の選択／最終対応・禁止対応・支援可能性・ラベル確定状態。期待値はモデルへ渡さない。
+- **RunManifest**：データ／問い／ガード／モデルの版・hash、実行条件、上限、予定件数、完了／部分状態。予測結果と1対多。
+- **TrialResult**：run／case／backend／反復で一意。モデルの選択、ガード後、上書き理由、評価ハンドラー、時間、成功／不正応答／失敗／未実行。本文や写真なし。
+
+現在ジョブの受付後の`analyses_used`を採用し、残り0と「現在の結果も返せない」を同義にしない。比較未実施のNoneと比較不可のFalseを分ける。終了済みの要求拒否は、選択評価と別の状態管理試験で確認する。
+
+## 2026-10-19 比較・任意保存（実装済み・ローカル検証）
+
+端末内に表示モード（並置／A・B）とガイド表示を持ち、保存ボタンの操作時に撮影Blobへの参照を明示する。保存対象は比較の好み`prefer_before`／`prefer_after`／`unclear`と区別する。新たな写真のサーバー保存・自動キャッシュ・永続アルバムは設けない。終了・破棄時に写真と参照を解放する。本人が既に端末へ書き出したファイルはアプリの削除対象ではない。

@@ -84,6 +84,10 @@ tasks で具体化する。値は仮置きを含む。
 | `selected` | 選ばれた支援 |
 | `guardOverride` | 通常コードが上書き・拒否したか、その理由（禁止・上限・終了） |
 | `invoked` | 実際に呼ばれた処理（例：`bedrock.explain`、`none`） |
+| `decision_source` | v3／現行v4ではmodel／policy。終了のみのコード決定をモデル判断と区別する |
+| `eligible_options` / `policy_reason` | コードで許可した四択ID集合／制限理由enum。自由記述を含めない |
+
+v3／v4のpolicy決定では`decider_choice`・`probabilities`・`confidence`はnull。model決定のスコアは実際に提示した候補集合についてのみ保存する。旧記録は既定source=modelとして読み取る。候補数が異なるスコアを直接比較して精度や校正を主張しない。
 
 FR-016 を満たす。顔画像・画像を復元できるデータ・本人の自由記述を含めない。
 
@@ -105,6 +109,7 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 ```
 
 不変条件：
+- afterで比較不能かつ`offer_finish`ならDONE。比較可能なら終了提案でもCOMPARINGを維持し、本人が写真を選べる。
 - `changesUsed = 2` または本人が終了を選んだ後は、`ADVICE_SHOWN` に入らない（FR-007）。
 - `TRYING` の間は新しい助言を生成しない（FR-004）。
 - 画像が届いていない `ANALYZING` は `FAILED` にせず、再撮影を案内して `CONSULTING` へ戻す（FR-011）。
@@ -125,7 +130,7 @@ TRYING ─整えたので確認─▶ ANALYZING（phase=after）─▶ COMPARING
 - 解析受付のIDEM・UPLOAD・SESSION・JOBは同じトランザクションで確定。セッション作成のIDEM・利用枠・SESSION・同意も一括確定する。
 - IDEMのfingerprintで同じキーの異なる入力を拒否する。回答による再判断もanalysesUsedへ1回加算する。
 
-## 2026-10-19 ローカル評価用の型（設計・未実装）
+## 2026-10-20 ローカル評価用の型（実装済み）
 
 本番の保存エンティティ・TTL・状態遷移・外部APIは変更しない。[評価契約](contracts/model-evaluation.md)の型は合成JSONLとignoredな実験出力だけに置く。
 

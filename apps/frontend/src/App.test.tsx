@@ -129,6 +129,49 @@ describe("screen 1: consult", () => {
 });
 
 describe("the full journey", () => {
+  it("finishes after an incomparable final check instead of requesting another photo", async () => {
+    const { user, mock } = setup();
+    setFetchImplementation(async (input, init) => {
+      const response = await mock.fetch(input, init);
+      if (String(input).includes("/jobs/") && response.ok) {
+        const body = await response.clone().json();
+        if (body.advice?.comparable === true) {
+          body.advice = {
+            kind: "offer_finish",
+            comparable: false,
+            basis: "user_request",
+            text: "ここまでにしましょう。",
+          };
+          return new Response(JSON.stringify(body), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+      return response;
+    });
+    await consult(user);
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で相談する" }),
+    );
+    await user.click(await screen.findByRole("button", { name: "やってみる" }));
+    await user.click(
+      await screen.findByRole("button", { name: "整えたので確認" }),
+    );
+    await takeTestPhoto(user);
+    await user.click(
+      await screen.findByRole("button", { name: "この写真で確認する" }),
+    );
+    await screen.findByRole("button", { name: "もう一度はじめる" });
+    await waitFor(() =>
+      expect(mock.calls.some((c) => c.method === "DELETE")).toBe(true),
+    );
+    expect(
+      screen.queryByRole("button", { name: "撮り直す" }),
+    ).not.toBeInTheDocument();
+    expect(liveObjectUrls()).toBe(0);
+  });
   it("consult -> trial photo -> one suggestion -> try -> recheck -> compare -> choose -> finish", async () => {
     const download = vi
       .spyOn(HTMLAnchorElement.prototype, "click")

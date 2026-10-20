@@ -3,7 +3,7 @@ structured-output mode), so every model answer is validated here and rejected if
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Lighting = Literal["good", "backlit", "dim", "uneven", "unknown"]
 Framing = Literal["ok", "too_small", "off_center", "cut_off", "no_face", "unknown"]
@@ -52,10 +52,46 @@ class DecisionRecord(BaseModel):
     job_id: str
     session_id: str
     question_version: str
-    probabilities: dict[str, float]
-    confidence: float
-    decider_choice: AdviceKind
+    probabilities: dict[str, float] | None
+    confidence: float | None
+    decider_choice: AdviceKind | None
     selected: AdviceKind
     guard_override: str | None
     invoked: list[str]
     created_at: str
+    decision_source: Literal["model", "policy"] = "model"
+    eligible_options: tuple[AdviceKind, ...] = ()
+    policy_reason: (
+        Literal[
+            "analysis_limit",
+            "change_limit",
+            "restriction",
+            "unobservable",
+            "insufficient_evidence",
+            "clarification_limit",
+            "available_support",
+        ]
+        | None
+    ) = None
+
+    @model_validator(mode="after")
+    def truthful_provenance(self):
+        scores = (self.probabilities, self.confidence, self.decider_choice)
+        if self.decision_source == "policy":
+            if any(value is not None for value in scores) or (
+                self.eligible_options != (self.selected,) or self.policy_reason is None
+            ):
+                raise ValueError("invented_policy_inference")
+        elif any(value is None for value in scores):
+            raise ValueError("missing_model_inference")
+        elif self.eligible_options and len(self.eligible_options) < 2:
+            raise ValueError("singleton_is_not_model_inference")
+        if self.eligible_options and self.selected not in self.eligible_options:
+            raise ValueError("ineligible_selection")
+        if (
+            self.decision_source == "model"
+            and self.eligible_options
+            and (set(self.probabilities) != set(self.eligible_options))
+        ):
+            raise ValueError("ineligible_model_scores")
+        return self

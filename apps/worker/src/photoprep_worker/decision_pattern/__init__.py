@@ -16,6 +16,7 @@ directory into another agent. See ``docs/decision-pattern.md`` and ``example.py`
 
 from .binding import Decision, run_decision
 from .decider import DEFAULT_CHECKPOINT, Choice, Decider, StrandsDecider, load_engine
+from .eligibility import Eligibility
 from .guards import Guard, Override, apply_guards
 from .question import TypedQuestion
 
@@ -24,6 +25,7 @@ __all__ = [
     "Choice",
     "Decider",
     "Decision",
+    "Eligibility",
     "Guard",
     "Override",
     "StrandsDecider",

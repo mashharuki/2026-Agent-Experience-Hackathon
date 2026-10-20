@@ -39,7 +39,6 @@ class TestHappyPath:
         assert record["invoked"] == ["bedrock.observe", "bedrock.explain"]
         assert set(record["probabilities"]) == {
             "grooming_tip",
-            "capture_setup_tip",
             "clarify",
             "offer_finish",
         }
@@ -58,17 +57,16 @@ class TestHappyPath:
 
 
 class TestGuardsAreApplied:
-    def test_a_decider_choice_that_breaks_a_restriction_is_replaced_and_recorded(self, world):
+    def test_a_restricted_action_is_removed_before_model_selection(self, world):
         world.seed(restrictions=["no_touch_brow"])
         world.decider.selected, world.decider.confidence = "grooming_tip", 0.419
         process_job(world.deps, JOB)
         assert world.job()["result"]["kind"] == "clarify"
         record = world.decision()
-        assert (record["decider_choice"], record["selected"], record["guard_override"]) == (
-            "grooming_tip",
-            "clarify",
-            "restriction",
-        )
+        assert record["decider_choice"] == record["selected"] == "clarify"
+        assert record["policy_reason"] == "restriction"
+        assert "grooming_tip" not in record["eligible_options"]
+        assert record["guard_override"] is None
         assert len(world.bedrock.calls) == 1  # no explanation was generated for a blocked tip
         assert world.session()["state"] == "CLARIFYING"
 
@@ -77,7 +75,8 @@ class TestGuardsAreApplied:
         world.bedrock.texts[0] = observation_text(lighting="backlit")
         process_job(world.deps, JOB)
         assert world.job()["result"]["kind"] == "capture_setup_tip"
-        assert world.decision()["guard_override"] == "unobservable"
+        assert world.decision()["policy_reason"] == "unobservable"
+        assert "grooming_tip" not in world.decision()["eligible_options"]
         assert world.session()["state"] == "CAPTURE_ADJUST"
 
     def test_after_two_changes_no_new_tip(self, world):
@@ -313,6 +312,8 @@ class TestTheDecisionDecidesWhatRuns:
     ):
         world.seed()
         world.decider.selected = kind
+        if kind == "capture_setup_tip":
+            world.bedrock.texts[0] = observation_text(lighting="backlit")
         process_job(world.deps, JOB)
         assert world.job()["result"]["kind"] == kind
         record = world.decision()

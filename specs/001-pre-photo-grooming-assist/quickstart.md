@@ -1,8 +1,14 @@
 # Quickstart：検証シナリオ
 
+## 実行可能性分離のローカル確認
+
+`apps/worker/`で`uv run pytest tests/test_eligibility.py`を実行する。最終解析・両対象禁止ではDecider呼出し0とスコアnull、根拠なしでは一手なし、候補外のモデル応答は処理失敗、比較不能の終了はDONEになることを確認する。
+
+現行v4は従来の問い・選択肢の表現を保ち、コードで実行候補を絞る。v3の新文面は通常支援に退行があり不採用。`evaluation/policy-cases/`は回帰用、別の固定`evaluation/eligibility-matrix/`はv4の確認用。両方とも合成データ・人間レビュー未実施。`uv run python -m tools.evaluate_decisions validate --cases-dir evaluation/eligibility-matrix`は重み取得なしで検査できる。
+
 現在のAPI/worker/frontend/CDKは実装済み。レビュー修正後の実行結果は [検証記録](../../docs/reviews/2026-10-19-remediation-validation.md)。以下のAWSシナリオはローカル・モックの成功と分けて記録する。
 
-**今回の順序（2026-10-19ユーザー指定）**：[比較・任意保存](photo-completion-plan.md)のT141〜T145、[追加実装・ローカルモデル実験](model-evaluation-plan.md)のT125〜T140の順で進め、両方の結果確認後にAWSのシナリオへ移る。追加UIはローカル実装・検証済み（[結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)）。モデル評価CLIは未実装。
+**今回の順序（2026-10-19ユーザー指定）**：[比較・任意保存](photo-completion-plan.md)のT141〜T145、[追加実装・ローカルモデル実験](model-evaluation-plan.md)のT125〜T140の順で進め、両方の結果確認後にAWSのシナリオへ移る。追加UIはローカル実装・検証済み（[結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)）。モデル評価CLIは実装済み。2026-10-20の[実験記録](../../docs/reviews/2026-10-20-local-model-evaluation.md)に実行範囲と採否を記す。
 
 ### ローカル回帰
 
@@ -53,7 +59,7 @@
 - 応募直前に、公式Rules全文（ライセンス、提出物、期限）を再確認する（T-007）。
 ## 追加：ローカルの判断評価（2026-10-19計画）
 
-**以下のCLI・データは未実装。T125〜T140の実装後に使う検証手順であり、現在実行できるという案内ではない。**
+以下のCLI・データは実装済み。通常CIはfake・ケース検証のみ。実モデルは取得済み重みと明示した上限を使って別途実行する。
 設計は[評価計画](model-evaluation-plan.md)、引数・出力は[CLI契約](contracts/model-evaluation.md)を正本とする。
 
 前提：Python 3.12、workerの`uv sync --frozen`が完了、合成ケースと固定manifest、実モデル実験では指定revisionのhead／LoRA／tokenizer／ベース重みを含むローカルキャッシュが必要。キャッシュ不足時は取得せず終了する。依存準備のネットワーク利用と、実験中の通信0を区別する。

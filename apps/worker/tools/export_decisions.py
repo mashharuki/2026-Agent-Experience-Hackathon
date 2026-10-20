@@ -24,6 +24,9 @@ FIELDS = (
     "probabilities",
     "invoked",
     "created_at",
+    "decision_source",
+    "eligible_options",
+    "policy_reason",
 )
 
 

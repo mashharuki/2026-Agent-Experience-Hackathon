@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "sha256": {
+    "dev": "675d391fd35a3a9d5ac17e5a116958307771b284034ce092cb44fa75286f2866",
+    "holdout": "296eede3fbf9b11e721e0264072e74f832b09cd22b288fdc2a276ce3a9fef08d"
+  },
+  "authors": "one AI author; no independent human review",
+  "review": "labels and group separation checked before predictions; synthetic observations only",
+  "groups": "declared scene IDs; related policy patterns recur; semantic independence not established",
+  "limitations": "small purposive text set; not face observation or general accuracy evidence"
+}

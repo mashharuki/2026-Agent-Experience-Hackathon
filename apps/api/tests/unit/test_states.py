@@ -103,7 +103,7 @@ def test_third_change_is_refused():
         ("clarify", "after", True, State.COMPARING),
         ("grooming_tip", "after", False, State.CAPTURE_ADJUST),  # light changed too much: retake
         ("offer_finish", "after", True, State.COMPARING),  # the user still gets to compare
-        ("offer_finish", "after", False, State.CAPTURE_ADJUST),
+        ("offer_finish", "after", False, State.DONE),
     ],
 )
 def test_state_after_a_finished_job(kind, phase, comparable, expected):

@@ -1,7 +1,9 @@
 # 契約：オフラインの判断評価
 
-状態：2026-10-19設計。CLI・型・データは未実装。[実装計画](../model-evaluation-plan.md)に従う。
+状態：2026-10-19設計、2026-10-20実装。[実装計画](../model-evaluation-plan.md)と[実験記録](../../../docs/reviews/2026-10-20-local-model-evaluation.md)を参照。
 外部HTTP API・DynamoDBの契約は変更しない。以下は開発用CLI／ファイルの新契約である。
+
+追補：v3／現行v4では内部DecisionRecordに任意の出所・候補・理由を追加し、既存記録の読込みを保持する。HTTPの四択・JSON構造は変更しない。
 
 ## EvaluationCase v1
 
@@ -34,13 +36,19 @@ unknownフィールド、重複ID、空集合、選択肢の誤記、split漏れ
 
 case_id、backend、state_version、repeat_index、`status=ok|invalid_output|model_error|timeout|not_run`、raw_choice、final_choice、probabilities、confidence、guard_override、実行ハンドラーID、選択時間、error_classを持つ。
 
+v3／v4はdecision_source、eligible_options、policy_reasonも持つ。候補一つのpolicy成功ではraw_choice／確率／confidenceはnullで、モデル適合の分母から除く。finalの分母には残す。複数候補のmodel成功は、実際に問いへ渡した候補だけの確率を保持する。最終動作が候補外なら成功としない。
+
+`--state-version v3`、`--paired-versions v1,v3`にも対応。`evaluation/policy-cases/`を別の評価版として使用する。v3は[分離計画](../eligibility-plan.md)で事前に定めた30例×1反復のシステム確認ゲートで判定し、旧v2の90判断ゲートとは分ける。
+
+v3は通常支援への退行で不採用。`--state-version v4`／`--paired-versions v1,v4`を追加し、v4の採用確認は新しい固定`eligibility-matrix-v1`の完全な30例でのみ判定する。旧版の`policy-cases`は回帰用で、その結果だけではv4ゲートに通らない。
+
 - `rules`／`fake`は確率とconfidenceをnullとし、架空のモデルスコアを作らない。
 - エラーでは生成できない値はnull。成功行へ補完しない。
 - 状態文、画像、モデル自由文、実利用者IDは書き出さない。
 - ハンドラーIDは評価用の実行証跡で、Bedrockや実画面が動いた証拠ではない。
 - 同じrun／backend／case／repeatの重複を拒否。部分runに未実行行を残す。
 
-## CLI（実装後の仕様）
+## CLI
 
 `python -m tools.evaluate_decisions`のサブコマンドを次のようにする。
 
@@ -53,6 +61,7 @@ case_id、backend、state_version、repeat_index、`status=ok|invalid_output|mod
 | `compare --runs DIR_A DIR_B ... --out DIR` | 前提条件の差を検査して集計。入力本文を再出力しない |
 
 実装時に`--paired-versions v1,v2`も設け、同じロード済みengineで交互に実行できるようにする。単独／pairedのモードを混在指定したら拒否。call上限は両版合計へ適用。
+`--threads`（既定4、1〜8）、`--seed`（既定0）を記録する。`--limit 5`はdevの5分類から1例ずつのスモーク用で、holdoutへのlimit指定は拒否する。`compare`は実行条件・固定データhash・予定試行の欠落・モデルidentityの不一致を拒否し、fakeと実モデルを混在させない。G3の採否は完全なholdout30件×3反復の両版が揃った場合だけ判定する。
 引数なしはusageを表示して終了し、モデルをロードしない。出力DIRは新規のみで、既存runを上書きしない。holdoutはmanifestの固定hashが一致する場合だけ実行する。
 
 終了コード：0＝要求した検査／run／集計が完了、2＝引数・データ・版不整合、3＝ローカル重み不足／ロード失敗、4＝実行途中のモデルエラー・上限中断・不正応答、5＝結果の品質ゲート不合格。

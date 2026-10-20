@@ -24,6 +24,8 @@ def state_after_job(kind: str, phase: str, comparable: bool | None) -> State:
     if kind not in ADVICE_KINDS:
         raise ValueError(f"unknown advice kind: {kind}")
     if phase == "after":
+        if kind == "offer_finish" and not comparable:
+            return State.DONE
         # The user just tidied up: they always get to compare, even when no further change
         # is offered (offer_finish). If light or position changed too much to compare, ask
         # for a retake instead of judging.

@@ -61,3 +61,14 @@ def test_failure_and_cancellation_paths_work_on_dynamodb(dynamo_world):
     ended.store.update(f"SESSION#{SESSION}", "META", set={"state": "DONE"})
     ended.store.update(f"JOB#{JOB}", "META", set={"status": "QUEUED"})
     assert process_job(ended.deps, JOB) is Outcome.CANCELLED
+
+
+def test_policy_record_preserves_null_scores_and_eligible_candidate(dynamo_world):
+    world = dynamo_world.seed(changes_used=2)
+    world.decider.fail = True
+    assert process_job(world.deps, JOB) is Outcome.DONE
+    record = world.decision()
+    assert record["decision_source"] == "policy"
+    assert record["probabilities"] is record["confidence"] is record["decider_choice"] is None
+    assert record["eligible_options"] == ["offer_finish"]
+    assert world.decider.states == []

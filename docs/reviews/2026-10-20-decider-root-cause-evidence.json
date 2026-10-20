@@ -1,0 +1,756 @@
+{
+  "date": "2026-10-20",
+  "scope": "synthetic offline root-cause diagnostic; not adoption or fresh validation",
+  "prior_real_judgments": 275,
+  "additional_real_judgments": 30,
+  "original_pair_audit": {
+    "dev": {
+      "unique_scenes": 10,
+      "raw_choice_changed": 0,
+      "final_choice_changed": 0,
+      "probability_distribution_changed": 10,
+      "maximum_absolute_probability_delta": {
+        "min": 0.0030000000000000027,
+        "median": 0.044249999999999984,
+        "max": 0.1614
+      }
+    },
+    "holdout": {
+      "unique_scenes": 30,
+      "raw_choice_changed": 0,
+      "final_choice_changed": 0,
+      "probability_distribution_changed": 30,
+      "maximum_absolute_probability_delta": {
+        "min": 0.004499999999999997,
+        "median": 0.028800000000000006,
+        "max": 0.15060000000000007
+      }
+    }
+  },
+  "original_token_audit": {
+    "question_tokens": 151,
+    "state_budget": 3945,
+    "maximum_state_tokens": {
+      "v1": 135,
+      "v2": 190
+    },
+    "truncated": false
+  },
+  "diagnostic": {
+    "manifest": {
+      "purpose": "development_diagnostic_not_adoption",
+      "dataset_sha256": {
+        "dev": "675d391fd35a3a9d5ac17e5a116958307771b284034ce092cb44fa75286f2866",
+        "holdout": "296eede3fbf9b11e721e0264072e74f832b09cd22b288fdc2a276ce3a9fef08d"
+      },
+      "script_sha256": "3c6fdae819e01aa10d1332a8d37037c1b8e66fdb93e206480797f887b6838c96",
+      "state_version": "v2",
+      "conditions": {
+        "dataset_sha256": {
+          "dev": "675d391fd35a3a9d5ac17e5a116958307771b284034ce092cb44fa75286f2866",
+          "holdout": "296eede3fbf9b11e721e0264072e74f832b09cd22b288fdc2a276ce3a9fef08d"
+        },
+        "question_sha256": "c69277f922e253056db6f7b0d77441fa22d4494a70ece642a588c60ce46cf063",
+        "guard_sha256": "5d74ab6a14e800fa48d85fcbd63dbeaa7871250eee03e1fe0b640e71e78ac809",
+        "binding_sha256": "d6652054c39f481d38c3a36a79c7da516def949756b5fa7d12df9157a92683ce",
+        "adapter_sha256": "ed214a978d3d838ce3ec2b8436bbf870be7a4977afea09813bdf28b26e1d1e0b",
+        "min_confidence": 0,
+        "v1_renderer_sha256": "230d34aa7dfdbbe451620ce866237a6cc56424635a588dedb7935431c1fa3697",
+        "v2_renderer_sha256": "1a05714f740988db66975e9ba1e2192f754afe84b27aed97547176ff97246576",
+        "threads": 4,
+        "seed": 0,
+        "device": "cpu",
+        "prefix_cache": false,
+        "warmups": 0,
+        "libraries": {
+          "strands-decider": "0.1.0",
+          "torch": "2.14.1",
+          "transformers": "5.20.1",
+          "pydantic": "2.14.1"
+        },
+        "python": "3.12.11",
+        "os": "Darwin"
+      },
+      "max_calls": 30,
+      "max_seconds": 600,
+      "repeats": 1,
+      "schedule": [
+        {
+          "case_id": "dev-brush",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-brush",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-brush",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-bangs",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-bangs",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-bangs",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-brow-no-touch",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-brow-no-touch",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-brow-no-touch",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-both-no-touch",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-both-no-touch",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-both-no-touch",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-backlight",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-backlight",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-backlight",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-far-away",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-far-away",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-far-away",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-open-request",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-open-request",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-open-request",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-ambivalent",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-ambivalent",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-ambivalent",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-last-analysis",
+          "variant": "criteria_only"
+        },
+        {
+          "case_id": "dev-last-analysis",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-last-analysis",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-answered-once",
+          "variant": "baseline_v2"
+        },
+        {
+          "case_id": "dev-answered-once",
+          "variant": "instructions_only"
+        },
+        {
+          "case_id": "dev-answered-once",
+          "variant": "criteria_only"
+        }
+      ],
+      "questions": {
+        "baseline_v2": {
+          "instructions": "本人の依頼と今確認できている状態から、次に使う支援はどれか？",
+          "criteria": {
+            "grooming_tip": "観察に根拠があり、本人の禁止に反しない身支度の一手を示す",
+            "capture_setup_tip": "観察が難しい撮影条件（逆光・位置・光の差）を調整するよう案内する",
+            "clarify": "根拠が弱い・依頼が曖昧・矛盾しているため、本人に確認する",
+            "offer_finish": "試行の上限に達した、または本人が終えたいので終了を提案する"
+          }
+        },
+        "instructions_only": {
+          "instructions": "本人の希望と観察から次の支援を一つ選ぶ。以下を上から優先する。眉と前髪の両方が接触禁止なら offer_finish。解析回数が3/3、または試した回数が2/2なら offer_finish。根拠が足りず、確認質問への回答が済みなら offer_finish。相談対象が接触禁止なら、他の対象を確認する clarify。逆光や顔の位置に問題があれば capture_setup_tip。根拠が足りない、希望が曖昧なら clarify。禁止に反せず根拠と残り枠がある場合だけ grooming_tip。",
+          "criteria": {
+            "grooming_tip": "観察に根拠があり、本人の禁止に反しない身支度の一手を示す",
+            "capture_setup_tip": "観察が難しい撮影条件（逆光・位置・光の差）を調整するよう案内する",
+            "clarify": "根拠が弱い・依頼が曖昧・矛盾しているため、本人に確認する",
+            "offer_finish": "試行の上限に達した、または本人が終えたいので終了を提案する"
+          }
+        },
+        "criteria_only": {
+          "instructions": "本人の依頼と今確認できている状態から、次に使う支援はどれか？",
+          "criteria": {
+            "grooming_tip": "相談対象への接触が許可され、見える根拠があり、解析回数が3未満かつ試した回数が2未満の場合だけ身支度を案内する",
+            "capture_setup_tip": "逆光・顔の位置など撮影条件で観察が難しいときに調整する",
+            "clarify": "未回答で根拠や希望が曖昧な場合、または相談対象が接触禁止で他の対象を確認する場合。ただし解析回数3/3では選ばない",
+            "offer_finish": "眉と前髪が両方接触禁止、解析回数3/3、試した回数2/2、または確認質問への回答後も根拠不足なら終了する"
+          }
+        }
+      },
+      "question_sha256": "ccb63b6273767241d65d05cf4c461e9b132937a6cec4bd79beb9f4fa4c061532"
+    },
+    "model_identity": {
+      "revisions": {
+        "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+        "Qwen/Qwen3.5-2B-Base": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c"
+      },
+      "file_sha256": {
+        "checkpoint/head.safetensors": "ace56742545b505e6fae34ada85c8edbeedb23ba8974d8680aebe0380d6083a1",
+        "checkpoint/lora/adapter_model.safetensors": "ae1d0cd1ac3edec6df0a519a3ad18f1c382099032d493f8f98c96a80cfebb4c7",
+        "checkpoint/lora/adapter_config.json": "0ced130cefbad13b092425de87680347ce01d09c833cf8e3870e8156db18ffcc",
+        "checkpoint/tokenizer.json": "a2cdd2e108566b09079afa8d266e9e65e7c280f27b771218237a06de5ba9cd86",
+        "checkpoint/tokenizer_config.json": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45",
+        "checkpoint/strands_decider_config.json": "1d9625055e88c254d50089116992d08b0567286c9d6fcefb3c025922058ee65a",
+        "base/config.json": "ed1c1723241f23f7f4e23430759cbd7dcfb4103cbdfe052bfe7626b57c2615b4",
+        "base/model.safetensors.index.json": "74d2ddfe79f10f35b27b498632f02b97b60dd9ec39b35d7c5a890c399284e319",
+        "base/model.safetensors-00001-of-00001.safetensors": "928acbf11878c32185bbd863514d191769285065ab9ea14fbfe431303f5fdf2d"
+      }
+    },
+    "summary": {
+      "status": "complete",
+      "elapsed_seconds": 171.35593654199965,
+      "completed_records": 30,
+      "variants": {
+        "baseline_v2": {
+          "planned": 10,
+          "ok": 10,
+          "raw_fit": 6,
+          "final_fit": 9
+        },
+        "instructions_only": {
+          "planned": 10,
+          "ok": 10,
+          "raw_fit": 7,
+          "final_fit": 10
+        },
+        "criteria_only": {
+          "planned": 10,
+          "ok": 10,
+          "raw_fit": 7,
+          "final_fit": 9
+        }
+      }
+    },
+    "baseline_reproduced_exactly": 10,
+    "trials": [
+      {
+        "case_id": "dev-brush",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.8997,
+          "capture_setup_tip": 0.0131,
+          "clarify": 0.0714,
+          "offer_finish": 0.0159
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-brush",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.7163,
+          "capture_setup_tip": 0.0248,
+          "clarify": 0.1855,
+          "offer_finish": 0.0734
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-brush",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.6765,
+          "capture_setup_tip": 0.0057,
+          "clarify": 0.2468,
+          "offer_finish": 0.071
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-bangs",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.792,
+          "capture_setup_tip": 0.0272,
+          "clarify": 0.1325,
+          "offer_finish": 0.0483
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-bangs",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.7482,
+          "capture_setup_tip": 0.0063,
+          "clarify": 0.2074,
+          "offer_finish": 0.038
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-bangs",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.9132,
+          "capture_setup_tip": 0.0139,
+          "clarify": 0.0587,
+          "offer_finish": 0.0142
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-brow-no-touch",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.1135,
+          "capture_setup_tip": 0.0259,
+          "clarify": 0.5161,
+          "offer_finish": 0.3445
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-brow-no-touch",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "offer_finish",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.2696,
+          "capture_setup_tip": 0.1721,
+          "clarify": 0.2348,
+          "offer_finish": 0.3236
+        },
+        "guard_override": null,
+        "raw_fit": false,
+        "final_fit": false
+      },
+      {
+        "case_id": "dev-brow-no-touch",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.1556,
+          "capture_setup_tip": 0.099,
+          "clarify": 0.3736,
+          "offer_finish": 0.3718
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-both-no-touch",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.5818,
+          "capture_setup_tip": 0.1297,
+          "clarify": 0.1789,
+          "offer_finish": 0.1096
+        },
+        "guard_override": "restriction",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-both-no-touch",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.1961,
+          "capture_setup_tip": 0.078,
+          "clarify": 0.4874,
+          "offer_finish": 0.2385
+        },
+        "guard_override": "restriction",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-both-no-touch",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "offer_finish",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.1726,
+          "capture_setup_tip": 0.0257,
+          "clarify": 0.3411,
+          "offer_finish": 0.4606
+        },
+        "guard_override": "restriction",
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-backlight",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.0505,
+          "capture_setup_tip": 0.7194,
+          "clarify": 0.1972,
+          "offer_finish": 0.0329
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-backlight",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.0408,
+          "capture_setup_tip": 0.9049,
+          "clarify": 0.0395,
+          "offer_finish": 0.0148
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-backlight",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.0207,
+          "capture_setup_tip": 0.9504,
+          "clarify": 0.0216,
+          "offer_finish": 0.0073
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-far-away",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.1306,
+          "capture_setup_tip": 0.6929,
+          "clarify": 0.1336,
+          "offer_finish": 0.0429
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-far-away",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.0239,
+          "capture_setup_tip": 0.9376,
+          "clarify": 0.0286,
+          "offer_finish": 0.01
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-far-away",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "capture_setup_tip",
+        "final_choice": "capture_setup_tip",
+        "probabilities": {
+          "grooming_tip": 0.054,
+          "capture_setup_tip": 0.7297,
+          "clarify": 0.1772,
+          "offer_finish": 0.0391
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-open-request",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.3263,
+          "capture_setup_tip": 0.0467,
+          "clarify": 0.6142,
+          "offer_finish": 0.0128
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-open-request",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.0751,
+          "capture_setup_tip": 0.0234,
+          "clarify": 0.8615,
+          "offer_finish": 0.04
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-open-request",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "grooming_tip",
+        "probabilities": {
+          "grooming_tip": 0.5522,
+          "capture_setup_tip": 0.0138,
+          "clarify": 0.3542,
+          "offer_finish": 0.0798
+        },
+        "guard_override": null,
+        "raw_fit": false,
+        "final_fit": false
+      },
+      {
+        "case_id": "dev-ambivalent",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.0414,
+          "capture_setup_tip": 0.018,
+          "clarify": 0.9139,
+          "offer_finish": 0.0267
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-ambivalent",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.3373,
+          "capture_setup_tip": 0.0415,
+          "clarify": 0.5003,
+          "offer_finish": 0.1209
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-ambivalent",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "clarify",
+        "probabilities": {
+          "grooming_tip": 0.0332,
+          "capture_setup_tip": 0.0218,
+          "clarify": 0.9339,
+          "offer_finish": 0.011
+        },
+        "guard_override": null,
+        "raw_fit": true,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-last-analysis",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.3031,
+          "capture_setup_tip": 0.0364,
+          "clarify": 0.5361,
+          "offer_finish": 0.1244
+        },
+        "guard_override": "analysis_limit",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-last-analysis",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.6839,
+          "capture_setup_tip": 0.1025,
+          "clarify": 0.09,
+          "offer_finish": 0.1236
+        },
+        "guard_override": "analysis_limit",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-last-analysis",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "grooming_tip",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.3501,
+          "capture_setup_tip": 0.0572,
+          "clarify": 0.2704,
+          "offer_finish": 0.3224
+        },
+        "guard_override": "analysis_limit",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-answered-once",
+        "variant": "baseline_v2",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.2032,
+          "capture_setup_tip": 0.2096,
+          "clarify": 0.5379,
+          "offer_finish": 0.0493
+        },
+        "guard_override": "clarification_limit",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-answered-once",
+        "variant": "instructions_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.0745,
+          "capture_setup_tip": 0.0328,
+          "clarify": 0.8079,
+          "offer_finish": 0.0848
+        },
+        "guard_override": "clarification_limit",
+        "raw_fit": false,
+        "final_fit": true
+      },
+      {
+        "case_id": "dev-answered-once",
+        "variant": "criteria_only",
+        "status": "ok",
+        "raw_choice": "clarify",
+        "final_choice": "offer_finish",
+        "probabilities": {
+          "grooming_tip": 0.2867,
+          "capture_setup_tip": 0.0714,
+          "clarify": 0.3914,
+          "offer_finish": 0.2506
+        },
+        "guard_override": "clarification_limit",
+        "raw_fit": false,
+        "final_fit": true
+      }
+    ]
+  }
+}

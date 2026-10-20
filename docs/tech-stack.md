@@ -46,7 +46,7 @@ Vite+への移行が済むまでは、既存のpnpm scriptsとBiome設定を使�
 | Python依存管理 | uv、lockfile | 採用・API/workerで導入済み | APIとワーカーの依存を分離し、再現可能にする |
 | 共有Python | `packages/photoprep-common` | 採用・導入済み | APIとワーカーで共通の Store（DynamoDB）・状態規則・ログの許可リスト。依存は boto3 のみ |
 | AIワーカー | Python 3.12、PyTorch CPU | 採用・実装済み・Fargateで実行（`apps/worker`。ローカルの回帰テストあり。実AWSで解析を1回通した） | SQSを取得するプロセス。Flaskサーバーは不要。`pillow` で画像検証、`pydantic` でモデル出力を検証 |
-| 判断モデル | Strands Decider 2B | 採用・開発MacとFargateで実行確認済み（性能の継続測定は未実施） | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`（revision `216d1ccb…` を固定）とベース重み `Qwen/Qwen3.5-2B-Base`（`b1485b2f…`）をビルド時に取得。禁止はDeciderが守らないため通常コードのガードで強制 |
+| 判断モデル | Strands Decider 2B | 採用・開発MacとFargateで実行確認済み（今回差分はローカル検証） | `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`（revision `216d1ccb…` を固定）とベース重み `Qwen/Qwen3.5-2B-Base`（`b1485b2f…`）。実行可能性はコードで判定し、許可候補だけを問い合わせる。候補一つならDeciderを呼ばない |
 | 画像観察・説明 | Bedrock Converse、Amazon Nova Lite | 条件付き・実Bedrockで1回の解析を確認（品質は未評価） | 初期ID `amazon.nova-lite-v1:0`。東京での品質とイベントクレジット対象製品を確認 |
 | コンテナ | Docker、Amazon ECR | ビルド・ECR登録・Fargateで起動を確認（約6 GB、2026-10-17） | ワーカーのモデル・依存を同梱。APIへのPyTorch/重みの混入を避ける。CPU版torchをLinuxで選ぶ設定はロックで確認済み |
 
@@ -108,9 +108,9 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 
 確認質問の回答API、短命な観察の再利用、原子的な受付、待機中の終了、画像回収の部分失敗検出を追加した。詳細と実行結果は [検証記録](reviews/2026-10-19-remediation-validation.md)。今回差分はローカル・モック検証までで、AWSでの検証済みという意味ではない。Vite+、Swagger UI、追加言語は今回導入していない。
 
-## 追加実装・モデル実験（計画、未実装）
+## 追加実装・モデル実験（2026-10-20実装・ローカル実験済み）
 
-[評価計画](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md)は既存のPython／pytest／Pydantic／JSONLとCPU Deciderを使う。評価SaaSや新規クラウド基盤は導入しない。合成ケース、オフラインのルール／状態文v1／v2比較、同一入力からのガード適用、モデル応答検査を追加予定。本番既定のv2化はローカル比較後の採用条件による。Bedrock・実写真・AWS性能の確認は後段とし、この計画作成を実装・検証済みとは扱わない。
+[評価ハーネス](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md)は既存Python／pytest／Pydantic／JSONLとCPU Deciderを使い、新規依存なし。初回275判断ではv2の改善がなく不採用とした。[初回結果](reviews/2026-10-20-local-model-evaluation.md)は保持する。その後の[実行可能性分離](../specs/001-pre-photo-grooming-assist/eligibility-plan.md)では、既定v4がコードで候補を制限し、複数候補のみ実モデルへ渡す。終了だけならDeciderを省き、source=policy・スコアnullで記録する。confidence閾値0は維持。旧データと分けた合成40件で検証し、通常CIはfakeと全データ版の検査のみ。実写真・今回差分のAWS性能・人間のラベル検証は未実施。
 
 ## 比較・任意保存（実装済み・ローカル検証）
 

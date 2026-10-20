@@ -82,14 +82,16 @@ class FakeDecider:
         self.states: list[str] = []
         self.fail = False
 
-    def choose(self, state_text: str) -> Choice:
+    def choose(self, state_text: str, *, question=None) -> Choice:
         self.states.append(state_text)
         if self.fail:
             raise RuntimeError("decider failed")
-        others = [
-            k
-            for k in ("grooming_tip", "capture_setup_tip", "clarify", "offer_finish")
-            if k != self.selected
-        ]
-        probs = {self.selected: 0.7, **{k: 0.1 for k in others}}
-        return Choice(selected=self.selected, probabilities=probs, confidence=self.confidence)
+        options = (
+            tuple(question.options)
+            if question
+            else ("grooming_tip", "capture_setup_tip", "clarify", "offer_finish")
+        )
+        selected = self.selected if self.selected in options else options[0]
+        others = [k for k in options if k != selected]
+        probs = {selected: 0.7, **{k: 0.3 / len(others) for k in others}}
+        return Choice(selected=selected, probabilities=probs, confidence=self.confidence)

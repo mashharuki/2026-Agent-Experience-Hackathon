@@ -21,13 +21,15 @@ from photoprep_common.states import State, state_after_job
 from photoprep_common.store import ConditionFailed, Store
 
 from .bedrock import Bedrock, BudgetedBedrock
-from .decider import NEXT_SUPPORT, Decider, build_state_text
+from .decider import NEXT_SUPPORT, Decider, build_decision_state
+from .decision_inputs import DecisionInputs
 from .decision_pattern import run_decision
 from .explain import build_advice
-from .guards import GuardContext, guards_for
+from .guards import guards_for
 from .images import ImageError, prepare_image
 from .observe import observe
 from .schemas import DecisionRecord, Observation
+from .support_policy import support_eligibility
 
 TERMINAL = {"SUCCEEDED", "FAILED", "UNKNOWN", "CANCELLED"}
 RECORD_TTL = timedelta(hours=24)
@@ -244,16 +246,20 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
             comparable = (
                 is_comparable(session.get("baseline"), observation) if phase == "after" else None
             )
-            state_text = build_state_text(
+            inputs = DecisionInputs(
                 scope=scope,
                 wish=wish,
                 restrictions=restrictions,
-                observation=observation,
+                observation=observation.model_dump(),
                 tools=list(job.get("tools", [])),
                 changes_used=session["changesUsed"],
+                analyses_used=session["analysesUsed"],
+                clarified=bool(source_context),
+                comparable=comparable,
                 phase=phase,
                 last_advice=session.get("lastAdviceKind"),
             )
+            state_text = build_decision_state(inputs, NEXT_SUPPORT)
 
             def tool(kind: str):
                 # One handler per option of the question. Only the selected one runs.
@@ -274,16 +280,11 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                 question=NEXT_SUPPORT,
                 state=state_text,
                 guards=guards_for(deps.min_confidence),
-                context=GuardContext(
-                    scope=scope,
-                    restrictions=restrictions,
-                    changes_used=session["changesUsed"],
-                    lighting=observation.lighting,
-                    framing=observation.framing,
-                    analyses_used=session.get("analysesUsed", 0),
-                    clarified=bool(source_context),
-                ),
+                context=inputs.guard_context(),
                 handlers={kind: tool(kind) for kind in NEXT_SUPPORT.options},
+                eligibility=(
+                    support_eligibility(inputs) if NEXT_SUPPORT.version in {"v3", "v4"} else None
+                ),
             )
             advice, advice_invoked = decision.result
         except Exception as err:  # noqa: BLE001 - any model-side failure is a failed job
@@ -359,6 +360,9 @@ def process_job(deps: Deps, job_id: str) -> Outcome:
                     *[i for i in advice_invoked if i != "none"],
                 ],
                 created_at=now.isoformat(),
+                decision_source=decision.decision_source,
+                eligible_options=decision.eligible_options,
+                policy_reason=decision.policy_reason,
             )
             deps.store.create_if_absent(
                 f"SESSION#{session_id}",

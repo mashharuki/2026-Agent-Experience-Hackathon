@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "dataset_version": "eligibility-matrix-v1",
+  "sha256": {
+    "dev": "72b47cda00e6e61888470449e56d3d1b56270bb01c78c9369db0c535bb5ef04b",
+    "holdout": "0c12b6c13c03310ca235d9662a68a0d01b6b3f21915811637e6ccb27c80928e4"
+  },
+  "authors": "one AI author; independent human review pending",
+  "review": "frozen before v4 predictions; authored factor combinations, not model labels",
+  "groups": "new exact inputs; related policy patterns recur; not semantic independence",
+  "limitations": "synthetic state matrix; not representative users or general model accuracy"
+}

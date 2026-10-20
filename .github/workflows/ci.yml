@@ -52,3 +52,12 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check . ../../packages/photoprep-common/src
       - run: uv run pytest
+      - name: Validate offline synthetic evaluation cases (no model weights)
+        if: matrix.app == 'worker'
+        run: uv run python -m tools.evaluate_decisions validate --cases-dir evaluation/cases
+      - name: Validate eligibility evaluation cases (no model weights)
+        if: matrix.app == 'worker'
+        run: uv run python -m tools.evaluate_decisions validate --cases-dir evaluation/policy-cases
+      - name: Validate eligibility matrix (no model weights)
+        if: matrix.app == 'worker'
+        run: uv run python -m tools.evaluate_decisions validate --cases-dir evaluation/eligibility-matrix

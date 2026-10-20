@@ -143,6 +143,10 @@ export function SessionFlow() {
         setNotice(undefined);
         setNextAdvice(result.kind === "grooming_tip" ? result : undefined);
         setScreen("compare");
+      } else if (result.kind === "offer_finish") {
+        setNotice(undefined);
+        void endOnServer();
+        finish();
       } else {
         setNotice(result.text ?? t("try.notComparable"));
         replaceAfter(undefined);

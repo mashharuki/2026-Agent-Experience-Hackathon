@@ -154,7 +154,7 @@ description: "Task list for 撮る前のひと手間（撮影前の身支度ア�
 - [ ] T067 [US2] `apps/api/src/photoprep_api/handlers/sessions.py` と `apps/worker/.../guards.py`: 禁止を保存してガードで強制（Decider が選んでも上書きし、理由を DecisionRecord に残す）
 - [ ] T068 [US2] `apps/worker/.../guards.py`・`decider.py`、`apps/frontend/src/screens/TryOne.tsx`: 道具・時間は助言に必要になった時点で `clarify` として尋ねる（最初にまとめて入力させない。FR-009）
 - [ ] T069 [US2] `apps/worker/.../guards.py`: 道具・時間が不足する場合、買い足しを前提とする助言を除外するガード
-- [ ] T070 [US2] **モデルの判断品質**の評価をガードのテストと別集計にする。実装場所と手順はPhase 12のT125〜T138へ具体化（旧案`evaluation/run_eval.py`からworker内の評価モジュール／CLIへ整理）。元タスクを完了扱いにはしない。
+- [x] T070 [US2] **モデルの判断品質**の評価をガードのテストと別集計にする。2026-10-20にT125〜T138で合成データによる実選択・ガード後を別集計し、[結果](../../docs/reviews/2026-10-20-local-model-evaluation.md)へ記録。実写真や助言文の品質を検証した意味ではない。
 
 **Checkpoint**: US1＋US2 が動き、禁止と制約を破る助言が 0 件であることをテストで確認できる。
 
@@ -371,39 +371,39 @@ US1 → US2 → US5 → US3 → US4 → US6 の順で、各ストーリーを単
 
 ## Phase 12: 追加実装・ローカルモデル実験（2026-10-19計画）
 
-全件未着手。[model-evaluation-plan.md](model-evaluation-plan.md)のEV-001〜006／G1〜G4に従う。今回は計画立案のみ。
+2026-10-20にT125〜T140を完了。実モデル275判断、v2不採用・既定v1／閾値0を維持。[model-evaluation-plan.md](model-evaluation-plan.md)のEV-001〜006／G1〜G4と、[実験記録](../../docs/reviews/2026-10-20-local-model-evaluation.md)を参照。AWSは未実施。人間のラベル確認・confidence校正は未実施で、T090の校正部分を完了したことにはしない。
 **順序：A→B→C→D→E→結果確認後にT124。** コードとfakeの成功、実モデルの品質、AWSでの確認を別に扱う。
 
 ### A：評価の土台
 
-- [ ] T125 [EV-001/002] `apps/worker/evaluation/schemas.py`と`tests/test_evaluation_cases.py`：ケース・manifest・結果の型、ラベル非混入、重複／群跨ぎ／矛盾の拒否を実装。契約は`contracts/model-evaluation.md`。
-- [ ] T126 [EV-002] `apps/worker/evaluation/cases/{dev,holdout}.jsonl`とmanifest：合成10＋30件、5群、許容集合、支援可能性、作成・レビュー方法とhashを固定。ライフサイクル拒否試験と分離する。依存T125。
-- [ ] T127 [EV-001/004] `evaluation/runner.py`と`tools/evaluate_decisions.py`：validate／run／compare、fake、共通ガードと副作用なしハンドラー、部分結果、実行上限、時間監督を実装。通信とAWSクライアント生成を禁止した試験で完了。依存T125。
-- [ ] T128 [EV-001] `evaluation/backends.py`：ラベルを参照しない固定`rules-v1`を実装し、四択・曖昧な意味を解釈しない限界を記録。既存ガードと組み合わせる。依存T125。
-- [ ] T129 [EV-001/002/005] `evaluation/{metrics,reporting}.py`、`tests/test_evaluation_reporting.py`、`.github/workflows/ci.yml`：分母、失敗／未実行、群別・方式別・反復別集計、全終了fakeの不合格、入力本文の非出力、通常CIのfake限定を実装。依存T126〜T128。
+- [x] T125 [EV-001/002] `apps/worker/evaluation/schemas.py`と`tests/test_evaluation_cases.py`：ケース・manifest・結果の型、ラベル非混入、重複／群跨ぎ／矛盾の拒否を実装。契約は`contracts/model-evaluation.md`。
+- [x] T126 [EV-002] `apps/worker/evaluation/cases/{dev,holdout}.jsonl`とmanifest：合成10＋30件、5群、許容集合、支援可能性、作成・レビュー方法とhashを固定。ライフサイクル拒否試験と分離する。依存T125。
+- [x] T127 [EV-001/004] `evaluation/runner.py`と`tools/evaluate_decisions.py`：validate／run／compare、fake、共通ガードと副作用なしハンドラー、部分結果、実行上限、時間監督を実装。通信とAWSクライアント生成を禁止した試験で完了。依存T125。
+- [x] T128 [EV-001] `evaluation/backends.py`：ラベルを参照しない固定`rules-v1`を実装し、四択・曖昧な意味を解釈しない限界を記録。既存ガードと組み合わせる。依存T125。
+- [x] T129 [EV-001/002/005] `evaluation/{metrics,reporting}.py`、`tests/test_evaluation_reporting.py`、`.github/workflows/ci.yml`：分母、失敗／未実行、群別・方式別・反復別集計、全終了fakeの不合格、入力本文の非出力、通常CIのfake限定を実装。依存T126〜T128。
 
 ### B：ローカル実モデルの基準値
 
-- [ ] T130 [EV-004] `evaluation/model_cache.py`／`backends.py`：既存の二つの固定revisionとhead／LoRA／tokenizer／ベース重みを検査し、オフラインで一度ロード。キャッシュ欠落・版違いは即時失敗、自動取得なし。依存T127。
-- [ ] T131 [EV-004] `tests/test_evaluation_offline.py`と実験記録：通信0・並列1・回数／壁時計上限・中断保存を検証後、実モデル5件のローカルスモークを実施。品質評価へ混ぜない。依存T129、T130。
-- [ ] T132 [EV-001/005] v1の状態文golden fixture、問い・ガードhashを保存し、dev10件×3反復の基準値を記録。ルールも集計する。依存T126、T128、T131。
+- [x] T130 [EV-004] `evaluation/model_cache.py`／`backends.py`：既存の二つの固定revisionとhead／LoRA／tokenizer／ベース重みを検査し、オフラインで一度ロード。キャッシュ欠落・版違いは即時失敗、自動取得なし。依存T127。
+- [x] T131 [EV-004] `tests/test_evaluation_offline.py`と実験記録：通信0・並列1・回数／壁時計上限・中断保存を検証後、実モデル5件のローカルスモークを実施。品質評価へ混ぜない。依存T129、T130。
+- [x] T132 [EV-001/005] v1の状態文golden fixture、問い・ガードhashを保存し、dev10件×3反復の基準値を記録。ルールも集計する。依存T126、T128、T131。
 
 ### C：状態整合と防御的検査
 
-- [ ] T133 [EV-003] `decision_inputs.py`、`decider.py`：確定済み共通入力、v1再現とv2状態文、残枠・確認回答済み・比較可否を実装。四択の説明とガードは変えず、本番既定はv1。依存T132。
-- [ ] T134 [EV-003] `decision_pattern/decider.py`と対応テスト：不正な選択肢、キー欠落、NaN／Infinity、範囲・合計・最上位の不整合を拒否し、失敗時ハンドラー0件を保証。依存T125。既存呼出しとの互換性を確認。
-- [ ] T135 [EV-003/006] `pipeline.py`と`test_pipeline.py`／`test_clarifications.py`等：モデルとガードの入力源を統一し、現在受付分を含む回数・観察再利用・比較・終了後破棄の回帰を検証。依存T133、T134。
+- [x] T133 [EV-003] `decision_inputs.py`、`decider.py`：確定済み共通入力、v1再現とv2状態文、残枠・確認回答済み・比較可否を実装。四択の説明とガードは変えず、本番既定はv1。依存T132。
+- [x] T134 [EV-003] `decision_pattern/decider.py`と対応テスト：不正な選択肢、キー欠落、NaN／Infinity、範囲・合計・最上位の不整合を拒否し、失敗時ハンドラー0件を保証。依存T125。既存呼出しとの互換性を確認。
+- [x] T135 [EV-003/006] `pipeline.py`と`test_pipeline.py`／`test_clarifications.py`等：モデルとガードの入力源を統一し、現在受付分を含む回数・観察再利用・比較・終了後破棄の回帰を検証。依存T133、T134。
 
 ### D：モデル比較と採否
 
-- [ ] T136 [EV-001/002] dev10件×3反復×v1／v2を比較して必要なら状態文を調整。T132の実装前の基準値とは分け、現在の同一adapter／ガードで比較する。追加調整分は初回275回の基本計画と別に記録。holdoutを見ずに候補・実行設定・採否条件を固定。依存T135。
-- [ ] T137 [EV-001/002/004] 固定holdout30件×3反復×v1／v2をローカルで実行し、ルールも比較。同じモデル・ガード・閾値0。入力本文や実写真を出力せず、部分runは部分として記録。依存T136。
-- [ ] T138 [EV-005/006] `docs/reviews/`に実測レポート：群別の適合率・違反・不要な退避・失敗・実行条件と限界、v2採用／不採用をG3で判断。評価データを見て調整したら新しい評価セットを準備。依存T137。
+- [x] T136 [EV-001/002] dev10件×3反復×v1／v2を比較して必要なら状態文を調整。T132の実装前の基準値とは分け、現在の同一adapter／ガードで比較する。追加調整分は初回275回の基本計画と別に記録。holdoutを見ずに候補・実行設定・採否条件を固定。依存T135。
+- [x] T137 [EV-001/002/004] 固定holdout30件×3反復×v1／v2をローカルで実行し、ルールも比較。同じモデル・ガード・閾値0。入力本文や実写真を出力せず、部分runは部分として記録。依存T136。
+- [x] T138 [EV-005/006] `docs/reviews/`に実測レポート：群別の適合率・違反・不要な退避・失敗・実行条件と限界、v2採用／不採用をG3で判断。評価データを見て調整したら新しい評価セットを準備。依存T137。
 
 ### E：採否反映・AWS検証への引継ぎ
 
-- [ ] T139 [EV-006] 採用なら本番既定と`DecisionRecord.question_version`をv2へ更新し回帰、不採用ならv1維持を明記。confidence閾値は0。`docs/decision-pattern.md`／技術一覧／researchを実際の結果へ同期。依存T138。
-- [ ] T140 [EV-006] ローカル実装・実験の完了証拠、残課題、AWSで確認する差分を整理。G4で移行可否を判定し、ユーザーへ結果を報告。**T124のAWS操作はここでは実施しない。** 依存T139。
+- [x] T139 [EV-006] 採用なら本番既定と`DecisionRecord.question_version`をv2へ更新し回帰、不採用ならv1維持を明記。confidence閾値は0。`docs/decision-pattern.md`／技術一覧／researchを実際の結果へ同期。依存T138。
+- [x] T140 [EV-006] ローカル実装・実験の完了証拠、残課題、AWSで確認する差分を整理。G4で移行可否を判定し、ユーザーへ結果を報告。**T124のAWS操作はここでは実施しない。** 依存T139。
 
 ## Phase 13: 比較して選んだ一枚を持ち帰る（2026-10-19計画）
 
@@ -414,3 +414,14 @@ US1 → US2 → US5 → US3 → US4 → US6 の順で、各ストーリーを単
 - [x] T143 [FR-031] `screens/Compare.tsx`：並置／A・B切替、同じ表示枠、前後ラベル、選択の保持。表示切替で推論しない。依存T141。
 - [x] T144 [FR-030] `features/session/photos.ts`と保存ヘルパー、`SessionFlow.tsx`：明示した前／後／変更なし画像の任意保存、失敗時の再操作、参照URL解放、保存せず終了を実装。撮影中の終了・再開始では遅延画像を破棄する。初回`offer_finish`の既存終了処理を保ち、無変更の保存は解析前プレビュー・終了前の助言画面に設ける。保存要求をOSへの保存完了として扱わない。依存T141。
 - [x] T145 [FR-030/031] Vitest／Playwright：合成画像で保存ファイルと元Blobの一致、ガイドの向き・画素への非重畳、比較切替、無変更・保存せず終了、通信失敗時の保存、終了後の遅延撮影・応答と参照解放、追加通信0を確認。仕様・技術一覧・検証記録を同期。依存T142〜T144。
+
+## Phase 14: 改善しなかった原因の診断（2026-10-20）
+
+後続：[eligibility-plan.md](eligibility-plan.md)に基づき、以下を順に実装・検証する。
+
+- [x] T147 実行可能性の契約・候補絞込み・コード決定の監査型を実装し、境界と不正応答をテストする。
+- [x] T148 v3の問い／状態を追加し、workerへ接続。文面の退行を確認してv3を棄却し、従来の表現＋候補制御のv4を既定にする。根拠なし・確認済み・上限・比較不能時の終了を通しで検証する。
+- [x] T149 旧データを保持し、別のpolicy-casesと未使用入力のeligibility-matrixを固定して実モデル比較。完了モデル判断160件・コード決定40件を分離集計し、途中呼出し最大1件の中断も記録。v4は固定30例で最終30/30・違反0・支援6/6。人間のレビューや一般精度を検証した意味ではない。
+- [x] T150 仕様・再利用パターン・技術一覧・[検証記録](../../docs/reviews/2026-10-20-eligibility-validation.md)を更新し、Worker255・API378・Frontend145件の回帰とビルドを確認。AWS操作なし。
+
+- [x] T146 [EV-005/006] 選択・スコア・SDK経路を監査し、dev10例×3条件の規則明記実験をオフラインで30判断・600秒以内に実施。[原因分析](../../docs/reviews/2026-10-20-decider-root-cause-analysis.md)と実測JSONに、入力不達の除外、文面の寄与と未解決例、退行、ラベル不整合、修正方針を記録。本番既定と既存評価データは維持。新設計の実装・新holdout・AWS検証は未実施。

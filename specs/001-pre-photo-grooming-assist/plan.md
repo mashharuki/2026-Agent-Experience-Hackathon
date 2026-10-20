@@ -4,11 +4,13 @@
 
 **Input**: Feature specification from `/specs/001-pre-photo-grooming-assist/spec.md`
 
+**現行の実行可能性分離（2026-10-20）**：[eligibility-plan.md](eligibility-plan.md)。FR-032に対応し、コードで候補を絞った後にDeciderへ任せるv4を追加。以下の初回v2比較結果は履歴として保持する。
+
 **レビュー後の修正計画（2026-10-19、ローカル実装済み）**: [R1〜R7の修正計画](remediation-plan.md)。変更箇所、依存関係、API・状態遷移の変更案、受け入れ条件を記載。
 
-**追加実装・モデル実験の計画（2026-10-19、未実装）**: [model-evaluation-plan.md](model-evaluation-plan.md)。評価ハーネス、状態文v1／v2、オフライン実Decider比較、採用ゲートを定義。AWS検証はローカル実装・実験結果を確認した後の別工程とする。
+**追加実装・モデル実験（2026-10-20、ローカル完了）**: [model-evaluation-plan.md](model-evaluation-plan.md)。評価ハーネス・共通入力・不正応答拒否を実装し、実モデル275判断で比較。状態文v2は改善がなく不採用、既定v1・閾値0を維持。[結果と限界](../../docs/reviews/2026-10-20-local-model-evaluation.md)。AWS検証は別工程。
 
-**プロダクトの方向性の反映（2026-10-19、ローカル実装・検証済み）**：[比較・選択・任意保存](photo-completion-plan.md)。①＋③のUIを実装し、[検証結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)を記録。次はT125〜T140のローカルモデル実験、その結果確認後にT124のAWS検証の順で進める。
+**プロダクトの方向性の反映（2026-10-19、ローカル実装・検証済み）**：[比較・選択・任意保存](photo-completion-plan.md)。①＋③のUIを実装し、[検証結果](../../docs/reviews/2026-10-19-photo-completion-validation.md)を記録。T125〜T140も完了し、次工程はT124のAWS機能検証。今回のAWS操作は未実施。
 
 ## Summary
 
@@ -17,8 +19,9 @@ React/ViteのSPAが端末で撮影し、同意後にだけ画像を一時S3へ�
 ジョブを受け付け、FargateのPythonワーカーが次の順で処理する。
 
 1. Bedrock（Nova Lite）が画像を観察し、構造化した観察結果にする。
-2. Strands Decider 2B が **画像ではなく観察結果・希望・履歴（テキスト）** から次の支援
-   （`grooming_tip` / `capture_setup_tip` / `clarify` / `offer_finish`）を選ぶ。
+2. 確定済み状態から実行可能な支援候補をコードで絞る。終了だけならコード決定と記録する。
+   候補が複数ならStrands Decider 2B が **観察結果・希望・履歴（テキスト）** から選ぶ。
+   四択ID（`grooming_tip` / `capture_setup_tip` / `clarify` / `offer_finish`）は維持する。
 3. 通常コードが禁止・上限・終了を再検査し、選ばれた支援だけを実行する。
 4. 説明が必要な場合のみ Bedrock を追加で呼ぶ。
 
@@ -36,7 +39,7 @@ React/ViteのSPAが端末で撮影し、同意後にだけ画像を一時S3へ�
 **Primary Dependencies**:
 - フロント：Material UI＋Emotion、TanStack Query、Orval 生成クライアント（導入・ローカル検証済み）、演出は MUI＋独自CSS（React Bits は採用しない。R-005）
 - API：Connexion 3＋Flask＋Mangum＋boto3（導入・ローカル結合検証済み。最新差分のAWS確認はT124）
-- ワーカー：PyTorch CPU、Strands Decider 2B、Bedrock Converse／Amazon Nova Lite（導入済み。新たな選択品質の比較はT125〜T140で未実施）
+- ワーカー：PyTorch CPU、Strands Decider 2B、Bedrock Converse／Amazon Nova Lite。初回比較はT125〜T140、実行可能性分離はT147〜T150で別集計する。
 
 **Storage**: DynamoDB On-Demand（セッション・ジョブ・利用枠。画像なし）。一時画像は専用の非公開S3。比較用写真は端末メモリのみ。本人が明示操作した場合だけファイルを書き出す
 

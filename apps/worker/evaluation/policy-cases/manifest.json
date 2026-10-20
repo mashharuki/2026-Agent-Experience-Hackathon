@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "dataset_version": "eligibility-v1",
+  "sha256": {
+    "dev": "56f6e16c554eaf62d388b04cae9c56b5fece5795267ba4b6c66dfa7421824188",
+    "holdout": "ce8d573c0f95bd01e8162d1f969f2b1d79353421dd50460614fdd74d0b17f894"
+  },
+  "authors": "one AI author; independent human review pending",
+  "review": "authored and frozen before real predictions; not independent expert labels",
+  "groups": "new scene IDs and exact inputs; semantic overlap with prior policy patterns remains",
+  "limitations": "synthetic text only; not general model accuracy or product utility"
+}

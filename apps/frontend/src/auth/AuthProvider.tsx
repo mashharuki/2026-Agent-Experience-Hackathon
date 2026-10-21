@@ -15,6 +15,7 @@ import {
   completeSignIn,
   refreshTokens,
   startSignIn,
+  startSignUp,
   type Tokens,
 } from "./cognito";
 import { AuthContext, type AuthState } from "./context";
@@ -110,6 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userLabel: config.mode === "mock" ? "モックユーザー" : undefined,
       signIn: () => {
         if (cognitoConfig) void startSignIn(cognitoConfig);
+      },
+      signUp: () => {
+        if (cognitoConfig) void startSignUp(cognitoConfig);
       },
       signOut: signedOut,
     }),

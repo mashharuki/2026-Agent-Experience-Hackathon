@@ -7,6 +7,7 @@ export function buildAuthorizeUrl(
   config: CognitoConfig,
   state: string,
   challenge: string,
+  screen: "sign-in" | "sign-up" = "sign-in",
 ): string {
   const params = new URLSearchParams({
     response_type: "code",
@@ -17,17 +18,34 @@ export function buildAuthorizeUrl(
     code_challenge: challenge,
     code_challenge_method: "S256",
   });
-  return `${config.domain}/oauth2/authorize?${params}`;
+  const path = screen === "sign-up" ? "/signup" : "/oauth2/authorize";
+  return `${config.domain}${path}?${params}`;
 }
 
-/** Start sign-in: remember the verifier and state for this tab only, then go to Cognito. */
-export async function startSignIn(config: CognitoConfig): Promise<void> {
+/** Both hosted screens share the same PKCE callback and tab-scoped state. */
+async function startAuth(
+  config: CognitoConfig,
+  screen: "sign-in" | "sign-up",
+): Promise<void> {
   const verifier = randomUrlSafe(64);
   const state = randomUrlSafe(32);
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ verifier, state }));
   window.location.assign(
-    buildAuthorizeUrl(config, state, await challengeFromVerifier(verifier)),
+    buildAuthorizeUrl(
+      config,
+      state,
+      await challengeFromVerifier(verifier),
+      screen,
+    ),
   );
+}
+
+export async function startSignIn(config: CognitoConfig): Promise<void> {
+  await startAuth(config, "sign-in");
+}
+
+export async function startSignUp(config: CognitoConfig): Promise<void> {
+  await startAuth(config, "sign-up");
 }
 
 export interface Tokens {

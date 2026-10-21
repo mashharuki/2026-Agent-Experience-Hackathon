@@ -3,7 +3,15 @@
 import pytest
 
 from photoprep_api.services.analysis import request_analysis
-from tests.integration.test_api_flow import IDEM_A, new_session, new_upload, start_analysis
+from tests.conftest import OTHER_CLAIMS
+from tests.integration.test_api_flow import (
+    IDEM_A,
+    IDEM_B,
+    finish_job,
+    new_session,
+    new_upload,
+    start_analysis,
+)
 
 
 def test_failed_transaction_does_not_consume_upload_or_analysis(api, monkeypatch):
@@ -65,3 +73,33 @@ def test_legacy_orphan_is_not_reported_as_accepted(api):
         f"IDEM#user-123#{sid}#{IDEM_A}", "META", {"ownerSub": "user-123", "jobId": "missing-job"}
     )
     assert start_analysis(api, sid, upload)[0] == 409
+
+
+def test_completed_analysis_replay_does_not_start_new_work(api):
+    sid = new_session(api, restrictions=[])
+    upload = new_upload(api, sid)
+    first = start_analysis(api, sid, upload)
+    finish_job(api, first[1]["jobId"], kind="offer_finish")
+    assert start_analysis(api, sid, upload)[:2] == first[:2]
+    assert api.store.get(f"SESSION#{sid}", "META")["analysesUsed"] == 1
+    assert api.queue.sent == [first[1]["jobId"]]
+    assert start_analysis(api, sid, upload, idem=IDEM_B)[0] == 409
+    assert (
+        api.request(
+            "POST",
+            f"/sessions/{sid}/analyses",
+            {"uploadId": upload, "phase": "before", "tools": ["comb"]},
+            idem=IDEM_A,
+        )[0]
+        == 409
+    )
+    assert (
+        api.request(
+            "POST",
+            f"/sessions/{sid}/analyses",
+            {"uploadId": upload, "phase": "before"},
+            idem=IDEM_A,
+            claims=OTHER_CLAIMS,
+        )[0]
+        == 404
+    )

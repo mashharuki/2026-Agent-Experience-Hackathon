@@ -1,10 +1,12 @@
 # Operations: start, stop, spend limits and tear-down
 
-> 2026-10-19レビュー修正：回答API・ジョブ種別・回収監視の差分はローカル検証済み、AWS未反映。[検証記録](reviews/2026-10-19-remediation-validation.md)を参照。以下の旧検証手順と今回の切替手順を区別する。
+> **Current status — 2026-10-21:** PhotoPrepStack reached DELETE_COMPLETE. Dedicated resources and retained user/data stores were removed; shared CDK bootstrap infrastructure remains. See [teardown evidence](reviews/2026-10-21-aws-teardown.md). The instructions and deployed identifiers below are historical; do not run them to restart or recreate the old product. New game operations will follow [the new design](../specs/002-snipe-ai-regatta/plan.md).
 
-Status: the infrastructure was deployed once on 2026-10-17 for verification and the commands below for deploying,
-starting and stopping the worker and publishing the SPA were run against AWS. **The tear-down steps were written
-from the design and have only been partly exercised** (run each `cdk` command on its own; a second one started
+> Earlier on 2026-10-21: deployed and validated the photo assistant, then stopped the worker. This is historical validation, superseded by the teardown above. See [AWS validation](reviews/2026-10-21-aws-validation.md). Device capture/save and alarm delivery remain unverified.
+
+Status: the infrastructure and SPA were deployed on 2026-10-17 and again on 2026-10-21 for verification. Deploying,
+starting and stopping the worker and publishing the SPA were exercised against AWS. **The tear-down steps were written
+from the original design; the complete project teardown was subsequently verified on 2026-10-21** (run each `cdk` command on its own; a second one started
 while the first is still running can recreate the stack). Values in `<angle brackets>` come from the stack outputs.
 
 ## What keeps the cost down
@@ -51,8 +53,9 @@ pnpm run publish:apply                 # builds against the deployed API, upload
 - Confirm the e-mail subscription that AWS sends (alarms and the budget stay silent until you do).
 - Stateful resources (user pool, table) are **retained** by default. For a full tear-down pass
   `-c photoprep:destroyData=true` when deploying, before deleting the stack.
-- Create the invited user in Cognito yourself (the console or `aws cognito-idp admin-create-user`); never
-  share the password.
+- Users select **Create account**, register on Cognito, and enter the code sent to their email before signing in.
+  Self-registration was enabled on 2026-10-21; existing users and their passwords are preserved.
+  Keep the worker stopped outside demos; registration does not override the API quotas or service status.
 
 ## Build and push the worker image (about 5 GB with the model weights)
 
@@ -64,7 +67,8 @@ docker push <WorkerRepositoryUri>:<immutable-tag>
 ```
 
 The repository is immutable: use a new tag for every push and redeploy with `-c photoprep:workerImageTag=<tag>`.
-The image has **not** been built yet; the first build checks the pinned model revisions.
+The Linux/amd64 image was built and pushed on 2026-10-21 with both pinned model revisions verified.
+The verified tag and digest are recorded in the AWS validation report; never reuse an immutable tag for changed code.
 
 ## Start the worker (before a demo)
 
@@ -75,9 +79,10 @@ aws lambda invoke --function-name <WorkerControlFunction> --payload '{"action":"
   --cli-binary-format raw-in-base64-out /dev/stdout
 ```
 
-The door stays **closed** (`warming_up`, with an estimate of five minutes that has not been measured)
-until the worker has loaded the model and then opens it itself. Check `GET /service-status` or the
-app's first screen.
+The door stays **closed** (`warming_up`, with a five-minute estimate) until the worker has loaded the model
+and then opens it itself. Three starts on 2026-10-21 took 145.6, 149.9 and 162.2 seconds from the start
+request to accepting work, including the image pull and model initialization. Check `GET /service-status`
+or the app's first screen; do not confuse this with a warm analysis's latency.
 
 ## Stop the worker
 
@@ -109,7 +114,7 @@ leftover log groups. 5. Check Billing for resources that remain (public IPv4 add
 1. 新規受付を閉じてdrainする。旧workerを残したまま回答ジョブを配送しない。
 2. APIのLambdaパッケージ、workerイメージを再ビルドし、新ルート・状態・ジョブ種別とCDKの監視・回収権限を揃える。
 3. フロントを公開し、PWAの更新を確認。既存のv1同意セッションは終了・新しい同意で再開始する。
-4. 招待ユーザーで回答→判断、待機中終了、所有権拒否、終了後の写真・観察メモ削除、回収通知を確認してから受付を開く。検証後はワーカーを停止する。
+4. メール確認済みのテストユーザーで回答→判断、待機中終了、所有権拒否、終了後の写真・観察メモ削除、回収通知を確認してから受付を開く。検証後はワーカーを停止する。
 
 回収処理は `attempted/deleted/failed/retried` を返す。S3個別エラーの一時失敗は最大2回追加再試行し、権限エラーは繰り返さない。`SweeperDeletionFailures` とSweeper Lambda Errorsを既存SNSへ通知する。failed_count>0ならIAM・バケットポリシー・暗号化設定を確認し、修正後に回収を再実行する。ログに画像キーや観察文章を貼らない。
 

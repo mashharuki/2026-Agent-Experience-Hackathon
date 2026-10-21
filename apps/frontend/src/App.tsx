@@ -42,16 +42,22 @@ function Gate() {
   const { t } = useI18n();
   if (auth.status === "loading")
     return <Typography>{t("gate.loading")}</Typography>;
-  if (auth.status === "error") {
-    return <Alert severity="error">{t("gate.error")}</Alert>;
-  }
-  if (auth.status === "signed-out") {
+  if (auth.status === "signed-out" || auth.status === "error") {
     return (
       <Stack spacing={2}>
+        {auth.status === "error" ? (
+          <Alert severity="error">{t("gate.error")}</Alert>
+        ) : null}
         <Typography>{t("gate.signInPrompt")}</Typography>
         <Button variant="contained" size="large" onClick={auth.signIn}>
           {t("gate.signIn")}
         </Button>
+        <Button variant="outlined" size="large" onClick={auth.signUp}>
+          {t("gate.signUp")}
+        </Button>
+        <Typography variant="body2" color="text.secondary">
+          {t("gate.signUpHint")}
+        </Typography>
       </Stack>
     );
   }

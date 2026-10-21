@@ -9,6 +9,7 @@ const cognito = vi.hoisted(() => ({
   completeSignIn: vi.fn(),
   refreshTokens: vi.fn(),
   startSignIn: vi.fn(),
+  startSignUp: vi.fn(),
 }));
 vi.mock("./cognito", () => cognito);
 

@@ -13,12 +13,13 @@ from .session import SESSION_TTL, load_session, session_pk, session_view, ttl_af
 
 
 def answer(c: Container, sub: str, session_id: str, request: dict, key: str) -> tuple[dict, int]:
-    session = load_session(c, sub, session_id)
     idem_pk = f"IDEM#{sub}#{session_id}#CLARIFY#{key}"
     replay = c.store.get(idem_pk, "META")
     if replay:
+        load_session(c, sub, session_id, allow_ended=True)
         check_replay(replay, request)
         return replay["response"], replay["responseStatus"]
+    session = load_session(c, sub, session_id)
     ensure_consent(session)
     ensure_accepting(c)
     clarification_id = request["clarificationId"]

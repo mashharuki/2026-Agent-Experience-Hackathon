@@ -1,5 +1,7 @@
 # A little prep before the photo (撮る前のひと手間)
 
+> **Product pivot — 2026-10-21:** The photo assistant below is preserved legacy code. Its dedicated AWS resources and retained user/data stores have been deleted. The current product is a human-versus-AI Snipe dinghy race; [design and implementation plan](specs/002-snipe-ai-regatta/plan.md), [requirements](specs/002-snipe-ai-regatta/spec.md), [teardown record](docs/reviews/2026-10-21-aws-teardown.md). The game is not implemented or deployed yet. Old deployment URLs and accounts no longer work.
+
 <p align="center"><img src="docs/brand/logo-lockup.svg" alt="A little prep before the photo (撮る前のひと手間)" width="520"></p>
 
 [日本語版はこちら → README_ja.md](README_ja.md)
@@ -42,7 +44,7 @@ The decision structure is extracted as a reusable pattern, see [Decision pattern
 - **Japanese and English** UI and advice, switchable at any time (the advice follows the chosen language).
 - **Installable (PWA)**: add it to the home screen. The service worker only caches the static app shell; it
   never touches the API, S3, Cognito, the sign-in callback or photos.
-- **Invitation-only sign-in** with Amazon Cognito (Authorization Code + PKCE).
+- **Email-verified sign-up and sign-in** with Amazon Cognito (Authorization Code + PKCE).
 - **Cost controls**: the worker runs only when started, scales to zero, and the app enforces per-person and
   daily quotas. A "door" tells you when the service is closed or warming up, instead of failing.
 
@@ -57,7 +59,7 @@ The decision structure is extracted as a reusable pattern, see [Decision pattern
 | Piece | What it does |
 | --- | --- |
 | **SPA** (S3 + CloudFront with OAC) | React app served from a private bucket. Takes the photo in the browser. |
-| **Amazon Cognito** | Invitation-only sign-in, Authorization Code + PKCE, public client. |
+| **Amazon Cognito** | Email-verified self-registration and sign-in, Authorization Code + PKCE, public client. |
 | **API Gateway HTTP API + Lambda** | JWT authorizer, then ownership checks in code. Python (Connexion + Mangum) built from the OpenAPI file. Accepts a request (202) and returns the result later. |
 | **S3 (images)** | Private bucket for temporary photos. The browser uploads with a signed POST, so photos never pass through the API. |
 | **DynamoDB** | Sessions, jobs, results, quotas and the service status. No images. |
@@ -195,16 +197,15 @@ docker push <WorkerRepositoryUri>:v1
 ```
 
 Deploy again with the image tag (a deploy stops a running worker; add `-c photoprep:workerDesiredCount=1` to keep it
-running), then create your invited user and publish the frontend:
+running), then publish the frontend. Users register through Cognito and confirm their email:
 
 ```sh
 cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1
-aws cognito-idp admin-create-user --user-pool-id <UserPoolId> --region ap-northeast-1 --username you@example.com --user-attributes Name=email,Value=you@example.com Name=email_verified,Value=true --desired-delivery-mediums EMAIL
 pnpm --filter frontend run publish:plan     # prints what would be uploaded
 pnpm --filter frontend run publish:apply
 ```
 
-Open the `SpaUrl` from the stack outputs and sign in with the temporary password that Cognito e-mails you.
+Open the `SpaUrl`, choose **Create account**, register your email and a password (12+ characters with uppercase, lowercase, a number and a symbol), and enter the emailed verification code. Existing users can choose **Sign in**.
 
 ### Start and stop the worker
 

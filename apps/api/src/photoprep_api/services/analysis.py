@@ -66,13 +66,15 @@ def create_upload(c: Container, sub: str, session_id: str, request: dict) -> dic
 
 def request_analysis(c: Container, sub: str, session_id: str, request: dict, idem_key: str) -> str:
     """Accept an analysis and return its job id (a replay returns the same id)."""
-    session = load_session(c, sub, session_id)
     phase = request["phase"]
     idem_pk = f"IDEM#{sub}#{session_id}#{idem_key}"
 
     replay = c.store.get(idem_pk, "META")
     if replay is not None:
+        # Returning accepted work must still work after a fast job finishes the session.
+        load_session(c, sub, session_id, allow_ended=True)
         return replay_job(c, replay, request)
+    session = load_session(c, sub, session_id)
     ensure_consent(session)
     ensure_accepting(c)  # new work only while the service is accepting it
 

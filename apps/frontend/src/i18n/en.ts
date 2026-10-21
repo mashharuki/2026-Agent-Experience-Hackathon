@@ -26,8 +26,12 @@ export const en: Record<MessageKey, string> = {
 
   "gate.loading": "Checking…",
   "gate.error": "We could not sign you in. Please try again.",
-  "gate.signInPrompt": "Please sign in to start (invitation only).",
+  "gate.signInPrompt":
+    "Sign in to start, or create an account if this is your first visit.",
   "gate.signIn": "Sign in",
+  "gate.signUp": "Create account",
+  "gate.signUpHint":
+    "Register with your email and password, then enter the verification code sent to your email.",
 
   "heading.consult": "Consult",
   "heading.capture": "First photo",

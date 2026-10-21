@@ -14,7 +14,7 @@ export interface IdentityProps {
 }
 
 /**
- * Cognito user pool for an invitation-only SPA: Authorization Code + PKCE with a
+ * Cognito user pool for an email-verified SPA: Authorization Code + PKCE with a
  * public client (no client secret). The API accepts only access tokens carrying the
  * `photoprep/session` scope.
  */
@@ -34,9 +34,10 @@ export class Identity extends Construct {
     super(scope, id);
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
-      // Invitation only: administrators create users; nobody can self-register.
-      selfSignUpEnabled: false,
+      selfSignUpEnabled: true,
       signInAliases: { email: true },
+      autoVerify: { email: true },
+      userVerification: { emailStyle: cognito.VerificationEmailStyle.CODE },
       signInCaseSensitive: false,
       standardAttributes: { email: { required: true, mutable: false } },
       passwordPolicy: {
@@ -107,12 +108,12 @@ export class Identity extends Construct {
       {
         id: "AwsSolutions::AwsSolutions-COG8",
         reason:
-          "The Plus feature plan (advanced security) has an extra monthly cost. The pool is invitation-only, so the cost is not justified for this small hackathon deployment (constitution principle II).",
+          "Plus threat protection is not budgeted for this temporary hackathon deployment. Registration requires email verification, passwords are strong, API quotas cap usage, and the worker is manually started and stopped (constitution principle II).",
       },
       {
         id: "AwsSolutions::AwsSolutions-COG2",
         reason:
-          "MFA (TOTP) is available but optional: the few invited testers sign in often during development and demos. Revisit before any wider release.",
+          "MFA (TOTP) is available but optional for this temporary development and demo deployment. Email verification is required for self-registration; revisit mandatory MFA before production use.",
       },
     ]);
   }

@@ -1,0 +1,501 @@
+{
+  "date": "2026-10-21",
+  "baseline_commit": "6dd8fc2",
+  "worker_tag": "w-20261021-6dd8fc2",
+  "worker_image": {
+    "Digest": "sha256:898d20a60b1d3e23777f9faeaafe9f24de18b084846813fba7e2a2cf05c6fcda",
+    "Bytes": 4173002346
+  },
+  "acceptance": {
+    "time": "2026-10-21T11:56:47.235196+00:00",
+    "checks": [
+      {
+        "name": "unauthenticated_rejected",
+        "pass": true,
+        "status": 401
+      },
+      {
+        "name": "oauth_pkce_two_users",
+        "pass": true
+      },
+      {
+        "name": "id_token_rejected",
+        "pass": true,
+        "status": 403
+      },
+      {
+        "name": "worker_ready",
+        "pass": true,
+        "seconds": 162.2
+      },
+      {
+        "name": "create_session_1",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "upload_slot",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "presigned_s3_upload",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "analysis_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "analysis_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "cross_owner_job_rejected",
+        "pass": true,
+        "status": 404
+      },
+      {
+        "name": "cross_owner_session_rejected",
+        "pass": true,
+        "status": 404
+      },
+      {
+        "name": "real_image_pipeline",
+        "pass": true,
+        "status": "SUCCEEDED",
+        "error": null,
+        "kind": "grooming_tip"
+      },
+      {
+        "name": "v4_real_trace",
+        "pass": true,
+        "source": "model",
+        "eligible": [
+          "grooming_tip",
+          "clarify",
+          "offer_finish"
+        ],
+        "invoked": [
+          "bedrock.observe",
+          "bedrock.explain"
+        ]
+      },
+      {
+        "name": "image_deleted",
+        "pass": true
+      },
+      {
+        "name": "real_grooming_path",
+        "pass": true
+      },
+      {
+        "name": "try_one_change",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "upload_slot",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "presigned_s3_upload",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "analysis_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "analysis_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "real_before_after_comparison",
+        "pass": true,
+        "status": "SUCCEEDED"
+      },
+      {
+        "name": "user_before_preference_saved",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "image_deleted",
+        "pass": true
+      },
+      {
+        "name": "completed_analysis_replay",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "create_session_2",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "upload_slot",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "presigned_s3_upload",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "analysis_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "analysis_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "restriction_policy_finish",
+        "pass": true
+      },
+      {
+        "name": "image_deleted",
+        "pass": true
+      },
+      {
+        "name": "create_session_3",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "fixture_answer_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "clarification_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "fixture_answer_success",
+        "pass": true,
+        "status": "SUCCEEDED",
+        "error": null
+      },
+      {
+        "name": "completed_clarification_replay",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "observation_reuse",
+        "pass": true
+      },
+      {
+        "name": "context_deleted",
+        "pass": true
+      },
+      {
+        "name": "no_evidence_policy_finish",
+        "pass": true
+      },
+      {
+        "name": "create_session_4",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "fixture_answer_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "clarification_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "fixture_answer_success",
+        "pass": true,
+        "status": "SUCCEEDED",
+        "error": null
+      },
+      {
+        "name": "completed_clarification_replay",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "observation_reuse",
+        "pass": true
+      },
+      {
+        "name": "context_deleted",
+        "pass": true
+      },
+      {
+        "name": "analysis_limit_finish",
+        "pass": true
+      },
+      {
+        "name": "create_session_5",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "fixture_answer_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "clarification_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "fixture_answer_success",
+        "pass": true,
+        "status": "SUCCEEDED",
+        "error": null
+      },
+      {
+        "name": "completed_clarification_replay",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "observation_reuse",
+        "pass": true
+      },
+      {
+        "name": "context_deleted",
+        "pass": true
+      },
+      {
+        "name": "supported_actual_decider",
+        "pass": true,
+        "selected": "grooming_tip",
+        "eligible": [
+          "grooming_tip",
+          "offer_finish"
+        ],
+        "invoked": [
+          "bedrock.explain"
+        ]
+      },
+      {
+        "name": "create_session_6",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "upload_slot",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "presigned_s3_upload",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "atomic_concurrent_upload_acceptance",
+        "pass": true,
+        "statuses": [
+          202,
+          409
+        ]
+      },
+      {
+        "name": "concurrent_winner_completed",
+        "pass": true,
+        "status": "SUCCEEDED"
+      },
+      {
+        "name": "concurrent_one_stored_job",
+        "pass": true,
+        "count": 1
+      },
+      {
+        "name": "image_deleted",
+        "pass": true
+      },
+      {
+        "name": "create_session_7",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "upload_slot",
+        "pass": true,
+        "status": 201
+      },
+      {
+        "name": "presigned_s3_upload",
+        "pass": true,
+        "status": 204
+      },
+      {
+        "name": "analysis_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "analysis_idempotency",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "end_accepted",
+        "pass": true,
+        "status": 202
+      },
+      {
+        "name": "late_result_cancelled",
+        "pass": true,
+        "saw_running": true,
+        "status": "CANCELLED"
+      },
+      {
+        "name": "done_preserved",
+        "pass": true
+      },
+      {
+        "name": "ended_session_rejects_work",
+        "pass": true,
+        "status": 409
+      },
+      {
+        "name": "image_deleted",
+        "pass": true
+      },
+      {
+        "name": "cleanup_requests",
+        "pass": true,
+        "error_types": []
+      }
+    ]
+  },
+  "unauthenticated_routes": [
+    {
+      "method": "GET",
+      "path": "/service-status",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/sessions",
+      "status": 401
+    },
+    {
+      "method": "DELETE",
+      "path": "/sessions/missing-session-123",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/sessions/missing-session-123/uploads",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/sessions/missing-session-123/analyses",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/sessions/missing-session-123/clarifications",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/sessions/missing-session-123/feedback",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/missing-job-123",
+      "status": 401
+    }
+  ],
+  "frontend_delivery": [
+    {
+      "path": "/",
+      "status": 200,
+      "type": "text/html",
+      "cache": "no-cache"
+    },
+    {
+      "path": "/sw.js",
+      "status": 200,
+      "type": "text/javascript; charset=utf-8",
+      "cache": "no-cache"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "type": "application/manifest+json",
+      "cache": "no-cache"
+    },
+    {
+      "path": "/assets/index-CrBC_Tt7.js",
+      "status": 200,
+      "type": "text/javascript; charset=utf-8",
+      "cache": "public,max-age=31536000,immutable"
+    }
+  ],
+  "shutdown": {
+    "desired": 0,
+    "running": 0,
+    "pending": 0,
+    "accepting": false,
+    "reason": "worker_stopped",
+    "queues": [
+      {
+        "logical": "DataJobDeadLetterQueueFE3232F9",
+        "counts": {
+          "ApproximateNumberOfMessages": 0,
+          "ApproximateNumberOfMessagesNotVisible": 0,
+          "ApproximateNumberOfMessagesDelayed": 0
+        }
+      },
+      {
+        "logical": "DataJobQueueDDB830EF",
+        "counts": {
+          "ApproximateNumberOfMessages": 0,
+          "ApproximateNumberOfMessagesNotVisible": 0,
+          "ApproximateNumberOfMessagesDelayed": 0
+        }
+      }
+    ],
+    "remaining_images": 0,
+    "remaining_contexts": 0,
+    "remaining_test_users": 0,
+    "alarm_count": 5,
+    "notification_confirmed": true
+  },
+  "api_tests": {
+    "passed": 382,
+    "skipped": 1
+  },
+  "startup_seconds": [
+    145.6,
+    149.9,
+    162.2
+  ],
+  "limitations": [
+    "synthetic_images_and_seeded_observation_fixtures",
+    "no_human_quality_evaluation",
+    "no_real_device_capture_or_save_verification",
+    "no_cloud_failure_injection_or_alarm_delivery_test",
+    "no_capture_to_advice_latency_distribution"
+  ]
+}

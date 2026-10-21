@@ -1,0 +1,289 @@
+openapi: 3.0.3
+info:
+  title: Snipe AI Regatta — design draft
+  version: 0.1.0-draft
+  description: >-
+    Not deployed. Observation, ReplayEvent and DecisionRecord schemas must be
+    made strict before promotion to packages/api-spec/openapi.yaml and generation.
+security:
+  - cognitoAccessToken: []
+paths:
+  /service-status:
+    get:
+      operationId: regatta_api.operations.get_service_status
+      responses:
+        '200':
+          description: Readiness, capacity and server time; does not reserve a race.
+        default:
+          $ref: '#/components/responses/Error'
+  /races:
+    post:
+      operationId: regatta_api.operations.create_race
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [courseId, scenarioId, language]
+              properties:
+                courseId:
+                  type: string
+                  enum: [windward-leeward-v1]
+                scenarioId:
+                  type: string
+                  enum: [steady-v1, shift-v1, pressure-v1]
+                language:
+                  type: string
+                  enum: [ja, en]
+      responses:
+        '201':
+          description: Race and short-lived capacity lease created atomically.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+    get:
+      operationId: regatta_api.operations.get_race
+      responses:
+        '200':
+          description: Owned race, outcome, replay manifest and deletion status.
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: regatta_api.operations.delete_race
+      responses:
+        '202':
+          description: New work blocked; deletion requested, not yet complete.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}/control:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+    post:
+      operationId: regatta_api.operations.control_race
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, expectedEpoch]
+              properties:
+                action:
+                  type: string
+                  enum: [pause, resume]
+                expectedEpoch:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: State and epoch updated atomically; lease is not extended.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}/decisions:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+    post:
+      operationId: regatta_api.operations.request_decision
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [seq, epoch, observationTick, observation]
+              properties:
+                seq:
+                  type: integer
+                  minimum: 1
+                  maximum: 24
+                epoch:
+                  type: integer
+                  minimum: 0
+                observationTick:
+                  type: integer
+                  minimum: 0
+                  maximum: 5400
+                observation:
+                  $ref: '#/components/schemas/ObservationDraft'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /jobs/{jobId}:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+    get:
+      operationId: regatta_api.operations.get_job
+      responses:
+        '200':
+          description: Job status and optional result; browser application is separate.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}/replay/{chunkIndex}:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+      - name: chunkIndex
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 7
+    put:
+      operationId: regatta_api.operations.put_replay_chunk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [sha256, events]
+              properties:
+                sha256:
+                  type: string
+                  pattern: '^[a-f0-9]{64}$'
+                events:
+                  type: array
+                  maxItems: 512
+                  items:
+                    type: object
+                    description: Draft; replace with strict ReplayEvent before implementation.
+      responses:
+        '204':
+          description: Saved, or identical content already present.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}/finish:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+    post:
+      operationId: regatta_api.operations.finish_race
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [outcome, simulationTick, replayManifest]
+              properties:
+                outcome:
+                  type: string
+                  enum: [finished, timed_out, aborted]
+                simulationTick:
+                  type: integer
+                  minimum: 0
+                  maximum: 5400
+                replayManifest:
+                  type: array
+                  maxItems: 8
+                  items:
+                    type: string
+                    pattern: '^[a-f0-9]{64}$'
+      responses:
+        '200':
+          description: Terminal outcome accepted; late tactical work invalidated.
+        default:
+          $ref: '#/components/responses/Error'
+  /races/{raceId}/debrief:
+    parameters:
+      - $ref: '#/components/parameters/RaceId'
+    post:
+      operationId: regatta_api.operations.request_debrief
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    cognitoAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito access token carrying regatta/race; validate ownership separately.
+  parameters:
+    RaceId:
+      name: raceId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+  schemas:
+    ObservationDraft:
+      type: object
+      description: >-
+        DESIGN ONLY. Strict boat, visible wind, history and mark schemas are a
+        pre-implementation gate. Never include future wind or seed.
+    AcceptedJob:
+      type: object
+      additionalProperties: false
+      required: [jobId, raceId, status]
+      properties:
+        jobId:
+          type: string
+        raceId:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        expiresAt:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+        retryAfterSeconds:
+          type: integer
+          minimum: 0
+  responses:
+    AcceptedJob:
+      description: Existing or newly accepted job. Does not mean applied to the boat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AcceptedJob'
+    Error:
+      description: 401 authentication, 404 ownership, 409 state, 413 size, 429 quota, 503 readiness.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -108,9 +108,14 @@ describe("storage is private and encrypted", () => {
 describe("authentication", () => {
   const { template } = build();
 
-  test("self sign-up is disabled (invitation only)", () => {
+  test("self-registration requires email confirmation with a code", () => {
     template.hasResourceProperties("AWS::Cognito::UserPool", {
-      AdminCreateUserConfig: { AllowAdminCreateUserOnly: true },
+      AdminCreateUserConfig: { AllowAdminCreateUserOnly: false },
+      AutoVerifiedAttributes: ["email"],
+      VerificationMessageTemplate: { DefaultEmailOption: "CONFIRM_WITH_CODE" },
+      Policies: Match.objectLike({
+        PasswordPolicy: Match.objectLike({ MinimumLength: 12 }),
+      }),
     });
   });
 

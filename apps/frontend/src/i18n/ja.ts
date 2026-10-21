@@ -24,8 +24,12 @@ export const ja = {
 
   "gate.loading": "確認しています…",
   "gate.error": "ログインできませんでした。もう一度お試しください。",
-  "gate.signInPrompt": "はじめるにはログインが必要です（招待制）。",
+  "gate.signInPrompt":
+    "はじめるにはログインが必要です。初めての方は新規登録してください。",
   "gate.signIn": "ログイン",
+  "gate.signUp": "新規登録",
+  "gate.signUpHint":
+    "メールアドレスとパスワードで登録し、メールに届く確認コードを入力してください。",
 
   "heading.consult": "相談する",
   "heading.capture": "試し撮り",

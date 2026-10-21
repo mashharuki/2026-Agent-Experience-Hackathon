@@ -4,6 +4,7 @@ export interface AuthState {
   status: "loading" | "signed-out" | "signed-in" | "error";
   userLabel?: string;
   signIn: () => void;
+  signUp: () => void;
   signOut: () => void;
 }
 

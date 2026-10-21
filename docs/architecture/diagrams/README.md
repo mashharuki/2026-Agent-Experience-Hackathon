@@ -1,5 +1,18 @@
 # アーキテクチャ図
 
+## 現行企画：Snipe AI Regatta（未実装の設計）
+
+`snipe-regatta.drawio` は2ページ（AWS構成／戦術判断と操船）。既存のAWS公式SVGを埋め込み、ノードと矢印を編集できる。
+`snipe-regatta-system.png` と `snipe-regatta-decision.png` はプレビュー。以下で再生成する。
+
+```sh
+python3 docs/architecture/diagrams/generate-regatta.py
+drawio --export --format png --page-index 1 --scale 1.3 --border 20 --theme light --output docs/architecture/diagrams/snipe-regatta-system.png docs/architecture/diagrams/snipe-regatta.drawio
+drawio --export --format png --page-index 2 --scale 1.3 --border 20 --theme light --output docs/architecture/diagrams/snipe-regatta-decision.png docs/architecture/diagrams/snipe-regatta.drawio
+```
+
+## 旧企画：写真支援アプリ
+
 `photo-prep.drawio` をdraw.io Desktop / diagrams.netで開いて編集する。
 ページ1は全体構成、ページ2はAI処理とデータ保護。ノード・矢印・テキストを編集できる。
 公式SVGアイコンをファイル内に埋め込んでおり、表示時の外部通信は不要。

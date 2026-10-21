@@ -1,5 +1,7 @@
 # 撮る前のひと手間
 
+> **製品転換（2026-10-21）**：以下は再利用のため保持した旧版です。専用AWS環境と保持されていたユーザー・データは削除済み。現行企画は、人間がスキッパーとしてAIと競うスナイプ級ヨットレースです。[設計書](specs/002-snipe-ai-regatta/plan.md)・[機能仕様](specs/002-snipe-ai-regatta/spec.md)・[削除記録](docs/reviews/2026-10-21-aws-teardown.md)を参照してください。ゲームは未実装・未デプロイで、旧URLとアカウントは使用できません。
+
 <p align="center"><img src="docs/brand/logo-lockup.svg" alt="撮る前のひと手間" width="520"></p>
 
 [English → README.md](README.md)
@@ -37,7 +39,7 @@
 - **日本語と英語**の画面・助言に対応し、いつでも切り替えられます（助言文も選んだ言語で返ります）。
 - **PWA**：ホーム画面に追加できます。サービスワーカーがキャッシュするのは画面を構成する静的ファイルだけで、
   API・S3・Cognito・サインインの戻り・写真には触れません。
-- **招待制のログイン**：Amazon Cognito（Authorization Code + PKCE）。
+- **メール確認付きの新規登録・ログイン**：Amazon Cognito（Authorization Code + PKCE）。
 - **費用の制御**：ワーカーは起動したときだけ動き、0台に戻ります。利用枠（一人あたり・全体の1日あたり）もアプリで制限します。
   受付していないときは失敗にせず、停止中・準備中を「受付」画面で知らせます。
 
@@ -52,7 +54,7 @@
 | 構成要素 | 役割 |
 | --- | --- |
 | **SPA**（S3 + CloudFront、OAC） | 非公開バケットからReactアプリを配信。ブラウザで撮影します。 |
-| **Amazon Cognito** | 招待制のログイン。Authorization Code + PKCE、公開クライアント。 |
+| **Amazon Cognito** | メール確認付きセルフ登録・ログイン。Authorization Code + PKCE、公開クライアント。 |
 | **API Gateway HTTP API + Lambda** | JWT検証のあと、コードで所有権を確認。OpenAPIから構成したPython（Connexion + Mangum）。受付は202で返し、結果はあとで取得します。 |
 | **S3（画像）** | 一時画像用の非公開バケット。ブラウザが署名付きPOSTで直接送るので、写真はAPIを通りません。 |
 | **DynamoDB** | セッション・ジョブ・結果・利用枠・受付状態。画像は入れません。 |
@@ -183,16 +185,15 @@ docker push <WorkerRepositoryUri>:v1
 ```
 
 イメージのタグを指定して再デプロイし（デプロイは動いているワーカーを止めます。動かし続けるなら
-`-c photoprep:workerDesiredCount=1` を足します）、招待ユーザーを作って、フロントエンドを公開します：
+`-c photoprep:workerDesiredCount=1` を足します）、フロントエンドを公開します。利用者は新規登録画面で登録し、メールを確認します：
 
 ```sh
 cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1
-aws cognito-idp admin-create-user --user-pool-id <UserPoolId> --region ap-northeast-1 --username you@example.com --user-attributes Name=email,Value=you@example.com Name=email_verified,Value=true --desired-delivery-mediums EMAIL
 pnpm --filter frontend run publish:plan     # アップロードする内容を表示するだけ
 pnpm --filter frontend run publish:apply
 ```
 
-スタックの出力にある `SpaUrl` を開き、Cognitoからメールで届く仮パスワードでサインインしてください。
+スタックの出力にある `SpaUrl` を開き、「新規登録」からメールアドレスとパスワード（12文字以上・英大文字／小文字／数字／記号）を登録し、メールの確認コードを入力してください。既存の利用者は「ログイン」から進めます。
 
 ### ワーカーの起動と停止
 

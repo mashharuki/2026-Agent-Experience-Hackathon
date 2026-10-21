@@ -2,18 +2,18 @@
 
 ## Project Structure & Module Organization
 
-This AWS hackathon project helps a person try one grooming adjustment before a photo and compare the result.
+The current product is a human-versus-AI Snipe dinghy game, designed in `specs/002-snipe-ai-regatta/`, not implemented yet. Existing photo-assistant code remains reusable legacy code; its AWS deployment was deleted on 2026-10-21.
 
 - `apps/frontend/`: React/Vite SPA, MUI screens, TanStack Query, bilingual UI, mock API and PWA.
 - `apps/api/`: Python Connexion/Flask API, Lambda adapter, operations handlers and pytest tests.
 - `apps/worker/`: Python SQS worker, Bedrock observation, Decider selection, guards and Docker image.
 - `apps/cdk/`: TypeScript AWS CDK infrastructure and Jest assertions.
 - `packages/api-spec/openapi.yaml`: authoritative API contract; `packages/photoprep-common/`: shared Python persistence, states and logging.
-- `specs/001-pre-photo-grooming-assist/`: requirements, plans, tasks and validation scenarios. `docs/architecture/` contains AWS diagrams and cost assumptions.
+- `specs/001-pre-photo-grooming-assist/`: legacy specifications and evidence. `docs/architecture/`: diagrams and cost assumptions.
 
 ## Specification Workflow
 
-Follow `.specify/memory/constitution.md` and `.agents/skills/speckit-*/`. Read `docs/tech-stack.md`, the feature spec and `remediation-plan.md` before changes. Reference the stack in Technical Context. Update requirements, contracts, generated clients and tasks together. Keep implemented behavior distinct from AWS validation and model-quality evidence.
+Follow `.specify/memory/constitution.md` and `.agents/skills/speckit-*/`. Read `docs/tech-stack.md` and the active spec/plan/research; for legacy fixes, read `001/remediation-plan.md`. Reference the stack in Technical Context. Promote draft OpenAPI before generation. Synchronize requirements, contracts, clients and tasks. Distinguish implementation, AWS evidence and model quality.
 
 ## Build, Test, and Development Commands
 
@@ -30,12 +30,12 @@ Use `pnpm@10.32.1`, Python 3.12 and uv.
 
 ## Coding Style & Testing
 
-Follow Biome for JS/TS and Ruff for Python. Use descriptive names; preserve `grooming_tip`, `capture_setup_tip`, `clarify`, and `offer_finish`. Test observable behavior, ownership, restrictions, atomic acceptance, cancellation and deletion failures. Run shared Store contracts against memory and moto. Evaluate real model quality separately from deterministic fake-model tests; no coverage percentage is configured.
+Follow Biome for JS/TS and Ruff for Python. Preserve legacy enums. Separate physics, rendering and decisions; never block rendering on inference or expose future wind. Test ownership, atomic acceptance, expiry, cancellation and deletion. Run Store contracts against memory/moto. Separate model evaluation from fake-model tests; no coverage percentage is configured.
 
 ## Commit & Pull Request Guidelines
 
-Use specific, action-oriented subjects. PRs should explain behavior, validation and limitations, link relevant issues and include screenshots for UI changes. `.github/workflows/ci.yml` checks contracts, code generation, quality, tests and mock browser flows.
+Use action-oriented subjects. PRs explain behavior, validation and limitations, link issues and show UI screenshots. CI checks contracts, generation, quality, tests and mock browser flows.
 
 ## Security & Operations
 
-Keep Cognito authentication and server ownership checks on every API. Apply restrictions and limits in code. Never commit credentials, personal face photos or observation text. Do not log user content. Explain cloud processing and short-lived observation reuse before capture. Ended sessions must reject new work and ignore late results. Cloud deployment and paid model checks require the documented budget and shutdown procedures.
+Require Cognito and ownership checks on every cloud API. Enforce limits in code. Never commit credentials or user content. Ended races/sessions reject new work and late results. Deployment requires latency and remaining-budget checks: $30 total and 30 worker-hours do not reset. Preserve legacy code and evidence until migration is accepted.

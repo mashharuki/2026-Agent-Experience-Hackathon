@@ -73,6 +73,33 @@ def test_answer_is_atomic_and_idempotent(api):
     assert answer(api, sid, jid, scope="bangs")[0] == 409
 
 
+def test_completed_answer_replays_without_another_job_or_charge(api):
+    sid, jid = seed_question(api)
+    first = answer(api, sid, jid)
+    finish_job(api, first[1]["jobId"], kind="offer_finish")
+    before = api.store.get(f"SESSION#{sid}", "META")
+    sent = list(api.queue.sent)
+    assert answer(api, sid, jid)[:2] == first[:2]
+    assert api.store.get(f"SESSION#{sid}", "META") == before
+    assert api.queue.sent == sent
+    assert answer(api, sid, jid, scope="bangs")[0] == 409
+    body = {"clarificationId": jid, "scope": "brow"}
+    assert (
+        api.request("POST", f"/sessions/{sid}/clarifications", body, idem="new-answer-key-123")[0]
+        == 409
+    )
+    assert (
+        api.request(
+            "POST",
+            f"/sessions/{sid}/clarifications",
+            body,
+            idem="clarification-key",
+            claims=OTHER_CLAIMS,
+        )[0]
+        == 404
+    )
+
+
 def test_expired_or_out_of_scope_observation_requires_capture_without_spending(api):
     sid, jid = seed_question(api, scope="bangs")
     # A bangs-only observation must not be used to invent a brow observation.

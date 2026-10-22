@@ -810,7 +810,7 @@ export default function ObserverApp() {
                 <small>
                   {row.finishTime !== null
                     ? clock(row.finishTime)
-                    : row.gapMeters === 0
+                    : row.isLeader
                       ? text.leader
                       : `+${row.gapMeters} m`}
                 </small>

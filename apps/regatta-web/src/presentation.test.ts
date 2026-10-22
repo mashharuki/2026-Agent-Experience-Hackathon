@@ -1,6 +1,11 @@
 import { createFleetRace } from "sailing-sim";
 import { describe, expect, it } from "vitest";
-import { raceOutcome, standings, tacticKind } from "./presentation";
+import {
+  labelPosition,
+  raceOutcome,
+  standings,
+  tacticKind,
+} from "./presentation";
 
 describe("raceOutcome", () => {
   it("is no_result when nobody finished", () =>
@@ -45,6 +50,20 @@ describe("standings", () => {
   });
 });
 
+describe("standings leader", () => {
+  it("marks exactly one leader even when the next boat rounds to a 0 m gap", () => {
+    const race = createFleetRace(1, "steady");
+    race.boats[1] = {
+      ...race.boats[1],
+      x: race.boats[0].x,
+      y: race.boats[0].y + 0.2,
+    };
+    const rows = standings(race, null);
+    expect(rows.filter((r) => r.isLeader)).toHaveLength(1);
+    expect(rows[0].isLeader).toBe(true);
+  });
+});
+
 describe("tacticKind", () => {
   it("classifies tactics", () => {
     expect(tacticKind("hold_course")).toBe("hold");
@@ -53,5 +72,18 @@ describe("tacticKind", () => {
     expect(tacticKind("seek_visible_pressure_gust_3")).toBe("pressure");
     expect(tacticKind("approach_mark")).toBe("mark");
     expect(tacticKind("head_to_finish")).toBe("mark");
+  });
+});
+
+describe("labelPosition", () => {
+  it("maps the view center to the middle of the canvas", () =>
+    expect(labelPosition({ x: 0, y: 0, z: 0.5 }, 800, 600)).toEqual({
+      x: 400,
+      y: 300,
+    }));
+  it("hides labels behind the camera or outside the view", () => {
+    expect(labelPosition({ x: 0, y: 0, z: 1.2 }, 800, 600)).toBeNull();
+    expect(labelPosition({ x: 1.3, y: 0, z: 0.5 }, 800, 600)).toBeNull();
+    expect(labelPosition({ x: 0, y: -1.2, z: 0.5 }, 800, 600)).toBeNull();
   });
 });

@@ -1054,3 +1054,41 @@ select {
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
+
+/* Boat name tags projected from the 3D scene. */
+.boat-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--on-sea);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.boat-label[hidden] {
+  display: none;
+}
+.boat-label i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.boat-label b {
+  display: none;
+  color: var(--accent);
+}
+.boat-label.is-prediction {
+  border-color: var(--accent);
+}
+.boat-label.is-prediction b {
+  display: inline;
+}

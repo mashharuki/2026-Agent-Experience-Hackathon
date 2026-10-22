@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 W, H, HORIZON = 1920, 1080, 560
 NAVY, SEA_DEEP, SEA, SKY, SAIL, BUOY = "#102f43", "#06465e", "#167a8c", "#bfdce9", "#f8fcfa", "#ef8354"
-FONT = "font-family=\"'Avenir Next','Hiragino Sans','Noto Sans JP',system-ui,sans-serif\""
+FONT = "font-family=\"'Avenir Next','Helvetica Neue',system-ui,sans-serif\""
 BOATS = [
     # name, hull color, x, y, scale, heel (deg), facing (1 = sails to the right)
     ("Jade", "#4ca991", 1720, 600, 0.42, -4, -1),
@@ -157,8 +157,8 @@ def build():
     <text x="120" y="250" font-size="30" font-weight="700" letter-spacing="8" fill="#ffd3bf">AI SAILING SPECTATOR GAME</text>
     <text x="114" y="390" font-size="132" font-weight="800" letter-spacing="-2">Snipe AI</text>
     <text x="114" y="530" font-size="132" font-weight="800" letter-spacing="-2">Regatta</text>
-    <text x="120" y="625" font-size="54" font-weight="700">風を読んで、勝者を選べ。</text>
-    <text x="120" y="690" font-size="36" font-weight="500" opacity="0.92">Read the wind. Pick the winner.</text>
+    <text x="120" y="625" font-size="54" font-weight="700">Read the wind. Pick the winner.</text>
+    <text x="120" y="690" font-size="36" font-weight="500" opacity="0.92">Four boats. Four approaches. One changing sea.</text>
     <text x="120" y="790" font-size="26" font-weight="500" opacity="0.88">4 AI boats · tactics chosen by Strands Decider 2B</text>
     <text x="120" y="832" font-size="26" font-weight="500" opacity="0.88">post-race debrief by Amazon Bedrock · runs on AWS</text>
   </g>

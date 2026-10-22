@@ -35,6 +35,7 @@ import {
   startSignIn,
 } from "./cloud";
 import { FleetRuntime, replayFleet } from "./fleet-runtime";
+import { raceOutcome, standings, tacticKind } from "./presentation";
 import { mountScene } from "./scene";
 
 const ja = {
@@ -78,12 +79,21 @@ const ja = {
   left: "残り",
   wind: "真風",
   heading: "針路",
-  tacks: "タック",
   chart: "コース図",
   result: "レースの結果",
   hit: "予想的中！",
   miss: "次は、どの艇を選ぶ？",
   noWinner: "レース不成立・予想判定なし",
+  unscored: "予想なし・判定対象外",
+  yourPick: "予想",
+  settings: "レースの設定",
+  endConfirm: "レースを終了しますか？予想の判定は行われません。",
+  keepWatching: "観戦を続ける",
+  endNow: "終了する",
+  leader: "先頭",
+  speedOf: "{name}の艇速",
+  headingOf: "{name}の針路",
+  predictedRank: "予想艇の順位",
   winner: "勝者",
   replay: "航跡を振り返る",
   export: "記録を保存",
@@ -170,12 +180,21 @@ const en: Record<keyof typeof ja, string> = {
   left: "Time left",
   wind: "True wind",
   heading: "Heading",
-  tacks: "Tacks",
   chart: "Course chart",
   result: "Race result",
   hit: "You picked the winner!",
   miss: "Who will you pick next?",
   noWinner: "No valid result / prediction not scored",
+  unscored: "No prediction — not scored",
+  yourPick: "Your pick",
+  settings: "Race settings",
+  endConfirm: "End the race? Your prediction will not be scored.",
+  keepWatching: "Keep watching",
+  endNow: "End race",
+  leader: "Leader",
+  speedOf: "{name} speed",
+  headingOf: "{name} heading",
+  predictedRank: "Your pick",
   winner: "Winner",
   replay: "Review the tracks",
   export: "Save recording",
@@ -209,7 +228,7 @@ const en: Record<keyof typeof ja, string> = {
   jibe_now: "Jibe",
   approach_mark: "Approach mark",
   head_to_finish: "Head to finish",
-  seek: "Seek visible pressure",
+  seek: "Seek pressure",
   cloudNote:
     "The real Strands Decider on AWS chooses each boat's tactics. Decision deadline",
   seconds: "s",
@@ -229,6 +248,7 @@ const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60)
     .toString()
     .padStart(2, "0")}`;
+const TACTIC_ICON = { hold: "→", maneuver: "↺", pressure: "≈", mark: "⚑" };
 const color = (value: number) => `#${value.toString(16).padStart(6, "0")}`;
 const meta = (id: string) => FLEET.find((b) => b.id === id) ?? FLEET[0];
 const tactic = (value: string, text: Text) =>
@@ -295,6 +315,7 @@ function Chart({
 function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
   const host = useRef<HTMLDivElement>(null);
   const [fallback, setFallback] = useState(false);
+  const [chartOpen, setChartOpen] = useState(false);
   const snapshot = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot);
   const { race, wind } = snapshot;
   const boat = race.boats[snapshot.focusIndex];
@@ -326,6 +347,9 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
     };
   }, [runtime]);
   const status = race.status === "ready" ? text.readyRace : text[race.status];
+  const pickRank = snapshot.prediction
+    ? standings(race, snapshot.prediction).find((row) => row.isPrediction)?.rank
+    : undefined;
   return (
     <section className="sea-shell" aria-label={text.practice}>
       <div
@@ -398,21 +422,33 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
         </div>
         <small>{Math.round(degrees(wind.direction))}°</small>
       </div>
-      <div className="course-chart">
+      <button
+        type="button"
+        className={`course-chart${chartOpen ? " is-expanded" : ""}`}
+        aria-expanded={chartOpen}
+        onClick={() => setChartOpen((open) => !open)}
+      >
         <span>{text.chart}</span>
         <Chart runtime={runtime} race={race} label={text.chart} />
-      </div>
+      </button>
       <div className="instruments" aria-live="off">
-        <div className="speed-instrument">
-          <span>{text.speed}</span>
-          <strong>
-            {(boat.speed * 1.94384).toFixed(1)}
-            <small>kn</small>
-          </strong>
-        </div>
         <div className="time-instrument">
           <span>{text.left}</span>
           <strong>{clock((MAX_TICKS - race.tick) * STEP)}</strong>
+        </div>
+        <div className="rank-instrument">
+          <span>{text.predictedRank}</span>
+          <strong>
+            {pickRank ?? "—"}
+            <small>/ {race.boats.length}</small>
+          </strong>
+        </div>
+        <div>
+          <span>{text.speedOf.replace("{name}", meta(boat.id).name)}</span>
+          <b>
+            {(boat.speed * 1.94384).toFixed(1)}
+            <small>kn</small>
+          </b>
         </div>
         <div>
           <span>{text.wind}</span>
@@ -422,12 +458,8 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
           </b>
         </div>
         <div>
-          <span>{text.heading}</span>
+          <span>{text.headingOf.replace("{name}", meta(boat.id).name)}</span>
           <b>{Math.round(degrees(boat.heading))}°</b>
-        </div>
-        <div>
-          <span>{text.tacks}</span>
-          <b>{boat.tacks}</b>
         </div>
         <div>
           <span>{text.mode}</span>
@@ -464,6 +496,7 @@ export default function ObserverApp() {
     | { state: "done"; value: Debrief }
   >({ state: "idle" });
   const [resultOpen, setResultOpen] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [replayTick, setReplayTick] = useState<number | null>(null);
   const text = language === "ja" ? ja : en;
   const { race } = snapshot;
@@ -543,6 +576,7 @@ export default function ObserverApp() {
   }, [language]);
   useEffect(() => {
     if (terminal) {
+      setConfirmEnd(false);
       setReplayTick(null);
       setResultOpen(true);
     }
@@ -594,6 +628,7 @@ export default function ObserverApp() {
     session.current !== null &&
     snapshot.logs.some((log) => log.source === "decider");
   const winners = fleetWinners(race);
+  const outcome = raceOutcome(winners, snapshot.prediction);
   const replay =
     replayTick === null ? race : replayFleet(runtime.recording(), replayTick);
   return (
@@ -634,74 +669,12 @@ export default function ObserverApp() {
       </header>
       <main className="sailing-layout">
         <aside className="control-panel">
-          <div className="intro">
-            <span className="practice-label">{text.practice}</span>
-            <h1>{text.title}</h1>
-          </div>
-          <label className="field-label" htmlFor="engine">
-            {text.mode}
-          </label>
-          <Select
-            id="engine"
-            size="small"
-            fullWidth
-            value={snapshot.mode}
-            disabled={active}
-            onChange={(event) =>
-              runtime.setMode(event.target.value as "preview" | "decider")
-            }
-          >
-            <MenuItem value="preview">{text.preview}</MenuItem>
-            <MenuItem value="decider" disabled={health !== "ready"}>
-              {text.decider}
-            </MenuItem>
-          </Select>
-          <p className={`engine-note ${snapshot.mode}`}>
-            {snapshot.mode === "preview"
-              ? text.previewNote
-              : cloud
-                ? `${text.cloudNote} ${runtime.deadline / 1000}${text.seconds}`
-                : text.modelNote}
-          </p>
-          {health === "signed_out" && cloud ? (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => void startSignIn(cloud)}
-            >
-              {text.signIn}
-            </Button>
-          ) : (
-            health !== "ready" && (
-              <>
-                {health === "worker_stopped" && (
-                  <p className="engine-note">{text.workerStopped}</p>
-                )}
-                <Button size="small" onClick={() => void connect()}>
-                  {health === "loading" ? text.loading : text.connect}
-                </Button>
-              </>
-            )
+          {race.status === "ready" && (
+            <div className="intro">
+              <span className="practice-label">{text.practice}</span>
+              <h1>{text.title}</h1>
+            </div>
           )}
-          <label className="field-label" htmlFor="scenario">
-            {text.scenario}
-          </label>
-          <Select
-            id="scenario"
-            size="small"
-            fullWidth
-            value={race.scenario}
-            disabled={active}
-            onChange={(event) =>
-              runtime.configure(event.target.value as Scenario)
-            }
-          >
-            {(["dynamic", "steady", "shift", "pressure"] as const).map((s) => (
-              <MenuItem key={s} value={s}>
-                {text[s]}
-              </MenuItem>
-            ))}
-          </Select>
           {race.status === "ready" ? (
             <fieldset className="prediction-options">
               <legend>{text.prediction}</legend>
@@ -759,7 +732,7 @@ export default function ObserverApp() {
               >
                 {race.status === "paused" ? text.resume : text.pause}
               </Button>
-              <Button variant="outlined" onClick={() => runtime.finish()}>
+              <Button variant="outlined" onClick={() => setConfirmEnd(true)}>
                 {text.end}
               </Button>
             </div>
@@ -769,25 +742,120 @@ export default function ObserverApp() {
               {text.again}
             </Button>
           )}
+          <p className={`engine-note ${snapshot.mode}`}>
+            {snapshot.mode === "preview"
+              ? text.previewNote
+              : cloud
+                ? `${text.cloudNote} ${runtime.deadline / 1000}${text.seconds}`
+                : text.modelNote}
+          </p>
+          {race.status === "ready" && (
+            <details className="race-settings">
+              <summary>
+                {text.settings}
+                <span>
+                  {snapshot.mode === "preview" ? text.preview : text.decider}
+                </span>
+              </summary>
+              <p className={`engine-status health-${health}`}>
+                <i />
+                {health === "ready"
+                  ? text.ready
+                  : health === "loading"
+                    ? text.loading
+                    : health === "signed_out"
+                      ? text.signedOut
+                      : health === "worker_stopped"
+                        ? text.workerStopped
+                        : text.offline}
+              </p>
+              <label className="field-label" htmlFor="engine">
+                {text.mode}
+              </label>
+              <Select
+                id="engine"
+                size="small"
+                fullWidth
+                value={snapshot.mode}
+                disabled={active}
+                onChange={(event) =>
+                  runtime.setMode(event.target.value as "preview" | "decider")
+                }
+              >
+                <MenuItem value="preview">{text.preview}</MenuItem>
+                <MenuItem value="decider" disabled={health !== "ready"}>
+                  {text.decider}
+                </MenuItem>
+              </Select>
+              {health === "signed_out" && cloud ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => void startSignIn(cloud)}
+                >
+                  {text.signIn}
+                </Button>
+              ) : (
+                health !== "ready" && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void connect()}
+                  >
+                    {health === "loading" ? text.loading : text.connect}
+                  </Button>
+                )
+              )}
+              <label className="field-label" htmlFor="scenario">
+                {text.scenario}
+              </label>
+              <Select
+                id="scenario"
+                size="small"
+                fullWidth
+                value={race.scenario}
+                disabled={active}
+                onChange={(event) =>
+                  runtime.configure(event.target.value as Scenario)
+                }
+              >
+                {(["dynamic", "steady", "shift", "pressure"] as const).map(
+                  (s) => (
+                    <MenuItem key={s} value={s}>
+                      {text[s]}
+                    </MenuItem>
+                  ),
+                )}
+              </Select>
+            </details>
+          )}
           <div className="fleet-standing">
             <h2>{text.rank}</h2>
-            {fleetRanking(race).map((boat, index) => (
+            {standings(race, snapshot.prediction).map((row) => (
               <button
                 type="button"
-                key={boat.id}
-                aria-pressed={race.boats[snapshot.focusIndex].id === boat.id}
-                onClick={() => runtime.focus(boat.id)}
+                key={row.id}
+                className={row.isPrediction ? "is-prediction" : undefined}
+                aria-pressed={race.boats[snapshot.focusIndex].id === row.id}
+                onClick={() => runtime.focus(row.id)}
               >
-                <span>{index + 1}</span>
+                <span>{row.rank}</span>
                 <i
                   className="boat-dot"
-                  style={{ background: color(meta(boat.id).color) }}
+                  style={{ background: color(meta(row.id).color) }}
                 />
-                <strong>{meta(boat.id).name}</strong>
+                <strong>{meta(row.id).name}</strong>
+                {row.isPrediction && (
+                  <em className="pick-tag">{text.yourPick}</em>
+                )}
                 <small>
-                  {boat.finishTime === null
-                    ? `${(boat.speed * 1.94384).toFixed(1)} kn`
-                    : text.finishedBoat}
+                  {row.finishTime !== null
+                    ? clock(row.finishTime)
+                    : row.isLeader
+                      ? text.leader
+                      : row.gapMeters === null
+                        ? text.dns
+                        : `+${row.gapMeters} m`}
                 </small>
               </button>
             ))}
@@ -808,11 +876,12 @@ export default function ObserverApp() {
           )}
           {snapshot.logs.length === 0 && <p>{text.noDecisions}</p>}
           {snapshot.logs
-            .slice(-5)
+            .slice(-4)
             .reverse()
             .map((log) => (
               <div
-                className="decision-item"
+                className={`decision-item${log.boatId === snapshot.prediction ? " is-prediction" : ""}`}
+                data-kind={tacticKind(log.selected)}
                 key={`${log.boatId}-${log.observedTick}-${log.source}`}
               >
                 <span
@@ -821,18 +890,23 @@ export default function ObserverApp() {
                 />
                 <div>
                   <strong>{meta(log.boatId).name}</strong>
-                  <span>{tactic(log.selected, text)}</span>
+                  <span>
+                    <i className="tactic-icon" aria-hidden="true">
+                      {TACTIC_ICON[tacticKind(log.selected)]}
+                    </i>
+                    {tactic(log.selected, text)}
+                  </span>
                 </div>
                 <small>
-                  {clock(log.observedTick * STEP)}
-                  <b>
+                  <span>{clock(log.observedTick * STEP)}</span>
+                  <b className={`source-badge source-${log.source}`}>
                     {log.source === "decider"
                       ? text.real
                       : log.source === "preview"
                         ? text.rule
-                        : text.fallback}{" "}
-                    · {text[log.status]}
+                        : text.fallback}
                   </b>
+                  <em>{text[log.status]}</em>
                 </small>
               </div>
             ))}
@@ -848,45 +922,123 @@ export default function ObserverApp() {
         <span>{snapshot.mode === "preview" ? text.preview : text.decider}</span>
       </footer>
       <Dialog
+        open={confirmEnd}
+        onClose={() => setConfirmEnd(false)}
+        aria-describedby="end-confirm"
+      >
+        <DialogContent>
+          <p id="end-confirm" className="end-confirm">
+            {text.endConfirm}
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmEnd(false)}>
+            {text.keepWatching}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConfirmEnd(false);
+              runtime.finish();
+            }}
+          >
+            {text.endNow}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
         open={resultOpen}
         onClose={() => setResultOpen(false)}
         fullWidth
         maxWidth="md"
+        aria-describedby="result-summary"
       >
         <DialogTitle>{text.result}</DialogTitle>
         <DialogContent>
-          <h2>
-            {winners.length === 0
-              ? text.noWinner
-              : winners.includes(snapshot.prediction ?? "")
+          <div
+            id="result-summary"
+            className={`result-headline result-${outcome}`}
+          >
+            <h2>
+              {outcome === "hit"
                 ? text.hit
-                : text.miss}
-          </h2>
-          {winners.length > 0 && (
-            <p>
-              {text.winner}: {winners.map((id) => meta(id).name).join(" / ")}
-            </p>
-          )}
-          <Chart runtime={runtime} race={replay} label={text.replay} />
-          <ol>
-            {fleetRanking(race).map((boat) => (
-              <li key={boat.id}>
-                {meta(boat.id).name} —{" "}
-                {boat.finishTime === null ? text.dns : clock(boat.finishTime)}
-              </li>
-            ))}
-          </ol>
-          <p id="replay-label">
-            {text.replay}: {clock((replayTick ?? race.tick) * STEP)}
-          </p>
-          <Slider
-            aria-labelledby="replay-label"
-            min={0}
-            max={Math.max(1, race.tick)}
-            step={3}
-            value={replayTick ?? race.tick}
-            onChange={(_, value) => setReplayTick(value as number)}
-          />
+                : outcome === "miss"
+                  ? text.miss
+                  : outcome === "unscored"
+                    ? text.unscored
+                    : text.noWinner}
+            </h2>
+            <dl className="result-summary">
+              <div>
+                <dt>{text.picked}</dt>
+                <dd>
+                  {snapshot.prediction ? (
+                    <>
+                      <i
+                        className="boat-dot"
+                        style={{
+                          background: color(meta(snapshot.prediction).color),
+                        }}
+                      />
+                      {meta(snapshot.prediction).name}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{text.winner}</dt>
+                <dd>
+                  {winners.length > 0
+                    ? winners.map((id) => meta(id).name).join(" / ")
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="outcome-layout">
+            <div className="result-track">
+              <Chart runtime={runtime} race={replay} label={text.replay} />
+              <p id="replay-label">
+                {text.replay}: {clock((replayTick ?? race.tick) * STEP)}
+              </p>
+              <Slider
+                aria-labelledby="replay-label"
+                min={0}
+                max={Math.max(1, race.tick)}
+                step={3}
+                value={replayTick ?? race.tick}
+                onChange={(_, value) => setReplayTick(value as number)}
+              />
+            </div>
+            <ol className="result-order">
+              {fleetRanking(race).map((boat) => (
+                <li
+                  key={boat.id}
+                  className={
+                    boat.id === snapshot.prediction
+                      ? "is-prediction"
+                      : undefined
+                  }
+                >
+                  <i
+                    className="boat-dot"
+                    style={{ background: color(meta(boat.id).color) }}
+                  />
+                  <strong>{meta(boat.id).name}</strong>
+                  {boat.id === snapshot.prediction && (
+                    <span className="pick-tag">{text.yourPick}</span>
+                  )}
+                  <small>
+                    {boat.finishTime === null
+                      ? text.dns
+                      : clock(boat.finishTime)}
+                  </small>
+                </li>
+              ))}
+            </ol>
+          </div>
           {canDebrief && (
             <section className="debrief" aria-live="polite">
               {debrief.state === "done" ? (

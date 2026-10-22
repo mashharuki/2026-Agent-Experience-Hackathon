@@ -7,6 +7,7 @@ import {
   fleetObservation,
   fleetOptions,
   fleetRanking,
+  fleetRemaining,
   fleetWinners,
   previewTactic,
   stepFleetRace,
@@ -62,6 +63,17 @@ describe("spectator fleet", () => {
       "coral",
     ]);
     expect(fleetWinners({ ...race, status: "aborted" })).toEqual([]);
+  });
+  it("exposes the remaining distance that orders the provisional ranking", () => {
+    const race = createFleetRace();
+    race.boats[3].y = 60;
+    const ranked = fleetRanking(race);
+    const remaining = ranked.map(fleetRemaining);
+    expect(remaining).toEqual([...remaining].sort((a, b) => a - b));
+    expect(ranked[0].id).toBe("jade");
+    expect(
+      fleetRemaining({ ...race.boats[0], leg: "finished", finishTime: 70 }),
+    ).toBe(-1);
   });
   for (const scenario of ["steady", "shift", "pressure", "dynamic"] as const) {
     it(`can complete a preview race in ${scenario} without modifying prior state`, () => {

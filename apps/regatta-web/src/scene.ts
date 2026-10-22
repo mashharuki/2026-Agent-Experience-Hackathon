@@ -1,7 +1,8 @@
-import { MARK, STEP, visiblePressure, windAt } from "sailing-sim";
+import { FLEET, MARK, STEP, visiblePressure, windAt } from "sailing-sim";
 import * as THREE from "three";
 import { makeBoat } from "./boat-visual";
 import { createOcean, createSky, waveHeight } from "./ocean";
+import { labelPosition } from "./presentation";
 import type { SceneRuntime } from "./runtime";
 
 function buoy(color: number, size = 1) {
@@ -192,6 +193,26 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
   boats.forEach((boat, i) => {
     scene.add(boat.group, wakes[i]);
   });
+  // Name tags for fleet boats only; the legacy helm screen has no fleet identities.
+  const labels = runtime.race.boats.map((boat) => {
+    const meta = FLEET.find((entry) => entry.id === boat.id);
+    if (!meta) return null;
+    const label = document.createElement("div");
+    label.className = "boat-label";
+    label.setAttribute("aria-hidden", "true");
+    const dot = document.createElement("i");
+    dot.style.background = `#${meta.color.toString(16).padStart(6, "0")}`;
+    const name = document.createElement("span");
+    name.textContent = meta.name;
+    const pick = document.createElement("b");
+    pick.textContent = "★";
+    label.append(dot, name, pick);
+    host.appendChild(label);
+    return label;
+  });
+  const projected = new THREE.Vector3();
+  let viewWidth = 0;
+  let viewHeight = 0;
   const camera = new THREE.PerspectiveCamera(53, 1, 0.12, 15000);
   const position = new THREE.Vector3();
   const target = new THREE.Vector3();
@@ -204,6 +225,8 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     const { width, height } = host.getBoundingClientRect();
     if (!width || !height) return;
     renderer.setSize(width, height);
+    viewWidth = width;
+    viewHeight = height;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   });
@@ -348,6 +371,24 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     previousView = runtime.view;
     initialized = true;
     sky.position.copy(camera.position);
+    camera.updateMatrixWorld();
+    labels.forEach((label, i) => {
+      if (!label) return;
+      const boat = race.boats[i];
+      const onBoard = runtime.view !== "overview" && i === runtime.focusIndex;
+      const spot =
+        boats[i].group.visible && !onBoard
+          ? labelPosition(
+              projected.set(boat.x, 7, -boat.y).project(camera),
+              viewWidth,
+              viewHeight,
+            )
+          : null;
+      label.hidden = spot === null;
+      label.classList.toggle("is-prediction", boat.id === runtime.prediction);
+      if (spot)
+        label.style.transform = `translate(${spot.x}px, ${spot.y}px) translate(-50%, -100%)`;
+    });
     renderer.render(scene, camera);
   });
   return () => {
@@ -369,5 +410,6 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     for (const material of materials) material.dispose();
     renderer.dispose();
     renderer.domElement.remove();
+    for (const label of labels) label?.remove();
   };
 }

@@ -1,0 +1,156 @@
+/* Legacy helm screen (App.tsx) only. The spectator screen does not use these rules. */
+.weather-help {
+  margin: 8px 0 4px;
+  font-size: 10px;
+  line-height: 1.75;
+  color: #4b6976;
+}
+.control-panel .opponent-switch {
+  margin: 10px 0 12px;
+}
+.opponent-switch .MuiFormControlLabel-label,
+.trim-control .MuiFormControlLabel-label {
+  font-size: 11px;
+}
+.helm-actions {
+  display: flex;
+  gap: 7px;
+}
+.helm-actions > * {
+  flex: 1;
+  min-width: 0;
+}
+.trim-control {
+  margin-top: 18px;
+  padding: 12px 0 15px;
+  border-top: 1px solid #ccdcdf;
+}
+.trim-control .sheet-title {
+  display: block;
+  font-size: 11px;
+  margin-top: 12px;
+}
+.trim-control .MuiSlider-root {
+  padding: 10px 0;
+}
+.sheet-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #597582;
+  font-size: 9px;
+}
+.helm-actions {
+  margin-bottom: 7px;
+}
+.helm-actions button {
+  touch-action: none;
+  min-height: 36px;
+  font-size: 12px;
+  background: #ffffff4f;
+}
+.model-notice {
+  font-size: 10px;
+  line-height: 1.75;
+  color: #587480;
+  margin: 13px 0 0;
+}
+.speed-instrument strong {
+  font-size: 36px;
+  letter-spacing: -1.5px;
+  line-height: 0.9;
+}
+.speed-instrument small {
+  margin-left: 3px;
+  font-size: 11px;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.player-key:before,
+.rival-key:before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd28f;
+  margin-right: 6px;
+}
+.rival-key:before {
+  background: #a4d7ef;
+}
+.sea-caption {
+  position: absolute;
+  left: calc(var(--rail) + 8px);
+  bottom: 211px;
+  color: #f2faf8;
+  pointer-events: none;
+  text-shadow: 0 2px 16px #0b4054aa;
+}
+.sea-caption > span {
+  display: none;
+  font-size: 56px;
+  font-weight: 450;
+  letter-spacing: -2px;
+}
+.sea-caption > strong {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 3px;
+}
+.track-large {
+  min-height: 240px;
+}
+.result-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 200px;
+  gap: 24px;
+  margin: 16px 0 24px;
+}
+.result-stats > span {
+  color: #54716f;
+  font-size: 13px;
+}
+.result-stats strong {
+  display: block;
+  font-size: 40px;
+}
+.result-stats p {
+  font-size: 12px;
+  color: #476369;
+}
+.render-notice {
+  position: absolute;
+  top: 240px;
+  left: var(--rail);
+  right: 170px;
+  font-size: 11px;
+}
+@media (max-width: 1000px) {
+  .speed-instrument strong {
+    font-size: 32px;
+  }
+}
+@media (max-width: 680px) {
+  .speed-instrument strong {
+    font-size: 28px;
+  }
+  .sea-caption {
+    left: 20px;
+    bottom: 230px;
+  }
+  .sea-caption > span {
+    font-size: 38px;
+  }
+  .result-layout {
+    grid-template-columns: 1fr;
+  }
+  .result-stats {
+    display: none;
+  }
+  .render-notice {
+    top: 150px;
+    left: 12px;
+    right: 12px;
+  }
+}

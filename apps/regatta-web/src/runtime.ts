@@ -22,6 +22,7 @@ export type SceneRuntime = {
   view: "follow" | "helm" | "overview";
   quality: "high" | "economy";
   focusIndex?: number;
+  prediction?: string | null;
   advance(milliseconds: number): void;
   pause(): void;
 };

@@ -1209,3 +1209,12 @@ select {
   display: inline;
   margin-top: 0;
 }
+/* Tactic names stay on one line so the log keeps a fixed height above the chart. */
+.observer-app .decision-item > div {
+  flex: 1;
+}
+.observer-app .decision-item div > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

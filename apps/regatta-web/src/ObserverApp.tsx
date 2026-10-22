@@ -228,7 +228,7 @@ const en: Record<keyof typeof ja, string> = {
   jibe_now: "Jibe",
   approach_mark: "Approach mark",
   head_to_finish: "Head to finish",
-  seek: "Seek visible pressure",
+  seek: "Seek pressure",
   cloudNote:
     "The real Strands Decider on AWS chooses each boat's tactics. Decision deadline",
   seconds: "s",

@@ -133,3 +133,27 @@ test("enlarges the course chart without covering the decision log", async ({
   await expect(chart).toHaveAttribute("aria-expanded", "true");
   expect((await chart.boundingBox())?.width).toBeGreaterThanOrEqual(360);
 });
+
+test("keeps long English tactic names from pushing the log onto the chart", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route("**/local-decider/health", (route) =>
+    route.fulfill({ json: { ready: false } }),
+  );
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "Language / 言語" }).click();
+  await page.getByRole("option", { name: "English" }).click();
+  await page
+    .locator(".prediction-options button")
+    .filter({ hasText: "Jade" })
+    .click();
+  await page.getByRole("button", { name: "Lock prediction & start" }).click();
+  // The first race uses the fixed default seed; Zephyr seeks pressure at 0:10.
+  await expect(
+    page.locator(".decision-item").filter({ hasText: "pressure" }),
+  ).toBeVisible({ timeout: 20_000 });
+  const feed = await page.locator(".decision-feed").boundingBox();
+  const chart = await page.locator(".course-chart").boundingBox();
+  expect(feed && chart && feed.y + feed.height <= chart.y).toBe(true);
+});

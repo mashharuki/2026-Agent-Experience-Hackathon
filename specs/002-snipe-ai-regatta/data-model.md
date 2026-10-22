@@ -20,6 +20,9 @@
 物理座標は東+x、北+y。位置m、速度m/s、内部角rad、表示は北0度・時計回り、風向は来る方角。
 ポーラ入力は真風。見かけの風は `trueWind - boatVelocity`。
 
+ローカル練習は`physicsVersion=sailing-v2`、`windVersion=wind-v2`を記録し、版不一致の再生を拒否する。
+`dynamic`の海面もseedとsimulationTickから生成し、別の実時間タイマー・将来の風の観測フィールドは持たない。
+
 `BoatState`: boatId、position、velocity、heading、rudder、mainSheet、tack、maneuverId、leg、markProgress。
 `Observation`: version、simulationTick、epoch、AI艇と相手艇、localWind、短い風履歴、可視ブロー候補、目標マーク。
 ブロー候補は最大3、履歴は最大8。座標はコース許容範囲内、角度正規化、有限数、列挙値を検査。

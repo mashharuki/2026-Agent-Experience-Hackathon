@@ -35,7 +35,7 @@ paths:
                   enum: [windward-leeward-v1]
                 scenarioId:
                   type: string
-                  enum: [steady-v1, shift-v1, pressure-v1]
+                  enum: [steady-v1, shift-v1, pressure-v1, dynamic-v1]
                 language:
                   type: string
                   enum: [ja, en]

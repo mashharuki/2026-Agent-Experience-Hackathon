@@ -1,0 +1,727 @@
+:root {
+  font-family: "Avenir Next", "Hiragino Sans", sans-serif;
+  color: #102f43;
+  background: #1b5268;
+  font-synthesis: none;
+  --panel: 264px;
+  --rail: 304px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+.app-shell {
+  position: relative;
+  min-height: 100dvh;
+}
+.app-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 5;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  color: #173e52;
+  background: linear-gradient(#e5f2f4e8, #e5f2f48c 72%, transparent);
+}
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.wordmark svg {
+  width: 34px;
+  height: 38px;
+}
+.wordmark strong {
+  display: block;
+  font-size: 20px;
+  letter-spacing: -0.65px;
+}
+.wordmark span {
+  display: block;
+  font-size: 11px;
+  margin-top: 2px;
+  color: #41687a;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+.header-actions .MuiInputBase-root {
+  background: #f7fcfdc9;
+  font-size: 12px;
+}
+.sailing-layout {
+  position: relative;
+  height: 100dvh;
+  min-height: 780px;
+}
+.control-panel {
+  position: absolute;
+  z-index: 4;
+  top: 96px;
+  left: 20px;
+  width: var(--panel);
+  max-height: calc(100% - 210px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid #f3fcffb3;
+  border-radius: 12px;
+  background: #f5fbf9eb;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 36px #072b3d28;
+  scrollbar-width: thin;
+  scrollbar-color: #99b4bb transparent;
+}
+.intro h1 {
+  font-size: 23px;
+  line-height: 1.4;
+  letter-spacing: -0.7px;
+  margin: 12px 0 5px;
+  font-weight: 750;
+}
+.intro p {
+  font-size: 11px;
+  color: #4a6b7a;
+  margin: 0 0 20px;
+}
+.practice-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #456777;
+  font-size: 10px;
+  font-weight: 600;
+}
+.practice-label:before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #438b84;
+  border-radius: 50%;
+}
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  margin-bottom: 7px;
+}
+.weather-help {
+  margin: 8px 0 4px;
+  font-size: 10px;
+  line-height: 1.75;
+  color: #4b6976;
+}
+.control-panel .MuiInputBase-root {
+  background: #ffffff9c;
+  font-size: 12px;
+}
+.control-panel .opponent-switch {
+  margin: 10px 0 12px;
+}
+.opponent-switch .MuiFormControlLabel-label,
+.trim-control .MuiFormControlLabel-label {
+  font-size: 11px;
+}
+.race-actions,
+.helm-actions {
+  display: flex;
+  gap: 7px;
+}
+.race-actions > *,
+.helm-actions > * {
+  flex: 1;
+  min-width: 0;
+}
+.race-actions button {
+  font-size: 11px;
+  padding: 7px 5px;
+}
+.trim-control {
+  margin-top: 18px;
+  padding: 12px 0 15px;
+  border-top: 1px solid #ccdcdf;
+}
+.trim-control .sheet-title {
+  display: block;
+  font-size: 11px;
+  margin-top: 12px;
+}
+.trim-control .MuiSlider-root {
+  padding: 10px 0;
+}
+.sheet-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #597582;
+  font-size: 9px;
+}
+.helm-actions {
+  margin-bottom: 7px;
+}
+.helm-actions button {
+  touch-action: none;
+  min-height: 36px;
+  font-size: 12px;
+  background: #ffffff4f;
+}
+.model-notice {
+  font-size: 10px;
+  line-height: 1.75;
+  color: #587480;
+  margin: 13px 0 0;
+}
+.sailing-stage {
+  position: absolute;
+  inset: 0;
+}
+.sea-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #167a8c;
+  isolation: isolate;
+}
+.sea-canvas {
+  position: absolute;
+  inset: 0;
+  outline: none;
+}
+.sea-canvas:focus-visible {
+  outline: 3px solid #ffcd80;
+  outline-offset: -4px;
+}
+.sea-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sea-toolbar {
+  position: absolute;
+  z-index: 2;
+  left: var(--rail);
+  right: 24px;
+  top: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border-radius: 6px;
+  background: #f5faf7ed;
+  color: #254b5c;
+  font-size: 11px;
+  box-shadow: 0 2px 12px #073b5020;
+}
+.status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #638c98;
+}
+.status-running i {
+  background: #348b72;
+}
+.status-paused i {
+  background: #cd743c;
+}
+.view-switch {
+  display: flex;
+  padding: 3px;
+  border-radius: 7px;
+  background: #f5faf7ed;
+  pointer-events: auto;
+  box-shadow: 0 2px 12px #073b5020;
+}
+.view-switch button {
+  min-height: 28px;
+  min-width: 48px;
+  font-size: 11px;
+  padding: 3px 9px;
+}
+.view-switch button[aria-pressed="true"] {
+  background: #244d61;
+  color: #fff;
+  border-radius: 5px;
+}
+.mark-indicator {
+  position: absolute;
+  top: 152px;
+  left: var(--rail);
+  color: #173d50;
+  font-size: 10px;
+  background: #f6fcf8e8;
+  border: 1px solid #ffffff7a;
+  border-radius: 7px;
+  padding: 10px 14px;
+  pointer-events: none;
+}
+.mark-indicator span {
+  display: block;
+  font-size: 23px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wind-dial {
+  position: absolute;
+  right: 28px;
+  top: 158px;
+  width: 108px;
+  height: 108px;
+  border: 1px solid #ffffffb3;
+  border-radius: 50%;
+  background: #f8fcf3e8;
+  box-shadow: 0 4px 20px #073b5024;
+  pointer-events: none;
+  color: #365969;
+}
+.compass-rose {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed #7f9ea17d;
+  border-radius: 50%;
+}
+.compass-rose span {
+  position: absolute;
+  font-size: 8px;
+}
+.compass-rose span:nth-child(1) {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f5faf2;
+  padding: 0 3px;
+}
+.compass-rose span:nth-child(2) {
+  right: -5px;
+  top: 43%;
+}
+.compass-rose span:nth-child(3) {
+  bottom: -5px;
+  left: 47%;
+}
+.compass-rose span:nth-child(4) {
+  left: -6px;
+  top: 43%;
+}
+.wind-needle {
+  position: absolute;
+  left: 36px;
+  top: 12px;
+  width: 36px;
+  height: 78px;
+  transform-origin: center;
+}
+.wind-needle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.wind-dial small {
+  position: absolute;
+  bottom: -26px;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f5fcff;
+  text-shadow: 0 1px 4px #062c3f;
+}
+.course-chart {
+  position: absolute;
+  right: 24px;
+  bottom: 185px;
+  width: 152px;
+  padding: 10px;
+  border: 1px solid #d2e3e9bf;
+  border-radius: 8px;
+  background: #f4fbf7eb;
+  box-shadow: 0 4px 24px #0b354d29;
+}
+.course-chart > span {
+  display: block;
+  font-size: 10px;
+  color: #37576b;
+  margin-bottom: 7px;
+}
+.track {
+  display: block;
+  width: 100%;
+}
+.course-chart .track {
+  border-radius: 3px;
+  opacity: 0.9;
+}
+.instruments {
+  position: absolute;
+  z-index: 2;
+  left: var(--rail);
+  right: 24px;
+  bottom: 65px;
+  display: grid;
+  grid-template-columns: 1.25fr 1.2fr repeat(4, 1fr);
+  gap: 0;
+  padding: 16px 8px;
+  border: 1px solid #e3f1edc2;
+  border-radius: 9px;
+  background: #f3faf6f0;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px #052c4433;
+}
+.instruments > div {
+  padding: 0 12px;
+  border-left: 1px solid #c4d7db;
+  min-width: 0;
+}
+.instruments > div:first-child {
+  border-left: 0;
+}
+.instruments span {
+  display: block;
+  font-size: 10px;
+  color: #52717e;
+  margin-bottom: 7px;
+  white-space: nowrap;
+}
+.instruments b,
+.instruments strong {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.instruments b small {
+  font-size: 10px;
+  margin-left: 3px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.speed-instrument strong {
+  font-size: 36px;
+  letter-spacing: -1.5px;
+  line-height: 0.9;
+}
+.speed-instrument small {
+  margin-left: 3px;
+  font-size: 11px;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.time-instrument strong {
+  font-size: 29px;
+  line-height: 1;
+}
+.sea-footer {
+  position: absolute;
+  left: var(--rail);
+  right: 24px;
+  bottom: 166px;
+  display: flex;
+  gap: 16px;
+  color: #f3fafb;
+  font-size: 10px;
+  text-shadow: 0 1px 4px #032b40;
+  pointer-events: none;
+}
+.sea-footer > span:last-child {
+  margin-left: auto;
+}
+.player-key:before,
+.rival-key:before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd28f;
+  margin-right: 6px;
+}
+.rival-key:before {
+  background: #a4d7ef;
+}
+.sea-caption {
+  position: absolute;
+  left: calc(var(--rail) + 8px);
+  bottom: 211px;
+  color: #f2faf8;
+  pointer-events: none;
+  text-shadow: 0 2px 16px #0b4054aa;
+}
+.sea-caption > span {
+  display: none;
+  font-size: 56px;
+  font-weight: 450;
+  letter-spacing: -2px;
+}
+.sea-caption > strong {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 3px;
+}
+.keyboard-strip {
+  position: absolute;
+  left: var(--rail);
+  bottom: 38px;
+  color: #e9f5f6;
+  font-size: 10px;
+  text-shadow: 0 1px 4px #072f41;
+}
+.rules-note {
+  position: absolute;
+  left: 24px;
+  bottom: 44px;
+  width: var(--panel);
+  margin: 0;
+  color: #e4f1f3;
+  font-size: 9px;
+  line-height: 1.8;
+  text-shadow: 0 1px 4px #082d3d;
+}
+.app-footer {
+  position: absolute;
+  z-index: 3;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 5px 14px;
+  padding: 10px 24px;
+  color: #d6e8ed;
+  font-size: 8px;
+  background: linear-gradient(transparent, #103b4ba3);
+  pointer-events: none;
+}
+.track-large {
+  min-height: 240px;
+}
+.result-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 200px;
+  gap: 24px;
+  margin: 16px 0 24px;
+}
+.result-stats > span {
+  color: #54716f;
+  font-size: 13px;
+}
+.result-stats strong {
+  display: block;
+  font-size: 40px;
+}
+.result-stats p {
+  font-size: 12px;
+  color: #476369;
+}
+.fallback-view {
+  position: absolute;
+  inset: 140px 180px 180px var(--rail);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.fallback-view svg {
+  width: 100%;
+  height: 100%;
+}
+.render-notice {
+  position: absolute;
+  top: 240px;
+  left: var(--rail);
+  right: 170px;
+  font-size: 11px;
+}
+@media (max-width: 1000px) {
+  :root {
+    --panel: 230px;
+    --rail: 270px;
+  }
+  .control-panel {
+    padding: 16px;
+  }
+  .intro h1 {
+    font-size: 21px;
+  }
+  .instruments {
+    padding: 14px 2px;
+  }
+  .instruments > div {
+    padding: 0 8px;
+  }
+  .instruments b {
+    font-size: 17px;
+  }
+  .speed-instrument strong {
+    font-size: 32px;
+  }
+  .time-instrument strong {
+    font-size: 25px;
+  }
+  .instruments span {
+    font-size: 9px;
+  }
+  .course-chart {
+    width: 134px;
+  }
+  .keyboard-strip {
+    font-size: 9px;
+  }
+}
+@media (max-width: 680px) {
+  .app-header {
+    position: relative;
+    height: 68px;
+    padding: 0 14px;
+    background: #deedf0;
+  }
+  .wordmark strong {
+    font-size: 16px;
+  }
+  .wordmark span {
+    font-size: 9px;
+  }
+  .wordmark svg {
+    width: 25px;
+  }
+  .header-actions {
+    gap: 5px;
+  }
+  .header-actions .MuiInputBase-root {
+    font-size: 10px;
+  }
+  .header-actions .MuiSelect-select {
+    padding: 7px 23px 7px 7px;
+  }
+  .sailing-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+  .sailing-stage {
+    position: relative;
+    order: -1;
+    height: 66svh;
+    min-height: 490px;
+  }
+  .control-panel {
+    position: relative;
+    inset: auto;
+    margin: 16px;
+    width: auto;
+    max-height: none;
+  }
+  .sea-toolbar {
+    left: 15px;
+    right: 15px;
+    top: 16px;
+  }
+  .mark-indicator {
+    left: 15px;
+    top: 72px;
+  }
+  .wind-dial {
+    top: 80px;
+    right: 20px;
+  }
+  .course-chart {
+    display: none;
+  }
+  .instruments {
+    left: 12px;
+    right: 12px;
+    bottom: 63px;
+    padding: 12px 1px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 0;
+  }
+  .instruments > div {
+    padding: 0 12px;
+  }
+  .instruments > div:nth-child(4) {
+    border-left: none;
+  }
+  .instruments strong,
+  .instruments b {
+    font-size: 20px;
+  }
+  .speed-instrument strong {
+    font-size: 28px;
+  }
+  .instruments span {
+    margin-bottom: 3px;
+  }
+  .sea-footer {
+    left: 16px;
+    right: 16px;
+    bottom: 199px;
+  }
+  .sea-caption {
+    left: 20px;
+    bottom: 230px;
+  }
+  .sea-caption > span {
+    font-size: 38px;
+  }
+  .keyboard-strip {
+    bottom: 17px;
+    left: 16px;
+    right: 16px;
+    font-size: 9px;
+  }
+  .rules-note {
+    position: static;
+    margin: 0 16px 16px;
+    width: auto;
+    font-size: 10px;
+  }
+  .app-footer {
+    position: relative;
+    padding: 16px;
+    background: #153e50;
+    font-size: 9px;
+  }
+  .result-layout {
+    grid-template-columns: 1fr;
+  }
+  .result-stats {
+    display: none;
+  }
+  .fallback-view {
+    inset: 130px 12px 220px;
+  }
+  .render-notice {
+    top: 150px;
+    left: 12px;
+    right: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *:before,
+  *:after {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

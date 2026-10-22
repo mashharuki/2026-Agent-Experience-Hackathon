@@ -16,6 +16,12 @@
 **Alternatives**: React Three Fiberは後続候補。Three.jsの版は実装時に固定する。
 **Sources**: [描画ループ](https://threejs.org/manual/en/creating-a-scene.html)、[資産の破棄](https://threejs.org/manual/en/how-to-dispose-of-objects.html)。
 
+2026-10-22追記：0.180.0に固定済み。本人依頼で独自の海面shaderと艇の詳細geometryを追加。
+Context7で[ShaderMaterial](https://threejs.org/docs/#api/en/materials/ShaderMaterial)と
+[出力色空間](https://threejs.org/manual/en/color-management.html)を確認し、導入済みr180の型と実ブラウザーで検証した。
+反射用の別レンダーパスや外部HDRIは使わず、手続き的な空と日光の近似反射で負荷・配布物を抑える。
+G1/G2と性能全般の合格は別途必要。
+
 ## スナイプの再現範囲
 
 **Decision**: 舵・メイン、風上タック、ブローへ寄せる戦術を先に検証する近似モデル。

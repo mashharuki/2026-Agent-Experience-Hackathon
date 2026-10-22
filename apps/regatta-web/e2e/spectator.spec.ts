@@ -30,6 +30,10 @@ test("locks a prediction, observes explicit preview decisions, and resets after 
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText("レース不成立・予想判定なし");
+  await expect(dialog.locator(".MuiSlider-root")).toBeInViewport();
+  await expect(dialog.locator(".result-order .is-prediction")).toContainText(
+    "Aurora",
+  );
   await dialog.getByRole("slider").press("Home");
   await dialog.getByRole("button", { name: "次のレースを予想" }).click();
   await expect(

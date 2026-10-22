@@ -35,6 +35,7 @@ import {
   startSignIn,
 } from "./cloud";
 import { FleetRuntime, replayFleet } from "./fleet-runtime";
+import { raceOutcome } from "./presentation";
 import { mountScene } from "./scene";
 
 const ja = {
@@ -84,6 +85,8 @@ const ja = {
   hit: "予想的中！",
   miss: "次は、どの艇を選ぶ？",
   noWinner: "レース不成立・予想判定なし",
+  unscored: "予想なし・判定対象外",
+  yourPick: "予想",
   winner: "勝者",
   replay: "航跡を振り返る",
   export: "記録を保存",
@@ -176,6 +179,8 @@ const en: Record<keyof typeof ja, string> = {
   hit: "You picked the winner!",
   miss: "Who will you pick next?",
   noWinner: "No valid result / prediction not scored",
+  unscored: "No prediction — not scored",
+  yourPick: "Your pick",
   winner: "Winner",
   replay: "Review the tracks",
   export: "Save recording",
@@ -594,6 +599,7 @@ export default function ObserverApp() {
     session.current !== null &&
     snapshot.logs.some((log) => log.source === "decider");
   const winners = fleetWinners(race);
+  const outcome = raceOutcome(winners, snapshot.prediction);
   const replay =
     replayTick === null ? race : replayFleet(runtime.recording(), replayTick);
   return (
@@ -852,41 +858,92 @@ export default function ObserverApp() {
         onClose={() => setResultOpen(false)}
         fullWidth
         maxWidth="md"
+        aria-describedby="result-summary"
       >
         <DialogTitle>{text.result}</DialogTitle>
         <DialogContent>
-          <h2>
-            {winners.length === 0
-              ? text.noWinner
-              : winners.includes(snapshot.prediction ?? "")
+          <div
+            id="result-summary"
+            className={`result-headline result-${outcome}`}
+          >
+            <h2>
+              {outcome === "hit"
                 ? text.hit
-                : text.miss}
-          </h2>
-          {winners.length > 0 && (
-            <p>
-              {text.winner}: {winners.map((id) => meta(id).name).join(" / ")}
-            </p>
-          )}
-          <Chart runtime={runtime} race={replay} label={text.replay} />
-          <ol>
-            {fleetRanking(race).map((boat) => (
-              <li key={boat.id}>
-                {meta(boat.id).name} —{" "}
-                {boat.finishTime === null ? text.dns : clock(boat.finishTime)}
-              </li>
-            ))}
-          </ol>
-          <p id="replay-label">
-            {text.replay}: {clock((replayTick ?? race.tick) * STEP)}
-          </p>
-          <Slider
-            aria-labelledby="replay-label"
-            min={0}
-            max={Math.max(1, race.tick)}
-            step={3}
-            value={replayTick ?? race.tick}
-            onChange={(_, value) => setReplayTick(value as number)}
-          />
+                : outcome === "miss"
+                  ? text.miss
+                  : outcome === "unscored"
+                    ? text.unscored
+                    : text.noWinner}
+            </h2>
+            <dl className="result-summary">
+              <div>
+                <dt>{text.picked}</dt>
+                <dd>
+                  {snapshot.prediction ? (
+                    <>
+                      <i
+                        className="boat-dot"
+                        style={{
+                          background: color(meta(snapshot.prediction).color),
+                        }}
+                      />
+                      {meta(snapshot.prediction).name}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{text.winner}</dt>
+                <dd>
+                  {winners.length > 0
+                    ? winners.map((id) => meta(id).name).join(" / ")
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="outcome-layout">
+            <div className="result-track">
+              <Chart runtime={runtime} race={replay} label={text.replay} />
+              <p id="replay-label">
+                {text.replay}: {clock((replayTick ?? race.tick) * STEP)}
+              </p>
+              <Slider
+                aria-labelledby="replay-label"
+                min={0}
+                max={Math.max(1, race.tick)}
+                step={3}
+                value={replayTick ?? race.tick}
+                onChange={(_, value) => setReplayTick(value as number)}
+              />
+            </div>
+            <ol className="result-order">
+              {fleetRanking(race).map((boat) => (
+                <li
+                  key={boat.id}
+                  className={
+                    boat.id === snapshot.prediction ? "is-prediction" : undefined
+                  }
+                >
+                  <i
+                    className="boat-dot"
+                    style={{ background: color(meta(boat.id).color) }}
+                  />
+                  <strong>{meta(boat.id).name}</strong>
+                  {boat.id === snapshot.prediction && (
+                    <span className="pick-tag">{text.yourPick}</span>
+                  )}
+                  <small>
+                    {boat.finishTime === null
+                      ? text.dns
+                      : clock(boat.finishTime)}
+                  </small>
+                </li>
+              ))}
+            </ol>
+          </div>
           {canDebrief && (
             <section className="debrief" aria-live="polite">
               {debrief.state === "done" ? (

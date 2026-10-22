@@ -978,3 +978,115 @@ select {
 .debrief small {
   color: #5b6f75;
 }
+
+/* Race result: outcome and finish order first, the track beside them. */
+.result-headline {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #e2eef0;
+}
+.result-headline h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: #102f43;
+}
+.result-hit {
+  background: #fde6db;
+  box-shadow: inset 4px 0 #ef8354;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .result-hit h2 {
+    animation: result-pop 0.6s ease-out;
+  }
+}
+@keyframes result-pop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.result-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+}
+.result-summary dt {
+  font-size: 12px;
+  color: #4b6573;
+}
+.result-summary dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 650;
+  color: #102f43;
+}
+.outcome-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.result-track .track {
+  max-height: 46vh;
+  border-radius: 6px;
+}
+.result-track p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #4b6573;
+}
+.result-order {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: finish;
+}
+.result-order li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-bottom: 1px solid #cedee2;
+  counter-increment: finish;
+  font-size: 14px;
+  color: #102f43;
+}
+.result-order li::before {
+  content: counter(finish);
+  width: 16px;
+  font-size: 12px;
+  color: #4b6573;
+}
+.result-order small {
+  margin-left: auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #4b6573;
+}
+.result-order li.is-prediction {
+  background: #e2eef0;
+  box-shadow: inset 3px 0 #244d61;
+}
+.pick-tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #244d61;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+@media (max-width: 680px) {
+  .outcome-layout {
+    grid-template-columns: 1fr;
+  }
+  .result-track {
+    order: 1;
+  }
+}

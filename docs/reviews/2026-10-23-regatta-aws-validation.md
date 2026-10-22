@@ -37,3 +37,10 @@ CloudFront＋非公開S3、Cognito（Code＋PKCE、scope `regatta/race`）、HTT
 - 振り返りの参照番号は存在確認のみで、文の内容が判断ログと一致するかは自動検証していない（例：各艇の操船の要約）。
 - 16 vCPUの稼働は約$0.99/時。ワーカーは撮影後に0台へ戻す。
 - イメージは計測用スタックのECRに`decider-v2`タグで置いている。計測用スタックを削除するとイメージも消える。
+
+## 撤去（2026-10-23 00:37 JST）
+
+ユーザーの依頼で、撮影後に`SnipeRegattaStack`と`RegattaProbeStack`を削除した。ECRの`fleet-v4-probe`・`decider-v1`・`decider-v2`もリポジトリごと削除。
+CDKのカスタムリソースが自動作成したロググループ3件も削除した。削除後、CloudFront・Cognito・HTTP API・ECS・VPC・DynamoDB・Lambda・Cloud Mapに本件のリソースが残っていないことを確認した。
+CDKの`CDKToolkit`（2026-07からのブートストラップ）は再デプロイに必要なため残している。
+再デプロイ時はベースイメージから`decider-v2`を作り直し、新しいECRへ載せる必要がある（手順は[AWS検証](../../specs/003-regatta-spectator/aws-validation.md)）。

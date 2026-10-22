@@ -315,6 +315,7 @@ function Chart({
 function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
   const host = useRef<HTMLDivElement>(null);
   const [fallback, setFallback] = useState(false);
+  const [chartOpen, setChartOpen] = useState(false);
   const snapshot = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot);
   const { race, wind } = snapshot;
   const boat = race.boats[snapshot.focusIndex];
@@ -421,10 +422,15 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
         </div>
         <small>{Math.round(degrees(wind.direction))}°</small>
       </div>
-      <div className="course-chart">
+      <button
+        type="button"
+        className={`course-chart${chartOpen ? " is-expanded" : ""}`}
+        aria-expanded={chartOpen}
+        onClick={() => setChartOpen((open) => !open)}
+      >
         <span>{text.chart}</span>
         <Chart runtime={runtime} race={race} label={text.chart} />
-      </div>
+      </button>
       <div className="instruments" aria-live="off">
         <div className="time-instrument">
           <span>{text.left}</span>
@@ -868,7 +874,7 @@ export default function ObserverApp() {
           )}
           {snapshot.logs.length === 0 && <p>{text.noDecisions}</p>}
           {snapshot.logs
-            .slice(-5)
+            .slice(-4)
             .reverse()
             .map((log) => (
               <div
@@ -890,7 +896,7 @@ export default function ObserverApp() {
                   </span>
                 </div>
                 <small>
-                  {clock(log.observedTick * STEP)}
+                  <span>{clock(log.observedTick * STEP)}</span>
                   <b className={`source-badge source-${log.source}`}>
                     {log.source === "decider"
                       ? text.real

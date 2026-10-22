@@ -234,7 +234,7 @@ select {
   box-shadow: 0 2px 12px color-mix(in srgb, var(--shadow) 13%, transparent);
 }
 .view-switch button {
-  min-height: 28px;
+  min-height: 36px;
   min-width: 48px;
   font-size: var(--fs-xs);
   padding: 3px 9px;
@@ -333,12 +333,26 @@ select {
   position: absolute;
   right: 24px;
   bottom: 185px;
-  width: 152px;
+  width: 200px;
   padding: 10px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: zoom-in;
   border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: 0 4px 24px color-mix(in srgb, var(--shadow) 16%, transparent);
+}
+/* Expands to the left so it never sits under the decision log (a separate stacking context). */
+.course-chart.is-expanded {
+  right: 240px;
+  width: 360px;
+  cursor: zoom-out;
+}
+.course-chart:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 .course-chart > span {
   display: block;
@@ -1148,4 +1162,50 @@ select {
   margin: 0;
   font-size: var(--fs-md);
   color: var(--ink);
+}
+
+/* Comfortable targets: 44px on phones, 36px for the desktop view switch. */
+.fleet-standing button,
+.prediction-options button {
+  min-height: 44px;
+}
+.observer-app .decision-feed {
+  top: 290px;
+  padding: 10px 13px;
+}
+.observer-app .decision-feed h2 {
+  margin-bottom: 6px;
+}
+.observer-app .wind-dial {
+  top: 150px;
+}
+@media (max-width: 1000px) {
+  .course-chart.is-expanded {
+    right: 208px;
+  }
+}
+@media (max-width: 680px) {
+  .view-switch button {
+    min-height: 44px;
+  }
+}
+.observer-app .decision-feed {
+  width: 230px;
+}
+.observer-app .decision-item {
+  padding: 6px 0;
+}
+.decision-item > small {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 4px;
+  justify-items: end;
+  align-items: center;
+}
+.decision-item > small > span {
+  grid-column: 1 / -1;
+}
+.decision-item > small em {
+  display: inline;
+  margin-top: 0;
 }

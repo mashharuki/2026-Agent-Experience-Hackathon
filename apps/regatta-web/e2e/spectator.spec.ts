@@ -80,7 +80,9 @@ test("closes the end confirmation when the race finishes on its own", async ({
   await page.clock.install();
   await startPreview(page);
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("予想の判定は行われません");
+  await expect(page.getByRole("dialog")).toContainText(
+    "予想の判定は行われません",
+  );
   // The runtime advances at most 250 ms per frame; 3 minutes of race time.
   for (let i = 0; i < 760; i++) await page.clock.fastForward(250);
   await expect(page.getByRole("dialog")).toHaveCount(1);
@@ -88,4 +90,46 @@ test("closes the end confirmation when the race finishes on its own", async ({
   await expect(page.getByRole("dialog")).not.toContainText(
     "予想の判定は行われません",
   );
+});
+
+const minHeight = async (page: Page, selector: string) => {
+  const boxes = await page
+    .locator(selector)
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getBoundingClientRect().height),
+    );
+  expect(boxes.length).toBeGreaterThan(0);
+  return Math.min(...boxes);
+};
+
+test("keeps touch targets large enough on phones", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startPreview(page);
+  expect(await minHeight(page, ".view-switch button")).toBeGreaterThanOrEqual(
+    44,
+  );
+  expect(
+    await minHeight(page, ".fleet-standing button"),
+  ).toBeGreaterThanOrEqual(44);
+});
+
+test("enlarges the course chart without covering the decision log", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await startPreview(page);
+  expect(await minHeight(page, ".view-switch button")).toBeGreaterThanOrEqual(
+    36,
+  );
+  await expect(page.locator(".decision-item").nth(3)).toBeVisible({
+    timeout: 15_000,
+  });
+  const feed = await page.locator(".decision-feed").boundingBox();
+  const chart = page.getByRole("button", { name: "コース図" });
+  const box = await chart.boundingBox();
+  expect(feed && box && feed.y + feed.height <= box.y).toBe(true);
+  expect(box?.width).toBeGreaterThanOrEqual(200);
+  await chart.click();
+  await expect(chart).toHaveAttribute("aria-expanded", "true");
+  expect((await chart.boundingBox())?.width).toBeGreaterThanOrEqual(360);
 });

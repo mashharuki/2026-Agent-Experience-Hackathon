@@ -725,3 +725,223 @@ select {
     transition: none;
   }
 }
+
+/* Spectator mode: prediction before the start, standings and actual choices in play. */
+.observer-app .intro h1 {
+  margin-bottom: 18px;
+}
+.observer-app .field-label {
+  margin-top: 12px;
+}
+.engine-note {
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 8px 0 14px;
+  color: #5a7081;
+}
+.engine-note.decider {
+  color: #286b62;
+}
+.prediction-options {
+  margin: 18px 0 14px;
+  padding: 0;
+  border: 0;
+}
+.prediction-options legend {
+  font-size: 11px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.prediction-options button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: #ffffff94;
+  color: #23465b;
+  border: 1px solid #c9dade;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 6px 0;
+  cursor: pointer;
+}
+.prediction-options button[aria-pressed="true"] {
+  border-color: #365e70;
+  background: #e2eef0;
+  box-shadow: inset 3px 0 #365e70;
+}
+.prediction-options strong {
+  display: block;
+  font-size: 13px;
+}
+.prediction-options small {
+  display: block;
+  font-size: 9px;
+  color: #5b7683;
+  margin-top: 3px;
+}
+.pick-check {
+  margin-left: auto;
+  color: #416e7b;
+  font-size: 16px;
+}
+.boat-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 5px;
+}
+.locked-prediction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  font-size: 11px;
+}
+.locked-prediction strong {
+  font-size: 17px;
+}
+.fleet-standing {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #cedee2;
+}
+.fleet-standing h2,
+.decision-feed h2 {
+  font-size: 11px;
+  margin: 0 0 10px;
+  font-weight: 650;
+}
+.fleet-standing button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 5px;
+  color: #365669;
+  border: 0;
+  border-bottom: 1px solid #d6e3e3;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.fleet-standing button[aria-pressed="true"] {
+  background: #dfecee;
+}
+.fleet-standing button > span {
+  font-size: 10px;
+  width: 12px;
+}
+.fleet-standing strong {
+  font-size: 12px;
+}
+.fleet-standing small {
+  margin-left: auto;
+  font-size: 10px;
+}
+.fleet-standing p {
+  margin-bottom: 0;
+  font-size: 9px;
+  line-height: 1.7;
+  color: #627c88;
+}
+.observer-app button:focus-visible {
+  outline: 3px solid #de9e3b;
+  outline-offset: 2px;
+}
+.decision-feed {
+  position: absolute;
+  right: 24px;
+  top: 326px;
+  z-index: 3;
+  width: 198px;
+  padding: 13px;
+  background: #f5faf8eb;
+  border: 1px solid #e6f1f0c7;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+}
+.decision-feed > p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #597584;
+}
+.decision-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid #d3e1e4;
+}
+.decision-item > div {
+  min-width: 0;
+}
+.decision-item strong {
+  display: block;
+  font-size: 11px;
+  color: #294c60;
+}
+.decision-item div > span {
+  display: block;
+  font-size: 9px;
+  margin-top: 3px;
+  color: #416475;
+}
+.decision-item > small {
+  margin-left: auto;
+  font-size: 9px;
+  text-align: right;
+  color: #69828c;
+}
+.decision-item b {
+  display: block;
+  font-size: 8px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.pending-decision {
+  color: #32776f;
+}
+.instruments .engine-value {
+  font-size: 14px;
+  margin-top: 5px;
+}
+.model-error {
+  position: absolute;
+  z-index: 6;
+  left: var(--rail);
+  right: 24px;
+  top: 242px;
+  font-size: 11px;
+}
+@media (max-width: 1000px) {
+  .decision-feed {
+    width: 168px;
+  }
+  .decision-feed .decision-item:nth-of-type(n + 4) {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .decision-feed {
+    position: relative;
+    inset: auto;
+    width: auto;
+    margin: 0 16px 16px;
+  }
+  .model-error {
+    position: relative;
+    inset: auto;
+    margin: 16px;
+  }
+  .observer-app .wordmark span {
+    max-width: 145px;
+    font-size: 8px;
+  }
+  .instruments .engine-value {
+    font-size: 14px;
+  }
+}

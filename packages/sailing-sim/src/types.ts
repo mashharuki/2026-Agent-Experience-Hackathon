@@ -10,7 +10,8 @@ export type Control = {
   maneuver?: "tack" | "jibe";
 };
 export type Boat = Vec & {
-  id: "player" | "rival";
+  id: string;
+  color?: number;
   heading: number;
   speed: number;
   mainSheet: number;
@@ -40,7 +41,7 @@ export type Race = {
   withOpponent: boolean;
   tick: number;
   status: RaceStatus;
-  boats: [Boat, Boat];
+  boats: Boat[];
   contacts: number;
   lastContactTick: number;
 };

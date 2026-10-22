@@ -16,6 +16,15 @@ export type TrailPoint = {
   heading: number;
   speed: number;
 };
+export type SceneRuntime = {
+  race: Race;
+  trails: TrailPoint[][];
+  view: "follow" | "helm" | "overview";
+  quality: "high" | "economy";
+  focusIndex?: number;
+  advance(milliseconds: number): void;
+  pause(): void;
+};
 export type Recording = {
   version: "practice-replay-v1";
   physicsVersion: typeof PHYSICS_VERSION;

@@ -1,0 +1,822 @@
+{
+  "version": "fleet-replay-v1",
+  "physicsVersion": "sailing-v2",
+  "windVersion": "wind-v2",
+  "seed": 12,
+  "scenario": "dynamic",
+  "prediction": "zephyr",
+  "endTick": 5400,
+  "outcome": "timed_out",
+  "decisions": [
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 0,
+      "appliedTick": 31,
+      "status": "applied",
+      "latencyMs": 1018.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 60,
+      "appliedTick": 91,
+      "status": "applied",
+      "latencyMs": 1032.8000000002794
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 120,
+      "appliedTick": 153,
+      "status": "applied",
+      "latencyMs": 1088.7999999998137
+    },
+    {
+      "boatId": "jade",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 180,
+      "appliedTick": 213,
+      "status": "applied",
+      "latencyMs": 1083.2000000001863
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 240,
+      "appliedTick": 274,
+      "status": "applied",
+      "latencyMs": 1104.4000000003725
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 300,
+      "appliedTick": 334,
+      "status": "applied",
+      "latencyMs": 1098.8000000002794
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 360,
+      "appliedTick": 393,
+      "status": "applied",
+      "latencyMs": 1083.1000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 420,
+      "appliedTick": 452,
+      "status": "applied",
+      "latencyMs": 1045.3999999999069
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 480,
+      "appliedTick": 512,
+      "status": "applied",
+      "latencyMs": 1036.3999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_1",
+      "source": "decider",
+      "observedTick": 540,
+      "appliedTick": 569,
+      "status": "applied",
+      "latencyMs": 965
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 600,
+      "appliedTick": 629,
+      "status": "applied",
+      "latencyMs": 961.7000000001863
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_1",
+      "source": "decider",
+      "observedTick": 660,
+      "appliedTick": 690,
+      "status": "applied",
+      "latencyMs": 977.3999999999069
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 720,
+      "appliedTick": 753,
+      "status": "applied",
+      "latencyMs": 1078.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 780,
+      "appliedTick": 816,
+      "status": "applied",
+      "latencyMs": 1182.8999999999069
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 840,
+      "appliedTick": 873,
+      "status": "applied",
+      "latencyMs": 1077.8999999999069
+    },
+    {
+      "boatId": "jade",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 900,
+      "appliedTick": 935,
+      "status": "applied",
+      "latencyMs": 1136
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 960,
+      "appliedTick": 994,
+      "status": "applied",
+      "latencyMs": 1127.8000000002794
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1020,
+      "appliedTick": 1050,
+      "status": "applied",
+      "latencyMs": 980.5
+    },
+    {
+      "boatId": "coral",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1080,
+      "appliedTick": 1111,
+      "status": "applied",
+      "latencyMs": 1006.2000000001863
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1140,
+      "appliedTick": 1169,
+      "status": "applied",
+      "latencyMs": 960.5
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1200,
+      "appliedTick": 1231,
+      "status": "applied",
+      "latencyMs": 1018.4000000003725
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1260,
+      "appliedTick": 1290,
+      "status": "applied",
+      "latencyMs": 993.1000000000931
+    },
+    {
+      "boatId": "coral",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1320,
+      "appliedTick": 1361,
+      "status": "applied",
+      "latencyMs": 1340.1000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_2",
+      "source": "decider",
+      "observedTick": 1380,
+      "appliedTick": 1417,
+      "status": "applied",
+      "latencyMs": 1205.8999999999069
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1440,
+      "appliedTick": 1474,
+      "status": "applied",
+      "latencyMs": 1125.2000000001863
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1500,
+      "appliedTick": 1534,
+      "status": "applied",
+      "latencyMs": 1103.7999999998137
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1560,
+      "appliedTick": 1595,
+      "status": "applied",
+      "latencyMs": 1162.1000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_3",
+      "source": "decider",
+      "observedTick": 1620,
+      "appliedTick": 1654,
+      "status": "applied",
+      "latencyMs": 1111.6999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1680,
+      "appliedTick": 1712,
+      "status": "applied",
+      "latencyMs": 1046.2000000001863
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_3",
+      "source": "decider",
+      "observedTick": 1740,
+      "appliedTick": 1770,
+      "status": "applied",
+      "latencyMs": 979.6999999997206
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1800,
+      "appliedTick": 1830,
+      "status": "applied",
+      "latencyMs": 980.9000000003725
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_3",
+      "source": "decider",
+      "observedTick": 1860,
+      "appliedTick": 1892,
+      "status": "applied",
+      "latencyMs": 1056.1999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1920,
+      "appliedTick": 1953,
+      "status": "applied",
+      "latencyMs": 1084.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 1980,
+      "appliedTick": 2014,
+      "status": "applied",
+      "latencyMs": 1101.2000000001863
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2040,
+      "appliedTick": 2074,
+      "status": "applied",
+      "latencyMs": 1132.7999999998137
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_3",
+      "source": "decider",
+      "observedTick": 2100,
+      "appliedTick": 2136,
+      "status": "applied",
+      "latencyMs": 1182.6999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2160,
+      "appliedTick": 2193,
+      "status": "applied",
+      "latencyMs": 1082.2000000001863
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_4",
+      "source": "decider",
+      "observedTick": 2220,
+      "appliedTick": 2251,
+      "status": "applied",
+      "latencyMs": 1022.5
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2280,
+      "appliedTick": 2309,
+      "status": "applied",
+      "latencyMs": 959.9000000003725
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_4",
+      "source": "decider",
+      "observedTick": 2340,
+      "appliedTick": 2370,
+      "status": "applied",
+      "latencyMs": 984.1999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2400,
+      "appliedTick": 2430,
+      "status": "applied",
+      "latencyMs": 985.2999999998137
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2460,
+      "appliedTick": 2492,
+      "status": "applied",
+      "latencyMs": 1046.2000000001863
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2520,
+      "appliedTick": 2553,
+      "status": "applied",
+      "latencyMs": 1082.0999999996275
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_4",
+      "source": "decider",
+      "observedTick": 2580,
+      "appliedTick": 2614,
+      "status": "applied",
+      "latencyMs": 1105.5
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2640,
+      "appliedTick": 2674,
+      "status": "applied",
+      "latencyMs": 1125.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2700,
+      "appliedTick": 2733,
+      "status": "applied",
+      "latencyMs": 1089.6000000000931
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2760,
+      "appliedTick": 2793,
+      "status": "applied",
+      "latencyMs": 1099.3000000002794
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_5",
+      "source": "decider",
+      "observedTick": 2820,
+      "appliedTick": 2854,
+      "status": "applied",
+      "latencyMs": 1100.6999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2880,
+      "appliedTick": 2910,
+      "status": "applied",
+      "latencyMs": 985.6999999997206
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 2940,
+      "appliedTick": 2969,
+      "status": "applied",
+      "latencyMs": 959.6000000000931
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3000,
+      "appliedTick": 3030,
+      "status": "applied",
+      "latencyMs": 986.3999999999069
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_5",
+      "source": "decider",
+      "observedTick": 3060,
+      "appliedTick": 3092,
+      "status": "applied",
+      "latencyMs": 1047.2999999998137
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3120,
+      "appliedTick": 3153,
+      "status": "applied",
+      "latencyMs": 1085.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_5",
+      "source": "decider",
+      "observedTick": 3180,
+      "appliedTick": 3213,
+      "status": "applied",
+      "latencyMs": 1097.3999999999069
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3240,
+      "appliedTick": 3273,
+      "status": "applied",
+      "latencyMs": 1091.7999999998137
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_5",
+      "source": "decider",
+      "observedTick": 3300,
+      "appliedTick": 3334,
+      "status": "applied",
+      "latencyMs": 1104.1999999997206
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3360,
+      "appliedTick": 3393,
+      "status": "applied",
+      "latencyMs": 1088.1999999997206
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_6",
+      "source": "decider",
+      "observedTick": 3420,
+      "appliedTick": 3452,
+      "status": "applied",
+      "latencyMs": 1044.2999999998137
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3480,
+      "appliedTick": 3510,
+      "status": "applied",
+      "latencyMs": 994.3999999999069
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_6",
+      "source": "decider",
+      "observedTick": 3540,
+      "appliedTick": 3572,
+      "status": "applied",
+      "latencyMs": 1048.6000000000931
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3600,
+      "appliedTick": 3631,
+      "status": "applied",
+      "latencyMs": 1028
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3660,
+      "appliedTick": 3692,
+      "status": "applied",
+      "latencyMs": 1065.8999999999069
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3720,
+      "appliedTick": 3755,
+      "status": "applied",
+      "latencyMs": 1156.5999999996275
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_6",
+      "source": "decider",
+      "observedTick": 3780,
+      "appliedTick": 3814,
+      "status": "applied",
+      "latencyMs": 1112.6000000000931
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3840,
+      "appliedTick": 3872,
+      "status": "applied",
+      "latencyMs": 1064.1000000000931
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3900,
+      "appliedTick": 3933,
+      "status": "applied",
+      "latencyMs": 1085.7999999998137
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 3960,
+      "appliedTick": 3994,
+      "status": "applied",
+      "latencyMs": 1113.6000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_7",
+      "source": "decider",
+      "observedTick": 4020,
+      "appliedTick": 4054,
+      "status": "applied",
+      "latencyMs": 1112.7000000001863
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4080,
+      "appliedTick": 4110,
+      "status": "applied",
+      "latencyMs": 986.4000000003725
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4140,
+      "appliedTick": 4170,
+      "status": "applied",
+      "latencyMs": 991.8999999999069
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4200,
+      "appliedTick": 4230,
+      "status": "applied",
+      "latencyMs": 981.6000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_7",
+      "source": "decider",
+      "observedTick": 4260,
+      "appliedTick": 4293,
+      "status": "applied",
+      "latencyMs": 1095.2999999998137
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4320,
+      "appliedTick": 4353,
+      "status": "applied",
+      "latencyMs": 1079.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_7",
+      "source": "decider",
+      "observedTick": 4380,
+      "appliedTick": 4414,
+      "status": "applied",
+      "latencyMs": 1097.1000000000931
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4440,
+      "appliedTick": 4473,
+      "status": "applied",
+      "latencyMs": 1087.1999999997206
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_7",
+      "source": "decider",
+      "observedTick": 4500,
+      "appliedTick": 4537,
+      "status": "applied",
+      "latencyMs": 1223.1000000000931
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4560,
+      "appliedTick": 4595,
+      "status": "applied",
+      "latencyMs": 1142.8999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_8",
+      "source": "decider",
+      "observedTick": 4620,
+      "appliedTick": 4652,
+      "status": "applied",
+      "latencyMs": 1054.8999999999069
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4680,
+      "appliedTick": 4711,
+      "status": "applied",
+      "latencyMs": 1026.8999999999069
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_8",
+      "source": "decider",
+      "observedTick": 4740,
+      "appliedTick": 4772,
+      "status": "applied",
+      "latencyMs": 1049.5
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4800,
+      "appliedTick": 4829,
+      "status": "applied",
+      "latencyMs": 966.1999999997206
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_8",
+      "source": "decider",
+      "observedTick": 4860,
+      "appliedTick": 4892,
+      "status": "applied",
+      "latencyMs": 1064
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 4920,
+      "appliedTick": 4953,
+      "status": "applied",
+      "latencyMs": 1088.6000000000931
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_8",
+      "source": "decider",
+      "observedTick": 4980,
+      "appliedTick": 5017,
+      "status": "applied",
+      "latencyMs": 1208.3999999999069
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 5040,
+      "appliedTick": 5073,
+      "status": "applied",
+      "latencyMs": 1091.1000000000931
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 5100,
+      "appliedTick": 5135,
+      "status": "applied",
+      "latencyMs": 1161.1000000000931
+    },
+    {
+      "boatId": "coral",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 5160,
+      "appliedTick": 5193,
+      "status": "applied",
+      "latencyMs": 1090.7999999998137
+    },
+    {
+      "boatId": "jade",
+      "selected": "seek_visible_pressure_gust_9",
+      "source": "decider",
+      "observedTick": 5220,
+      "appliedTick": 5252,
+      "status": "applied",
+      "latencyMs": 1066
+    },
+    {
+      "boatId": "aurora",
+      "selected": "tack_now",
+      "source": "decider",
+      "observedTick": 5280,
+      "appliedTick": 5310,
+      "status": "applied",
+      "latencyMs": 982.3999999999069
+    },
+    {
+      "boatId": "zephyr",
+      "selected": "seek_visible_pressure_gust_9",
+      "source": "decider",
+      "observedTick": 5340,
+      "appliedTick": 5372,
+      "status": "applied",
+      "latencyMs": 1038.5
+    }
+  ]
+}

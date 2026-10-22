@@ -74,7 +74,9 @@ def verify_cache(hub: Path) -> tuple[Path, dict]:
         raise CacheError("local_cache_invalid") from exc
 
 
-def load_local(hub: Path, threads: int, seed: int):
+def load_local(hub: Path, threads: int, seed: int, device: str = "cpu"):
+    if device not in {"cpu", "mps"}:
+        raise CacheError("unsupported_local_device")
     from .offline import configure_offline
 
     configure_offline()
@@ -92,4 +94,4 @@ def load_local(hub: Path, threads: int, seed: int):
     torch.manual_seed(seed)
     torch.set_num_threads(threads)
     torch.set_num_interop_threads(1)
-    return load_engine(str(checkpoint), device="cpu", use_prefix_cache=False), identity
+    return load_engine(str(checkpoint), device=device, use_prefix_cache=False), identity

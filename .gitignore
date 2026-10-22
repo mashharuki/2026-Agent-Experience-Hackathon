@@ -32,3 +32,5 @@ apps/api/build/
 **/test-results/
 **/.env.*
 !**/.env.example
+# Local-only model bridge credentials and experiment outputs.
+.local/

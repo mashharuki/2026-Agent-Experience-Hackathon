@@ -1,6 +1,12 @@
-# 撮る前のひと手間
+# Snipe AI Regatta
 
-> **製品転換（2026-10-21）**：以下は再利用のため保持した旧版です。専用AWS環境と保持されていたユーザー・データは削除済み。現行企画は、人間がスキッパーとしてAIと競うスナイプ級ヨットレースです。[設計書](specs/002-snipe-ai-regatta/plan.md)・[機能仕様](specs/002-snipe-ai-regatta/spec.md)・[削除記録](docs/reviews/2026-10-21-aws-teardown.md)を参照してください。ゲームは未実装・未デプロイで、旧URLとアカウントは使用できません。
+変化する海面で走る4艇から勝者を予想し、各艇の戦術を観戦するスナイプ級ヨットゲーム。ローカルの実Strands Deciderと、明示されたルールのプレビューを区別します。予想はスタート時に固定し、観戦中は追従艇と視点を切り替えます。
+
+[現行仕様](specs/003-regatta-spectator/spec.md)・[設計](specs/003-regatta-spectator/plan.md)・[ローカル起動](specs/003-regatta-spectator/quickstart.md)
+
+新AWS環境・Bedrockの振り返りは未接続。ローカルの速度検証とヨット戦術の品質を区別します。旧写真支援のAWS環境は削除済みで、以下のコード・説明は履歴として保持します。
+
+## 旧写真支援アプリの履歴
 
 <p align="center"><img src="docs/brand/logo-lockup.svg" alt="撮る前のひと手間" width="520"></p>
 

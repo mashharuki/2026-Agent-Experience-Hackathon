@@ -1,131 +1,60 @@
-# Feature Specification: [FEATURE NAME]
+# Feature Specification: Snipe AI Regatta — 勝者を読む観戦ゲーム
 
-**Feature Branch**: `[###-feature-name]`
+**Created**: 2026-10-22
+**Status**: 実装中。実モデル接続・品質・遅延の証拠は検証結果で区別する。
+**Input**: ユーザーは操船せず、複数のAI艇から勝者を予想する。各艇が変化する海面・風向・風速を読み、Strands Deciderでタックやジャイブを判断する。本人の回答によりリアルタイム優先とし、判断中も全艇と海面を動かし遅延応答を破棄する。
 
-**Created**: [DATE]
+## User Scenarios & Testing
 
-**Status**: Draft
+### User Story 1 — 予想して観戦する (P1)
 
-**Input**: User description: "$ARGUMENTS"
+4艇の戦術方針と現在の海面を見て、勝つと思う艇を1艇選び出走する。操船操作は行わず、艇を選んで追従・艇上・俯瞰を切り替える。
+**Why**: 予想という参加の理由と、海を読む面白さを残す。
+**Independent Test**: 予想なしでは出走不可、出走後は予想を変えられず、4艇が同時に走る。
+**Acceptance**: 一時停止で全艇・海面が止まり、復帰で早送りしない。途中終了できる。
 
-## User Scenarios & Testing *(mandatory)*
+### User Story 2 — 各艇の判断を観察する (P1)
 
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
+各艇が同じ性能・観測可能な情報を使い、実Deciderで戦術を選ぶ。判断ログの出所・適用と破棄を区別する。
+**Why**: モデル選択が現実の航路差へつながることが製品の核。
+**Independent Test**: 異なる選択を適用すると航路が分かれる。模型的なルールのプレビューを実モデルと表示しない。
+**Acceptance**: 候補外・期限切れ・旧epoch・終了後の返答は不採用。判断中もレースを止めない。
 
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
+### User Story 3 — 答え合わせと再生 (P2)
 
-### User Story 1 - [Brief Title] (Priority: P1)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-### User Story 2 - [Brief Title] (Priority: P2)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-### User Story 3 - [Brief Title] (Priority: P3)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-[Add more user stories as needed, each with an assigned priority]
+実際のフィニッシュ順で予想の結果を見る。判断と航跡を記録から再生する。
+**Independent Test**: 再生は推論を呼ばず、同じ記録から同じ艇の状態を再現する。
+**Acceptance**: 同着は該当艇すべてを勝者とし、未完走・中断だけのレースでは予想の正誤を判定しない。
 
 ### Edge Cases
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
+遅い推論、推論失敗、全艇未完走、同着、順不同の返答、pause中の返答、再戦後の旧返答、通信断、境界・接触、先頭艇の完走と他艇の継続。
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+## Requirements
 
-## Requirements *(mandatory)*
+- **FR-001**: 基本4艇、予想1艇をスタート前に固定。ユーザーの舵・帆操作は主画面からなくす。
+- **FR-002**: 海面は時間で変化し、同じ地点・時刻なら全艇が同じ風を受ける。艇の性能は揃え、開始位置と戦術方針の差を説明する。
+- **FR-003**: 艇ごとに実Deciderで合法な戦術を選択し、通常の舵で連続的に実行する。安全制御・ルール・実モデルを別の出所として記録する。
+- **FR-004**: 将来の風・生成seed・ユーザーの予想を戦術観測へ入れない。モデルのconfidenceを勝率と表示しない。
+- **FR-005**: リアルタイム進行を維持。遅延返答は適用せず、連続した期限超過は不成立として停止し、ルールで実モデルの完走を偽装しない。
+- **FR-006**: 暫定順位と実フィニッシュ順を区別する。未完走・中断時に暫定1位を勝者としない。
+- **FR-007**: 追従艇と視点・画質の切替は予想・艇の性能へ影響しない。採用済みの海上描画・タック速度を維持。
+- **FR-008**: 記録は入力と適用判断・版を含み、再生時にモデルを再実行しない。
+- **FR-009**: AWS公開はCognito・所有権・上限・残予算の検証後。Bedrockの振り返り、公式提出物は引き続き必須。
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
+### Key Entities
 
-### Functional Requirements
+FleetRace、Boat、Prediction、TacticPlan、CurrentObservation、DecisionRecord、ReplayRecord。
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+## Success Criteria
 
-*Example of marking unclear requirements:*
-
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-### Key Entities *(include if feature involves data)*
-
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
-
-## Success Criteria *(mandatory)*
-
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
-
-### Measurable Outcomes
-
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+- 4艇から1艇を選ぶ→観戦→実際の結果と予想を確認できる。
+- 実モデルの選択と航路への適用を4艇それぞれで記録できる。精度は別途評価する。
+- 候補外・遅延・中断後の適用0、予想の後出し変更0、再生のモデル呼び出し0。
+- 100判断の遅延p50/p95と失効率を測定し、リアルタイム適性を報告する。
+- 本人が「どの艇が勝つか迷う」「戦術で形勢が変わる」「もう一度予想したい」を場面つきで評価する。
 
 ## Assumptions
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right assumptions based on reasonable defaults
-  chosen when the feature description did not specify certain details.
--->
-
-- [Assumption about target users, e.g., "Users have stable internet connectivity"]
-- [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
-- [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
-- [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
+4艇・180シミュレーション秒を初期値とする。予想は成績の表示のみ。初版では公開ランキングを設けない。
+個性は戦術方針であり、艇速を変えて勝敗を演出しない。ローカルのプレビューと実Deciderを分ける。

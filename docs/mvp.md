@@ -1,6 +1,6 @@
 # 撮る前のひと手間：最小版の仕様案
 
-> **旧企画の履歴**。2026-10-21にスナイプ級の人間対AIヨットレースへ転換した。現行の [機能仕様](../specs/002-snipe-ai-regatta/spec.md)・[設計書](../specs/002-snipe-ai-regatta/plan.md) を参照。以下は旧版の資料として保持する。
+> **旧企画の履歴**。2026-10-22の現行企画は、4艇のAIレースで勝者を予想・観戦するスナイプ級ゲーム。現行の [機能仕様](../specs/003-regatta-spectator/spec.md)・[設計書](../specs/003-regatta-spectator/plan.md) を参照。以下は旧版の資料として保持する。
 
 2026-10-17。方向性はユーザーが採用済み。以下の画面・対象範囲・技術分担は、その方向を実装可能な形にする提案であり、すべてを個別にユーザー確認したわけではない。本書は初期案の履歴。現行の実装範囲は [機能仕様](../specs/001-pre-photo-grooming-assist/spec.md)、[技術一覧](tech-stack.md)、[検証記録](reviews/2026-10-19-remediation-validation.md) を参照。
 

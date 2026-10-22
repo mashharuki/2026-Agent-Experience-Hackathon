@@ -1,0 +1,300 @@
+openapi: 3.1.0
+info:
+  title: Local fleet Decider experiment (draft)
+  version: 0.2.0
+  description: Local experiment only. Cloud contract and generated middleware pending.
+servers:
+- url: http://127.0.0.1:8766
+security:
+- LocalToken: []
+paths:
+  /health:
+    get:
+      responses:
+        '200':
+          description: Readiness, device and call count; no inference.
+        '403':
+          description: Missing/wrong local token or origin.
+  /decide:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+      responses:
+        '200':
+          description: Validated choice, scores and request identity.
+        '400':
+          description: Invalid or expired request.
+        '403':
+          description: Forbidden.
+        '410':
+          description: Expired during inference; result discarded.
+        '413':
+          description: Body over 16KiB.
+        '415':
+          description: Requires application/json.
+        '429':
+          description: Busy (no queue) or process call cap.
+        '500':
+          description: Inference failed.
+        '503':
+          description: Not ready.
+components:
+  securitySchemes:
+    LocalToken:
+      type: apiKey
+      in: header
+      name: X-Regatta-Local-Token
+  schemas:
+    BoatView:
+      additionalProperties: false
+      properties:
+        x:
+          maximum: 170
+          minimum: -170
+          title: X
+          type: number
+        y:
+          maximum: 250
+          minimum: -100
+          title: Y
+          type: number
+        id:
+          enum:
+          - aurora
+          - zephyr
+          - coral
+          - jade
+          title: Id
+          type: string
+        headingDeg:
+          exclusiveMaximum: 360
+          minimum: 0
+          title: Headingdeg
+          type: number
+        speedMps:
+          maximum: 8
+          minimum: 0
+          title: Speedmps
+          type: number
+        tackSide:
+          enum:
+          - -1
+          - 1
+          title: Tackside
+          type: integer
+        leg:
+          enum:
+          - upwind
+          - downwind
+          - finished
+          title: Leg
+          type: string
+        markPhase:
+          maximum: 3
+          minimum: 0
+          title: Markphase
+          type: integer
+      required:
+      - x
+      - y
+      - id
+      - headingDeg
+      - speedMps
+      - tackSide
+      - leg
+      - markPhase
+      title: BoatView
+      type: object
+    Observation:
+      additionalProperties: false
+      properties:
+        version:
+          const: fleet-observation-v2
+          title: Version
+          type: string
+        simulationTick:
+          maximum: 5400
+          minimum: 0
+          title: Simulationtick
+          type: integer
+        boat:
+          $ref: '#/components/schemas/BoatView'
+        others:
+          items:
+            $ref: '#/components/schemas/BoatView'
+          maxItems: 3
+          minItems: 3
+          title: Others
+          type: array
+        wind:
+          $ref: '#/components/schemas/Wind'
+        pressure:
+          items:
+            $ref: '#/components/schemas/Pressure'
+          maxItems: 3
+          title: Pressure
+          type: array
+        mark:
+          $ref: '#/components/schemas/Position'
+        profile:
+          enum:
+          - balanced
+          - pressure
+          - windward
+          - opportunist
+          title: Profile
+          type: string
+        currentPlan:
+          $ref: '#/components/schemas/Plan'
+      required:
+      - version
+      - simulationTick
+      - boat
+      - others
+      - wind
+      - pressure
+      - mark
+      - profile
+      - currentPlan
+      title: Observation
+      type: object
+    Plan:
+      additionalProperties: false
+      properties:
+        mode:
+          enum:
+          - angle
+          - pressure
+          - mark
+          - finish
+          title: Mode
+          type: string
+        relativeWindDeg:
+          maximum: 180
+          minimum: -180
+          title: Relativewinddeg
+          type: number
+        target:
+          anyOf:
+          - $ref: '#/components/schemas/Position'
+          - type: 'null'
+      required:
+      - mode
+      - relativeWindDeg
+      - target
+      title: Plan
+      type: object
+    Position:
+      additionalProperties: false
+      properties:
+        x:
+          maximum: 170
+          minimum: -170
+          title: X
+          type: number
+        y:
+          maximum: 250
+          minimum: -100
+          title: Y
+          type: number
+      required:
+      - x
+      - y
+      title: Position
+      type: object
+    Pressure:
+      additionalProperties: false
+      properties:
+        x:
+          maximum: 170
+          minimum: -170
+          title: X
+          type: number
+        y:
+          maximum: 250
+          minimum: -100
+          title: Y
+          type: number
+        id:
+          pattern: ^(patch_[01]|gust_([0-9]|1[0-2]))$
+          title: Id
+          type: string
+        radius:
+          exclusiveMinimum: 0
+          maximum: 40
+          title: Radius
+          type: number
+        extraSpeed:
+          maximum: 3
+          minimum: 0
+          title: Extraspeed
+          type: number
+      required:
+      - x
+      - y
+      - id
+      - radius
+      - extraSpeed
+      title: Pressure
+      type: object
+    Wind:
+      additionalProperties: false
+      properties:
+        directionDeg:
+          exclusiveMaximum: 360
+          minimum: 0
+          title: Directiondeg
+          type: number
+        speedMps:
+          maximum: 20
+          minimum: 0
+          title: Speedmps
+          type: number
+      required:
+      - directionDeg
+      - speedMps
+      title: Wind
+      type: object
+    Request:
+      additionalProperties: false
+      properties:
+        raceId:
+          pattern: ^[a-zA-Z0-9_-]{1,64}$
+          title: Raceid
+          type: string
+        epoch:
+          maximum: 10000
+          minimum: 0
+          title: Epoch
+          type: integer
+        seq:
+          maximum: 1000
+          minimum: 0
+          title: Seq
+          type: integer
+        boatId:
+          enum:
+          - aurora
+          - zephyr
+          - coral
+          - jade
+          title: Boatid
+          type: string
+        expiresAt:
+          title: Expiresat
+          type: number
+        observation:
+          $ref: '#/components/schemas/Observation'
+      required:
+      - raceId
+      - epoch
+      - seq
+      - boatId
+      - expiresAt
+      - observation
+      title: Request
+      type: object

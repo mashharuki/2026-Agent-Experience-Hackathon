@@ -1,6 +1,12 @@
-# A little prep before the photo (撮る前のひと手間)
+# Snipe AI Regatta
 
-> **Product pivot — 2026-10-21:** The photo assistant below is preserved legacy code. Its dedicated AWS resources and retained user/data stores have been deleted. The current product is a human-versus-AI Snipe dinghy race; [design and implementation plan](specs/002-snipe-ai-regatta/plan.md), [requirements](specs/002-snipe-ai-regatta/spec.md), [teardown record](docs/reviews/2026-10-21-aws-teardown.md). The game is not implemented or deployed yet. Old deployment URLs and accounts no longer work.
+Predict the winner, then watch four Snipe dinghies choose tactics on a changing sea. The local app supports real Strands Decider and an explicitly labelled rule-based preview. Select a boat to follow; your prediction is locked at the start.
+
+[Current requirements](specs/003-regatta-spectator/spec.md) · [Implementation plan](specs/003-regatta-spectator/plan.md) · [Run locally](specs/003-regatta-spectator/quickstart.md)
+
+New AWS services and Bedrock debriefs are pending. Local model latency is not AWS performance or a guarantee of sailing skill. The previous photo-assistant AWS deployment was deleted; its code and evidence remain below.
+
+## Legacy photo-assistant archive
 
 <p align="center"><img src="docs/brand/logo-lockup.svg" alt="A little prep before the photo (撮る前のひと手間)" width="520"></p>
 

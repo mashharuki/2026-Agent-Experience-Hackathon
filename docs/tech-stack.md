@@ -1,12 +1,14 @@
 # 技術スタック一覧
 
-> **現行企画はSnipe AI Regatta（ローカル練習を実装・評価中）**。新設計の採用・再利用候補は [002/plan.mdのTechnical Context](../specs/002-snipe-ai-regatta/plan.md#technical-context)を正本とする。旧AWS環境は2026-10-21に削除済み。新API・実モデル対戦は未接続であり、旧モデル評価をゲームの品質の証拠にしない。
+> **現行企画はSnipe AI Regatta（4艇の予想・観戦とローカル実Deciderを実装・評価中）**。新設計の採用・再利用候補は [002/plan.mdのTechnical Context](../specs/003-regatta-spectator/plan.md#technical-context)を正本とする。旧AWS環境は2026-10-21に削除済み。新クラウドAPI・Bedrockは未接続であり、旧モデル評価をゲームの品質の証拠にしない。
 
 ## 新ゲームの実装状況（2026-10-22）
 
+ローカル推論は固定revisionのStrands Decider 2B（0.1.0）を再利用。Mac MPSはローカル検証用で、AWSのCPU遅延・ヨット戦術品質の証拠にはしない。`apps/regatta-worker/`は実験用のloopback接続であり、公開契約・Cognito・Connexion/Orvalは別工程。
+
 | 領域 | 導入済みの構成 | 状態 |
 | --- | --- | --- |
-| ローカル画面 | React 19 / Vite 8 / MUI / TypeScript、`apps/regatta-web/` | 操船・日英表示・固定ルール艇・記録再生 |
+| ローカル画面 | React 19 / Vite 8 / MUI / TypeScript、`apps/regatta-web/` | 勝者予想・日英表示・4艇・追従・判断ログ・記録再生（旧操船画面は保持） |
 | 海面と艇 | Three.js 0.180.0、命令型描画 | 独自の水面・空shader、曲面の帆・索具、ヒール・引き波、追従／艇上／俯瞰、DPRによる軽量設定 |
 | 帆走と風 | 純粋TypeScript、`packages/sailing-sim/`、30Hz | `sailing-v2` / `wind-v2`。20秒周期の変化する海面を追加 |
 | 検証 | Vitest / TypeScript / Biome / Oxlint | 操船・現在の風と候補・停止・同じ版での再生を検証 |

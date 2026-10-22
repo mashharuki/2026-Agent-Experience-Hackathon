@@ -2,9 +2,10 @@
 
 ## Project Structure & Module Organization
 
-The current product is a human-versus-AI Snipe dinghy game, specified in `specs/002-snipe-ai-regatta/`. Local practice is implemented; real-model racing and the new cloud services are pending. Existing photo-assistant code remains reusable legacy code; its AWS deployment was deleted on 2026-10-21.
+The current product is a Snipe race prediction and AI spectator game, specified in `specs/003-regatta-spectator/`. Four boats and local real-Decider experiments are implemented; cloud services, Bedrock debriefs and model-quality evaluation remain pending. Existing photo-assistant code remains reusable legacy code; its AWS deployment was deleted on 2026-10-21.
 
-- `apps/regatta-web/`: React/MUI/Three.js local practice and replay; the opponent currently uses explicit fixed rules.
+- `apps/regatta-web/`: React/MUI/Three.js prediction, four-boat observation and replay. Explicitly distinguish real local Decider from rule-based preview.
+- `apps/regatta-worker/`: loopback-only real-model experiment and latency checks using the existing worker environment. Never publish this bridge as a cloud API.
 - `packages/sailing-sim/`: deterministic 30Hz physics, seeded wind, evolving gusts, tactics and Vitest tests. Keep weather on simulation time and record physics/wind versions.
 
 - `apps/frontend/`: React/Vite SPA, MUI screens, TanStack Query, bilingual UI, mock API and PWA.
@@ -23,7 +24,7 @@ Follow `.specify/memory/constitution.md` and `.agents/skills/speckit-*/`. Read `
 Use `pnpm@10.32.1`, Python 3.12 and uv.
 
 - `pnpm install --frozen-lockfile`: install JavaScript dependencies.
-- `pnpm --filter regatta-web dev` / `build` / `test`: run the sailing practice on port 5174, build it or test its runtime.
+- `pnpm --filter regatta-web dev` / `build` / `test`: run the spectator game on port 5174, build it or test its runtime.
 - `pnpm --filter sailing-sim test` / `build`: test the sailing/weather model or type-check it.
 - `pnpm --filter frontend dev` / `build`: run Vite / type-check and build.
 - `pnpm --filter frontend test` / `test:e2e`: run Vitest / Playwright with synthetic mock data.

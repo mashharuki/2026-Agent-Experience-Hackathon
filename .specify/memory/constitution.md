@@ -1,11 +1,11 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0 (2026-10-21)
-- Reason: ユーザー承認の製品転換。写真支援から、人間対AIのスナイプ級ヨットゲームへ。
+- Version change: 1.1.0 → 1.2.0 (2026-10-22)
+- Reason: ユーザー指定で、人間の操船から複数AI艇の勝者予想・リアルタイム観戦へ。三原則・総予算は維持。
 - Principles: ハッカソン準拠・低コスト・Cognito認証の三原則は維持。
-- Modified context: 現行specは002。画像固有の要件は画像を扱う場合に適用し、レース記録にも所有権・保持・削除を要求。
-- Synced: AGENTS.md、docs/mvp.md、docs/tech-stack.md、README、specs/002-snipe-ai-regatta/。
-- Follow-up: 操船、実モデルの戦術と遅延、残予算を検証してから新環境をデプロイ。旧実装と証拠は保持。
+- Modified context: 現行specは003。002は操船・描画の再利用資産として保持。画像固有の要件は画像を扱う場合に適用し、レース記録にも所有権・保持・削除を要求。
+- Synced: AGENTS.md、docs/mvp.md、docs/tech-stack.md、README、specs/003-regatta-spectator/。
+- Follow-up: 各艇の実モデル戦術・観戦の面白さ・遅延・残予算を検証してから新環境をデプロイ。旧実装と証拠は保持。
 -->
 
 # 2026-Agent-Experience-Hackathon Constitution
@@ -92,7 +92,7 @@ AWSのマネージドサービス、従量課金、必要な時だけ実行す�
 
 ## 設計・検証の進め方
 
-- 現行製品は `specs/002-snipe-ai-regatta/`。人間がスキッパーとして操船し、AIと戦術で競う。
+- 現行製品は `specs/003-regatta-spectator/`。ユーザーが勝者を予想し、複数のAI艇がDeciderで判断するレースを観戦する。002の操船・海上描画は再利用する。
   `docs/mvp.md` は現行設計への入口とし、001の写真支援仕様・コード・検証は旧版として保持する。
   採用済みの方向性と仮置きの操作・物理パラメーター・遅延目標を区別する。
 - 仕様では利用体験、応募成果物、認証境界、レース記録の扱いと再生を定める。
@@ -118,4 +118,4 @@ AWSのマネージドサービス、従量課金、必要な時だけ実行す�
 各変更のレビューと応募前確認で本憲章への適合を確認する。
 未確認事項は担当段階と確認方法を明記し、完了したものとして扱わない。
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-21
+**Version**: 1.2.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-22

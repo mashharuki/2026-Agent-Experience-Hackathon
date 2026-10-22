@@ -2,7 +2,7 @@ import { MARK, STEP, visiblePressure, windAt } from "sailing-sim";
 import * as THREE from "three";
 import { makeBoat } from "./boat-visual";
 import { createOcean, createSky, waveHeight } from "./ocean";
-import type { PracticeRuntime } from "./runtime";
+import type { SceneRuntime } from "./runtime";
 
 function buoy(color: number, size = 1) {
   const group = new THREE.Group();
@@ -104,7 +104,7 @@ function coast() {
   );
 }
 
-export function mountScene(host: HTMLElement, runtime: PracticeRuntime) {
+export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -166,7 +166,9 @@ export function mountScene(host: HTMLElement, runtime: PracticeRuntime) {
   );
   gate.computeLineDistances();
   scene.add(gate);
-  const boats = [makeBoat(0xef8354), makeBoat(0x559cc3)];
+  const boats = runtime.race.boats.map((boat, i) =>
+    makeBoat(boat.color ?? (i ? 0x559cc3 : 0xef8354)),
+  );
   const wakes = boats.map(() => makeWake());
   const trails = boats.map((_, i) => {
     const geometry = new THREE.BufferGeometry();
@@ -178,7 +180,7 @@ export function mountScene(host: HTMLElement, runtime: PracticeRuntime) {
     const line = new THREE.Line(
       geometry,
       new THREE.LineBasicMaterial({
-        color: i ? 0x92d3ec : 0xffd48e,
+        color: runtime.race.boats[i].color ?? (i ? 0x92d3ec : 0xffd48e),
         transparent: true,
         opacity: 0.5,
       }),
@@ -218,7 +220,7 @@ export function mountScene(host: HTMLElement, runtime: PracticeRuntime) {
     runtime.advance(last ? now - last : 0);
     last = now;
     const race = runtime.race;
-    const player = race.boats[0];
+    const player = race.boats[runtime.focusIndex ?? 0];
     const time = race.tick * STEP;
     const visualTime = reducedMotion.matches ? 0 : time;
     const wind = windAt(race.scenario, race.seed, time, player.x, player.y);

@@ -1,4 +1,5 @@
 export * from "./boat";
+export * from "./fleet";
 export * from "./math";
 export * from "./race";
 export * from "./tactics";

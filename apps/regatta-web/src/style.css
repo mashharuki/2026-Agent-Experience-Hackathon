@@ -960,3 +960,21 @@ select {
     overflow-y: auto;
   }
 }
+
+.debrief {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(18, 60, 76, 0.15);
+}
+
+.debrief p {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.debrief small {
+  color: #5b6f75;
+}

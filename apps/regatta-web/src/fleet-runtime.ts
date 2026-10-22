@@ -142,9 +142,26 @@ export class FleetRuntime {
   constructor(
     private transport: Transport = localDecider,
     seed = 12,
+    /** Observation-to-apply deadline; 3 s locally, longer for the CPU cloud worker. */
+    private deadlineMs = 3000,
   ) {
     this.race = createFleetRace(seed);
     this.snapshot = this.makeSnapshot();
+  }
+  get currentRaceId() {
+    return this.raceId;
+  }
+  get deadline() {
+    return this.deadlineMs;
+  }
+  /** Switch between the local bridge and AWS; only before a race starts. */
+  setTransport(transport: Transport, deadlineMs: number) {
+    if (this.race.status !== "ready" || this.pending) return false;
+    if (!(deadlineMs >= 1000 && deadlineMs <= 20000)) return false;
+    this.transport = transport;
+    this.deadlineMs = deadlineMs;
+    this.publish();
+    return true;
   }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => {
@@ -307,7 +324,8 @@ export class FleetRuntime {
     const applicable =
       fleetOptions(now).includes(reply.selected) &&
       now.boat.leg === request.observation.boat.leg;
-    const expired = elapsed >= 3000 || Date.now() >= request.expiresAt;
+    const expired =
+      elapsed >= this.deadlineMs || Date.now() >= request.expiresAt;
     const applied = valid && applicable && !expired;
     this.logs.push({
       boatId: request.boatId,
@@ -363,7 +381,7 @@ export class FleetRuntime {
       epoch: this.epoch,
       seq: this.seq++,
       boatId: boat.id,
-      expiresAt: Date.now() + 3000,
+      expiresAt: Date.now() + this.deadlineMs,
       observation,
     };
     const controller = new AbortController();
@@ -371,7 +389,7 @@ export class FleetRuntime {
       request,
       controller,
       started: performance.now(),
-      timer: setTimeout(() => controller.abort(), 3000),
+      timer: setTimeout(() => controller.abort(), this.deadlineMs),
     };
     this.pending = pending;
     this.transport(request, controller.signal)

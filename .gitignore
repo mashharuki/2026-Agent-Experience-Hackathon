@@ -35,3 +35,4 @@ apps/api/build/
 # Local-only model bridge credentials and experiment outputs.
 .local/
 apps/cdk/cdk.out-regatta-probe/
+apps/cdk/cdk.out-regatta/

@@ -14,7 +14,11 @@ export class Frontend extends Construct {
   readonly bucket: s3.Bucket;
   readonly distribution: cloudfront.Distribution;
 
-  constructor(scope: Construct, id: string) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: { comment?: string; permissionsPolicy?: string } = {},
+  ) {
     super(scope, id);
 
     this.bucket = new s3.Bucket(this, "SiteBucket", {
@@ -52,7 +56,9 @@ export class Frontend extends Construct {
           customHeaders: [
             {
               header: "Permissions-Policy",
-              value: "camera=(self), microphone=(), geolocation=()",
+              value:
+                props.permissionsPolicy ??
+                "camera=(self), microphone=(), geolocation=()",
               override: true,
             },
           ],
@@ -61,7 +67,7 @@ export class Frontend extends Construct {
     );
 
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
-      comment: "Pre-photo grooming assistant SPA",
+      comment: props.comment ?? "Pre-photo grooming assistant SPA",
       defaultRootObject: "index.html",
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       // PRICE_CLASS_200 includes Japan (class 100 does not).

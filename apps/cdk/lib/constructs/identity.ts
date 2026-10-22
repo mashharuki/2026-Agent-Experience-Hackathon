@@ -11,6 +11,10 @@ export interface IdentityProps {
   readonly domainPrefix: string;
   /** RETAIN keeps the user pool on stack deletion; DESTROY allows full teardown. */
   readonly removalPolicy: cdk.RemovalPolicy;
+  /** Resource server and scope; defaults keep the photo assistant's `photoprep/session`. */
+  readonly resourceServerId?: string;
+  readonly scopeName?: string;
+  readonly scopeDescription?: string;
 }
 
 /**
@@ -27,11 +31,18 @@ export class Identity extends Construct {
   readonly userPool: cognito.UserPool;
   readonly client: cognito.UserPoolClient;
   readonly issuerUrl: string;
+  /** Full scope string required on API routes, e.g. `photoprep/session`. */
+  readonly scope: string;
   /** Base URL of the Cognito hosted UI (the OAuth endpoints live under it). */
   readonly hostedUiUrl: string;
 
   constructor(scope: Construct, id: string, props: IdentityProps) {
     super(scope, id);
+    const serverId = props.resourceServerId ?? Identity.RESOURCE_SERVER_ID;
+    const scopeName = props.scopeName ?? Identity.SESSION_SCOPE_NAME;
+    const scopeDescription =
+      props.scopeDescription ?? "Create and use grooming-assist sessions";
+    this.scope = `${serverId}/${scopeName}`;
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
       selfSignUpEnabled: true,
@@ -58,12 +69,9 @@ export class Identity extends Construct {
     const resourceServer = this.userPool.addResourceServer(
       "ApiResourceServer",
       {
-        identifier: Identity.RESOURCE_SERVER_ID,
+        identifier: serverId,
         scopes: [
-          new cognito.ResourceServerScope({
-            scopeName: Identity.SESSION_SCOPE_NAME,
-            scopeDescription: "Create and use grooming-assist sessions",
-          }),
+          new cognito.ResourceServerScope({ scopeName, scopeDescription }),
         ],
       },
     );
@@ -86,10 +94,7 @@ export class Identity extends Construct {
           cognito.OAuthScope.EMAIL,
           cognito.OAuthScope.resourceServer(
             resourceServer,
-            new cognito.ResourceServerScope({
-              scopeName: Identity.SESSION_SCOPE_NAME,
-              scopeDescription: "Create and use grooming-assist sessions",
-            }),
+            new cognito.ResourceServerScope({ scopeName, scopeDescription }),
           ),
         ],
         callbackUrls: props.callbackUrls,

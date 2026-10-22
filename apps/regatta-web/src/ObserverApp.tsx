@@ -22,6 +22,18 @@ import {
   STEP,
   visiblePressure,
 } from "sailing-sim";
+import {
+  type CloudConfig,
+  cloudHealth,
+  cloudTransport,
+  completeSignIn,
+  type Debrief,
+  debriefRequest,
+  loadCloudConfig,
+  requestDebrief,
+  type Session,
+  startSignIn,
+} from "./cloud";
 import { FleetRuntime, replayFleet } from "./fleet-runtime";
 import { mountScene } from "./scene";
 
@@ -105,6 +117,17 @@ const ja = {
   approach_mark: "マークへアプローチ",
   head_to_finish: "フィニッシュへ",
   seek: "可視ブローへ寄せる",
+  cloudNote: "AWS上の実Strands Deciderが各艇の戦術を選びます。判断の期限",
+  seconds: "秒",
+  signIn: "サインインして実モデルを使う",
+  signedOut: "サインインが必要です",
+  workerStopped: "AWSの判断ワーカーは停止中です",
+  debrief: "AIの振り返りを生成（Amazon Bedrock）",
+  debriefLoading: "振り返りを生成中…",
+  debriefFailed: "振り返りを生成できませんでした。自動では再試行しません。",
+  debriefLimit: "本日の振り返りの上限に達しました。",
+  debriefNote:
+    "記録された判断ログだけをもとにした事後解説です。[D番号]は判断ログの番号です。",
 };
 const en: Record<keyof typeof ja, string> = {
   title: "Read the wind. Pick the winner.",
@@ -187,6 +210,19 @@ const en: Record<keyof typeof ja, string> = {
   approach_mark: "Approach mark",
   head_to_finish: "Head to finish",
   seek: "Seek visible pressure",
+  cloudNote:
+    "The real Strands Decider on AWS chooses each boat's tactics. Decision deadline",
+  seconds: "s",
+  signIn: "Sign in to use the real model",
+  signedOut: "Sign-in required",
+  workerStopped: "The AWS decision worker is stopped",
+  debrief: "Generate AI debrief (Amazon Bedrock)",
+  debriefLoading: "Writing the debrief…",
+  debriefFailed:
+    "The debrief could not be generated. It is not retried automatically.",
+  debriefLimit: "Today's debrief limit has been reached.",
+  debriefNote:
+    "A post-race commentary based only on the logged decisions. [D#] refers to the decision log.",
 };
 type Text = typeof ja;
 const clock = (seconds: number) =>
@@ -417,9 +453,16 @@ export default function ObserverApp() {
   const [runtime] = useState(() => new FleetRuntime());
   const snapshot = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot);
   const [language, setLanguage] = useState<"ja" | "en">("ja");
-  const [health, setHealth] = useState<"offline" | "loading" | "ready">(
-    "loading",
-  );
+  const [health, setHealth] = useState<
+    "offline" | "loading" | "ready" | "signed_out" | "worker_stopped"
+  >("loading");
+  // undefined: still loading /config.json; null: local bridge; object: AWS.
+  const [cloud, setCloud] = useState<CloudConfig | null | undefined>(undefined);
+  const session = useRef<Session | null>(null);
+  const [debrief, setDebrief] = useState<
+    | { state: "idle" | "loading" | "failed" | "limit" }
+    | { state: "done"; value: Debrief }
+  >({ state: "idle" });
   const [resultOpen, setResultOpen] = useState(false);
   const [replayTick, setReplayTick] = useState<number | null>(null);
   const text = language === "ja" ? ja : en;
@@ -432,8 +475,36 @@ export default function ObserverApp() {
         .querySelector<HTMLElement>(".control-panel")
         ?.scrollTo({ top: 0 });
   }, [active]);
-  const connect = async () => {
+  const connect = async (config = cloud) => {
     setHealth("loading");
+    if (config) {
+      const current = session.current;
+      if (!current) {
+        setHealth("signed_out");
+        return;
+      }
+      try {
+        const result = await cloudHealth(config, current);
+        if (result.ready) {
+          runtime.setTransport(
+            cloudTransport(config, () => session.current),
+            config.deadlineMs,
+          );
+          runtime.setMode("decider");
+          setHealth("ready");
+        } else
+          setHealth(
+            result.error === "worker_stopped"
+              ? "worker_stopped"
+              : result.error === "signed_out"
+                ? "signed_out"
+                : "offline",
+          );
+      } catch {
+        setHealth("offline");
+      }
+      return;
+    }
     try {
       const response = await fetch("/local-decider/health", {
         signal: AbortSignal.timeout(4000),
@@ -449,7 +520,23 @@ export default function ObserverApp() {
   // A local health probe never starts model inference.
   // biome-ignore lint/correctness/useExhaustiveDependencies: Probe once; reconnect is an explicit action.
   useEffect(() => {
-    void connect();
+    void (async () => {
+      const config = await loadCloudConfig();
+      setCloud(config);
+      if (config && window.location.pathname === "/auth/callback") {
+        try {
+          session.current = await completeSignIn(
+            config,
+            window.location.search,
+          );
+        } catch {
+          session.current = null;
+        }
+        // Drop the single-use code from the address bar and history.
+        window.history.replaceState(null, "", "/");
+      }
+      await connect(config);
+    })();
   }, []);
   useEffect(() => {
     document.documentElement.lang = language;
@@ -462,6 +549,7 @@ export default function ObserverApp() {
   }, [terminal]);
   const reset = () => {
     setResultOpen(false);
+    setDebrief({ state: "idle" });
     setReplayTick(null);
     runtime.configure(
       race.scenario,
@@ -478,6 +566,33 @@ export default function ObserverApp() {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const generateDebrief = async () => {
+    const current = session.current;
+    if (!cloud || !current) return;
+    const body = debriefRequest(
+      runtime.currentRaceId,
+      language,
+      runtime.recording(),
+      race.boats.map((boat) => ({ boatId: boat.id, seconds: boat.finishTime })),
+    );
+    if (!body) return;
+    setDebrief({ state: "loading" });
+    try {
+      setDebrief({
+        state: "done",
+        value: await requestDebrief(cloud, current, body),
+      });
+    } catch (error) {
+      setDebrief({
+        state:
+          (error as Error).message === "debrief_limit" ? "limit" : "failed",
+      });
+    }
+  };
+  const canDebrief =
+    Boolean(cloud) &&
+    session.current !== null &&
+    snapshot.logs.some((log) => log.source === "decider");
   const winners = fleetWinners(race);
   const replay =
     replayTick === null ? race : replayFleet(runtime.recording(), replayTick);
@@ -542,12 +657,31 @@ export default function ObserverApp() {
             </MenuItem>
           </Select>
           <p className={`engine-note ${snapshot.mode}`}>
-            {snapshot.mode === "preview" ? text.previewNote : text.modelNote}
+            {snapshot.mode === "preview"
+              ? text.previewNote
+              : cloud
+                ? `${text.cloudNote} ${runtime.deadline / 1000}${text.seconds}`
+                : text.modelNote}
           </p>
-          {health !== "ready" && (
-            <Button size="small" onClick={() => void connect()}>
-              {health === "loading" ? text.loading : text.connect}
+          {health === "signed_out" && cloud ? (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => void startSignIn(cloud)}
+            >
+              {text.signIn}
             </Button>
+          ) : (
+            health !== "ready" && (
+              <>
+                {health === "worker_stopped" && (
+                  <p className="engine-note">{text.workerStopped}</p>
+                )}
+                <Button size="small" onClick={() => void connect()}>
+                  {health === "loading" ? text.loading : text.connect}
+                </Button>
+              </>
+            )
           )}
           <label className="field-label" htmlFor="scenario">
             {text.scenario}
@@ -753,6 +887,32 @@ export default function ObserverApp() {
             value={replayTick ?? race.tick}
             onChange={(_, value) => setReplayTick(value as number)}
           />
+          {canDebrief && (
+            <section className="debrief" aria-live="polite">
+              {debrief.state === "done" ? (
+                <>
+                  <p>{debrief.value.text}</p>
+                  <small>
+                    {debrief.value.model} · {text.debriefNote}
+                  </small>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    disabled={debrief.state !== "idle"}
+                    onClick={() => void generateDebrief()}
+                  >
+                    {debrief.state === "loading"
+                      ? text.debriefLoading
+                      : text.debrief}
+                  </Button>
+                  {debrief.state === "failed" && <p>{text.debriefFailed}</p>}
+                  {debrief.state === "limit" && <p>{text.debriefLimit}</p>}
+                </>
+              )}
+            </section>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={save}>{text.export}</Button>

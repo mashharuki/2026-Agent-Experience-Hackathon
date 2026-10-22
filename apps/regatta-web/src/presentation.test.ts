@@ -42,11 +42,19 @@ describe("standings", () => {
       finishTime: 80,
       gapMeters: null,
     });
-    expect(rows[1]).toMatchObject({ id: "coral", gapMeters: 0 });
+    expect(rows[1].id).toBe("coral");
+    expect(rows.slice(1).every((r) => r.gapMeters === null)).toBe(true);
+    expect(rows.some((r) => r.isLeader)).toBe(false);
+    expect(rows.some((r) => r.isPrediction)).toBe(false);
+  });
+  it("keeps gaps but names no leader once a boat has finished mid-race", () => {
+    const race = createFleetRace(1, "steady");
+    race.boats[0] = { ...race.boats[0], leg: "finished", finishTime: 80 };
+    const rows = standings({ ...race, status: "running" }, null);
+    expect(rows.some((r) => r.isLeader)).toBe(false);
     expect(rows.slice(1).every((r) => typeof r.gapMeters === "number")).toBe(
       true,
     );
-    expect(rows.some((r) => r.isPrediction)).toBe(false);
   });
 });
 

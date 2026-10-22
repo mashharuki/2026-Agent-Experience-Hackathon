@@ -28,15 +28,20 @@ export function standings(
 ): StandingRow[] {
   const ranked = fleetRanking(race);
   const racing = ranked.filter((boat) => boat.finishTime === null);
+  // After the race ends an unfinished boat has no meaningful gap: it did not finish.
+  const ended = ["finished", "timed_out", "aborted"].includes(race.status);
+  const anyFinished = racing.length < ranked.length;
   const lead = racing.length ? Math.min(...racing.map(fleetRemaining)) : 0;
   return ranked.map((boat, index) => ({
     id: boat.id,
     rank: index + 1,
     isPrediction: boat.id === prediction,
-    isLeader: boat === racing[0],
+    isLeader: !ended && !anyFinished && boat === racing[0],
     finishTime: boat.finishTime,
     gapMeters:
-      boat.finishTime === null ? Math.round(fleetRemaining(boat) - lead) : null,
+      boat.finishTime === null && !ended
+        ? Math.round(fleetRemaining(boat) - lead)
+        : null,
   }));
 }
 

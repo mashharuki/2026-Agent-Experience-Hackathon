@@ -39,6 +39,13 @@ describe("spectator design tokens", () => {
       contrast(token("on-sea"), opaque(token("scrim"))),
     ).toBeGreaterThanOrEqual(4.5);
   });
+  it("keeps the focus ring at 3:1 on panels and on the sea", () => {
+    for (const background of ["surface", "surface-selected"])
+      expect(
+        contrast(token("focus-ring"), token(background)),
+      ).toBeGreaterThanOrEqual(3);
+    expect(contrast(token("focus"), token("sea"))).toBeGreaterThanOrEqual(3);
+  });
   it("never sets text below 11px", () => {
     const sizes = [...css.matchAll(/font-size:\s*([\d.]+)px/g)].map((m) =>
       Number(m[1]),

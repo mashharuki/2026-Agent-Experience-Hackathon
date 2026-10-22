@@ -16,7 +16,8 @@
   --accent: #ef8354;
   --accent-soft: #fde6db;
   --accent-ink: #8a3c17;
-  --focus: #de9e3b;
+  --focus: #ffd894;
+  --focus-ring: #b4561b;
   --positive: #286b62;
   --info: #276d8c;
   --idle: #638c98;
@@ -351,7 +352,7 @@ select {
   cursor: zoom-out;
 }
 .course-chart:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .course-chart > span {
@@ -761,7 +762,7 @@ select {
   color: var(--text-muted);
 }
 .observer-app button:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .decision-feed {
@@ -1148,7 +1149,7 @@ select {
   background: var(--positive);
 }
 .engine-status.health-loading i {
-  background: var(--focus);
+  background: var(--focus-ring);
 }
 .engine-status.health-offline i,
 .engine-status.health-worker_stopped i,

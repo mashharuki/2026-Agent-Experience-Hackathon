@@ -853,7 +853,9 @@ export default function ObserverApp() {
                     ? clock(row.finishTime)
                     : row.isLeader
                       ? text.leader
-                      : `+${row.gapMeters} m`}
+                      : row.gapMeters === null
+                        ? text.dns
+                        : `+${row.gapMeters} m`}
                 </small>
               </button>
             ))}

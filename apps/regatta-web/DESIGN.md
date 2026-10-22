@@ -43,6 +43,7 @@
 | `--surface` / `--surface-selected` / `--line` | `#f5fbf9` / `#e2eef0` / `#cedee2` | パネル / 選択行 / 区切り |
 | `--brand` / `--accent` / `--positive` / `--info` | `#244d61` / `#ef8354` / `#286b62` / `#276d8c` | 主ボタン / 予想艇・的中 / 実モデル・判断中 / ブロー |
 | `--on-sea` / `--scrim` | `#e9f5f6` / `#1d4b5cd9` | 海上の文字 / その下敷き |
+| `--focus-ring` / `--focus` | `#b4561b` / `#ffd894` | パネル上 / 海上のフォーカス枠（3:1以上） |
 | `--fs-xs`〜`--fs-xl` | 11 / 12 / 14 / 17 / 22px | 文字サイズ（計器の大数字は個別） |
 | `--radius-sm` / `--radius-md` | 6 / 10px | 角丸 |
 

@@ -10,6 +10,18 @@ import { acknowledge } from "./nag";
 export class RegattaProbeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: cdk.StackProps = {}) {
     super(scope, id, props);
+    const cpu = Number(this.node.tryGetContext("regatta:probeCpu") ?? 4096);
+    if (![4096, 8192, 16384].includes(cpu)) {
+      throw new Error("regatta:probeCpu must be 4096, 8192 or 16384");
+    }
+    const imageTag =
+      this.node.tryGetContext("regatta:probeImageTag") ?? "fleet-v4-probe";
+    if (
+      typeof imageTag !== "string" ||
+      !/^[a-zA-Z0-9_-]{1,64}$/.test(imageTag)
+    ) {
+      throw new Error("An immutable probe image tag is required");
+    }
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 1,
       natGateways: 0,
@@ -39,8 +51,8 @@ export class RegattaProbeStack extends cdk.Stack {
     });
     const cluster = new ecs.Cluster(this, "Cluster", { vpc });
     const task = new ecs.FargateTaskDefinition(this, "Task", {
-      cpu: 4096,
-      memoryLimitMiB: 16384,
+      cpu,
+      memoryLimitMiB: cpu === 16384 ? 32768 : 16384,
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
@@ -51,7 +63,7 @@ export class RegattaProbeStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
     task.addContainer("Probe", {
-      image: ecs.ContainerImage.fromEcrRepository(repository, "fleet-v4-probe"),
+      image: ecs.ContainerImage.fromEcrRepository(repository, imageTag),
       logging: ecs.LogDrivers.awsLogs({ logGroup, streamPrefix: "probe" }),
       stopTimeout: cdk.Duration.seconds(10),
     });
@@ -89,7 +101,7 @@ export class RegattaProbeStack extends cdk.Stack {
       Subnet: vpc.publicSubnets[0].subnetId,
       LogGroup: logGroup.logGroupName,
     }))
-      new cdk.CfnOutput(this, name, { value });
+      new cdk.CfnOutput(this, `${name}Output`, { value });
     cdk.Tags.of(this).add("Project", "SnipeAIRegatta");
     cdk.Tags.of(this).add("Purpose", "bounded-latency-gate");
   }

@@ -1,0 +1,621 @@
+{
+  "scope": "Linux x86_64 CPU inference only; API and queue overhead excluded",
+  "questionVersion": "fleet-v4",
+  "observationVersion": "fleet-observation-v2",
+  "modelRevisions": {
+    "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+    "Qwen/Qwen3.5-2B-Base": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c"
+  },
+  "threads": 4,
+  "count": 100,
+  "startupSeconds": 22.39544020599999,
+  "p50Ms": 9375.05391749994,
+  "p95Ms": 11443.06419999998,
+  "overThreeSeconds": 100,
+  "peakRssMiB": 11524.52734375,
+  "results": [
+    {
+      "case": 0,
+      "latencyMs": 8305.730744000015,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 1,
+      "latencyMs": 9087.728027000026,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 2,
+      "latencyMs": 9861.830087999919,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 3,
+      "latencyMs": 9773.274592999996,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 4,
+      "latencyMs": 8363.660433000063,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 5,
+      "latencyMs": 8689.222674999997,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 6,
+      "latencyMs": 9595.684494000012,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 7,
+      "latencyMs": 11162.64295399992,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 8,
+      "latencyMs": 8190.429203000008,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 9,
+      "latencyMs": 8986.42353999992,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 10,
+      "latencyMs": 9333.04664000002,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 11,
+      "latencyMs": 11447.969779999994,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 12,
+      "latencyMs": 8615.626950999967,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 13,
+      "latencyMs": 9289.14476400007,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 14,
+      "latencyMs": 10207.391741000038,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 15,
+      "latencyMs": 11224.999531999969,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 16,
+      "latencyMs": 8168.538750000039,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 17,
+      "latencyMs": 9478.63981799992,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 18,
+      "latencyMs": 9902.33894500011,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 19,
+      "latencyMs": 11359.499856999946,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 20,
+      "latencyMs": 8267.259013000057,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 21,
+      "latencyMs": 9233.359243999985,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 22,
+      "latencyMs": 10429.53176000003,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 23,
+      "latencyMs": 11479.407279000043,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 24,
+      "latencyMs": 8553.81343299996,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 25,
+      "latencyMs": 9406.78538599991,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 26,
+      "latencyMs": 10547.348064999936,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 27,
+      "latencyMs": 10382.997212999953,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 28,
+      "latencyMs": 8171.330057000091,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 29,
+      "latencyMs": 9808.201333999932,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 30,
+      "latencyMs": 10554.37426399999,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 31,
+      "latencyMs": 11361.486924000019,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 32,
+      "latencyMs": 8127.472161000014,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 33,
+      "latencyMs": 9236.158017000093,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 34,
+      "latencyMs": 10395.917951000001,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 35,
+      "latencyMs": 10513.775239999974,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 36,
+      "latencyMs": 8610.511524999993,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 37,
+      "latencyMs": 9278.45876599997,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 38,
+      "latencyMs": 10365.681164999954,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 39,
+      "latencyMs": 10041.376397000022,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 40,
+      "latencyMs": 8257.329203000041,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 41,
+      "latencyMs": 9250.692551000044,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 42,
+      "latencyMs": 9755.156148999959,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 43,
+      "latencyMs": 11318.228319000013,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 44,
+      "latencyMs": 8159.362883000085,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 45,
+      "latencyMs": 9241.330809000032,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 46,
+      "latencyMs": 10561.273067000002,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 47,
+      "latencyMs": 11675.297365000006,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 48,
+      "latencyMs": 8658.523672000001,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 49,
+      "latencyMs": 8964.452388000042,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 50,
+      "latencyMs": 9228.982735999807,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 51,
+      "latencyMs": 10390.411768999911,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 52,
+      "latencyMs": 8173.199417999967,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 53,
+      "latencyMs": 9004.427149000094,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 54,
+      "latencyMs": 10168.595650000043,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 55,
+      "latencyMs": 10032.4590539999,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 56,
+      "latencyMs": 8170.496762999846,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 57,
+      "latencyMs": 8926.966840999967,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 58,
+      "latencyMs": 10546.582563999891,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 59,
+      "latencyMs": 11331.611273999897,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 60,
+      "latencyMs": 8558.32769000017,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 61,
+      "latencyMs": 9078.702936999889,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 62,
+      "latencyMs": 10586.023124000121,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 63,
+      "latencyMs": 10460.79325200003,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 64,
+      "latencyMs": 8184.122906000084,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 65,
+      "latencyMs": 8655.689363999954,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 66,
+      "latencyMs": 9790.607622000152,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 67,
+      "latencyMs": 11456.54275600009,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 68,
+      "latencyMs": 8159.321179000017,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 69,
+      "latencyMs": 8919.278549999945,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 70,
+      "latencyMs": 9343.32244899997,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 71,
+      "latencyMs": 11356.91530400004,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 72,
+      "latencyMs": 8603.652515000022,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 73,
+      "latencyMs": 9168.368756000064,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 74,
+      "latencyMs": 10542.792463000069,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 75,
+      "latencyMs": 11397.360719999824,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 76,
+      "latencyMs": 8161.416922999933,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 77,
+      "latencyMs": 8990.905203000011,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 78,
+      "latencyMs": 9912.56366499988,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 79,
+      "latencyMs": 11583.318256999974,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 80,
+      "latencyMs": 8228.718396999966,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 81,
+      "latencyMs": 8908.550631000026,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 82,
+      "latencyMs": 10641.473445999964,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 83,
+      "latencyMs": 11401.39042199985,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 84,
+      "latencyMs": 8590.527789999896,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 85,
+      "latencyMs": 8985.993694999934,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 86,
+      "latencyMs": 10522.02167900009,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 87,
+      "latencyMs": 10296.384017000037,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 88,
+      "latencyMs": 8114.050226000018,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 89,
+      "latencyMs": 9066.347967999945,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 90,
+      "latencyMs": 10393.184420999887,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 91,
+      "latencyMs": 11443.06419999998,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 92,
+      "latencyMs": 8181.304387000182,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 93,
+      "latencyMs": 8912.993115999825,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 94,
+      "latencyMs": 10110.329879999881,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 95,
+      "latencyMs": 9682.292643999972,
+      "selected": "jibe_now",
+      "source": "decider"
+    },
+    {
+      "case": 96,
+      "latencyMs": 8616.064611999946,
+      "selected": "approach_mark",
+      "source": "decider"
+    },
+    {
+      "case": 97,
+      "latencyMs": 9050.831989000017,
+      "selected": "tack_now",
+      "source": "decider"
+    },
+    {
+      "case": 98,
+      "latencyMs": 10398.050297000054,
+      "selected": "hold_course",
+      "source": "decider"
+    },
+    {
+      "case": 99,
+      "latencyMs": 10027.695907999941,
+      "selected": "hold_course",
+      "source": "decider"
+    }
+  ],
+  "ecsStopped": true,
+  "taskCpu": "4096",
+  "taskMemoryMiB": "16384"
+}

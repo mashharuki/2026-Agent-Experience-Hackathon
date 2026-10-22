@@ -34,3 +34,4 @@ apps/api/build/
 !**/.env.example
 # Local-only model bridge credentials and experiment outputs.
 .local/
+apps/cdk/cdk.out-regatta-probe/

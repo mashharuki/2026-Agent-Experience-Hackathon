@@ -54,7 +54,7 @@ apps/worker/.venv/bin/python apps/regatta-worker/run_cloud_probe.py \
 
 GPUは東京のG系オンデマンド上限が0のため、締切までの選択肢から外した。
 ユーザー合意（16 vCPUで測ってから期限を6〜12秒で決める）に基づき、AWS版の判断期限を**6秒**とした。
-ローカルの3秒期限は変えていない。サーバーの受付上限は端末時計のずれを見込み9秒。期限後の返答は従来どおり適用しない。
+ローカルの3秒期限は変えていない。サーバーは受信からの6秒を自分の時計で判定し、ブラウザーの時刻は使わない（端末時計が4秒遅れて全件410になったため）。期限後の返答は従来どおり適用しない。通し検証は[記録](../../docs/reviews/2026-10-23-regatta-aws-validation.md)。
 
 ## 公開構成 `SnipeRegattaStack`
 
@@ -69,8 +69,8 @@ GPUは東京のG系オンデマンド上限が0のため、締切までの選択
 ```sh
 # デプロイ（ワーカー停止のまま）
 cd apps/cdk && AWS_PROFILE=... pnpm exec cdk deploy --app 'pnpm exec ts-node bin/regatta.ts' \
-  -o cdk.out-regatta -c regatta:repositoryName=<probe ECR repository> -c regatta:imageTag=decider-v1 \
-  -c regatta:workerCpu=16384 -c regatta:desiredCount=0 -c regatta:maxLeadMs=9000 \
+  -o cdk.out-regatta -c regatta:repositoryName=<probe ECR repository> -c regatta:imageTag=decider-v2 \
+  -c regatta:workerCpu=16384 -c regatta:desiredCount=0 -c regatta:budgetMs=6000 \
   --outputs-file ../../.local/regatta/stack-outputs.json
 # SPAの公開（config.jsonの判断期限は既定6000ms）
 AWS_PROFILE=... sh scripts/regatta-publish.sh .local/regatta/stack-outputs.json

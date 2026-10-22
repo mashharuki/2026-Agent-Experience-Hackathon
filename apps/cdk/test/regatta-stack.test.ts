@@ -12,7 +12,7 @@ function template(
     imageTag: "decider-v1",
     workerCpu: 16384,
     desiredCount: 0,
-    maxLeadMs: 15000,
+    budgetMs: 6000,
     ...overrides,
   });
   return Template.fromStack(stack);
@@ -107,7 +107,7 @@ describe("RegattaStack", () => {
             "16",
           ],
           Environment: Match.arrayWith([
-            { Name: "REGATTA_MAX_LEAD_MS", Value: "15000" },
+            { Name: "REGATTA_BUDGET_MS", Value: "6000" },
           ]),
         }),
       ],
@@ -116,6 +116,6 @@ describe("RegattaStack", () => {
 
   test("rejects a mutable or missing image tag and an unsafe deadline", () => {
     expect(() => template({ imageTag: "" })).toThrow("immutable image tag");
-    expect(() => template({ maxLeadMs: 60000 })).toThrow("maxLeadMs");
+    expect(() => template({ budgetMs: 60000 })).toThrow("budgetMs");
   });
 });

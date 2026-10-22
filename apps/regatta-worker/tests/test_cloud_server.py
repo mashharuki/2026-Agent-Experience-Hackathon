@@ -45,7 +45,7 @@ def cloud(monkeypatch):
     monkeypatch.setattr(cloud_server, "choose", fake_choose)
     service = Service()
     service.engine = object()
-    instance = CloudService(service, Limits(2, 3), max_lead_ms=15000, device="cpu")
+    instance = CloudService(service, Limits(2, 3), budget_ms=6000, device="cpu")
     instance.calls = calls
     return instance
 
@@ -57,9 +57,10 @@ def test_returns_a_decision_bound_to_the_request(cloud):
     assert reply["source"] == "decider" and reply["questionVersion"] == "fleet-v4"
 
 
-def test_accepts_the_configured_cloud_deadline_but_not_beyond(cloud):
-    assert cloud.decide(USER, body(lead_ms=14000))[0] == 200
-    assert cloud.decide(USER, body(lead_ms=16000)) == (400, {"error": "invalid_request"})
+@pytest.mark.parametrize("skew_ms", [-4000, 0, 30000])
+def test_a_skewed_client_clock_does_not_expire_valid_requests(cloud, skew_ms):
+    # Measured on a demo Mac: the browser clock was 4.0 s slow and every reply came back 410.
+    assert cloud.decide(USER, body(lead_ms=6000 + skew_ms))[0] == 200
 
 
 @pytest.mark.parametrize("user", ["", "anonymous", "0F8FAD5B-D9CB-469F-A165-70867728950E"])
@@ -71,7 +72,6 @@ def test_requires_the_user_forwarded_by_api_gateway(cloud, user):
 def test_rejects_invalid_and_oversized_bodies_without_inference(cloud):
     assert cloud.decide(USER, b"{}")[0] == 400
     assert cloud.decide(USER, b"x" * 16385)[0] == 413
-    assert cloud.decide(USER, body(lead_ms=-1))[0] == 400
     assert cloud.calls == []
 
 
@@ -111,8 +111,15 @@ def test_late_inference_is_reported_expired_not_returned(cloud, monkeypatch):
         return {"selected": "tack_now", "source": "decider", "confidence": 1, "probabilities": {}}
 
     monkeypatch.setattr(cloud_server, "choose", slow)
-    status, reply = cloud.decide(USER, body(lead_ms=20))
+    cloud.budget_ms = 20
+    status, reply = cloud.decide(USER, body())
     assert status == 410 and "selected" not in reply
+
+
+def test_budget_counts_from_receipt_not_from_inference_start(cloud):
+    # A request that already waited past the budget is refused before inference.
+    status, _ = cloud.decide(USER, body(), received=time.perf_counter() - 7)
+    assert status == 410 and cloud.calls == []
 
 
 def test_model_errors_are_not_leaked(cloud, monkeypatch):
@@ -139,7 +146,7 @@ def test_http_layer_requires_user_header_and_json(cloud):
         assert call("GET", "/ping") == (200, {"ok": True})
         assert call("GET", "/health")[0] == 403
         status, health = call("GET", "/health", headers={"x-regatta-user": USER})
-        assert status == 200 and health["ready"] and health["maxLeadMs"] == 15000
+        assert status == 200 and health["ready"] and health["budgetMs"] == 6000
         assert call("POST", "/decide", body(), {"Content-Type": "text/plain"})[0] == 415
         assert call("POST", "/decide", body(), {"Content-Type": "application/json"})[0] == 403
         status, reply = call(

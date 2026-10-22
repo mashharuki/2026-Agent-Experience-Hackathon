@@ -1,0 +1,5 @@
+*
+!apps/worker/evaluation/*.py
+!apps/regatta-worker/*.py
+**/__pycache__
+**/.venv

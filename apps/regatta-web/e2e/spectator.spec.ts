@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 test("locks a prediction, observes explicit preview decisions, and resets after ending", async ({
   page,
@@ -33,6 +33,7 @@ test("locks a prediction, observes explicit preview decisions, and resets after 
   await page.getByRole("button", { name: "一時停止", exact: true }).click();
   await expect(page.getByRole("button", { name: "観戦を再開" })).toBeVisible();
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();
+  await page.getByRole("button", { name: "終了する" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText("レース不成立・予想判定なし");
   await expect(dialog.locator(".MuiSlider-root")).toBeInViewport();
@@ -44,4 +45,47 @@ test("locks a prediction, observes explicit preview decisions, and resets after 
   await expect(
     page.getByRole("button", { name: "艇を選んでください" }),
   ).toBeDisabled();
+});
+
+const startPreview = async (page: Page) => {
+  await page.route("**/local-decider/health", (route) =>
+    route.fulfill({ json: { ready: false } }),
+  );
+  await page.goto("/");
+  await page
+    .locator(".prediction-options button")
+    .filter({ hasText: "Coral" })
+    .click();
+  await page.getByRole("button", { name: "この艇を予想して出走" }).click();
+};
+
+test("asks before ending a race", async ({ page }) => {
+  await startPreview(page);
+  await page.getByRole("button", { name: "レースを終了", exact: true }).click();
+  const confirm = page.getByRole("dialog");
+  await expect(confirm).toContainText("予想の判定は行われません");
+  await expect(page.locator(".status")).toContainText("レース中");
+  await confirm.getByRole("button", { name: "観戦を続ける" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".status")).toContainText("レース中");
+  await page.getByRole("button", { name: "レースを終了", exact: true }).click();
+  await page.getByRole("button", { name: "終了する" }).click();
+  await expect(page.getByRole("dialog")).toContainText("レースの結果");
+});
+
+test("closes the end confirmation when the race finishes on its own", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await page.clock.install();
+  await startPreview(page);
+  await page.getByRole("button", { name: "レースを終了", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("予想の判定は行われません");
+  // The runtime advances at most 250 ms per frame; 3 minutes of race time.
+  for (let i = 0; i < 760; i++) await page.clock.fastForward(250);
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(page.getByRole("dialog")).toContainText("レースの結果");
+  await expect(page.getByRole("dialog")).not.toContainText(
+    "予想の判定は行われません",
+  );
 });

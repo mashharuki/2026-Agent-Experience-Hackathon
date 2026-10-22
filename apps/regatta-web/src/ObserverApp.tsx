@@ -86,6 +86,10 @@ const ja = {
   noWinner: "レース不成立・予想判定なし",
   unscored: "予想なし・判定対象外",
   yourPick: "予想",
+  settings: "レースの設定",
+  endConfirm: "レースを終了しますか？予想の判定は行われません。",
+  keepWatching: "観戦を続ける",
+  endNow: "終了する",
   leader: "先頭",
   speedOf: "{name}の艇速",
   headingOf: "{name}の針路",
@@ -183,6 +187,10 @@ const en: Record<keyof typeof ja, string> = {
   noWinner: "No valid result / prediction not scored",
   unscored: "No prediction — not scored",
   yourPick: "Your pick",
+  settings: "Race settings",
+  endConfirm: "End the race? Your prediction will not be scored.",
+  keepWatching: "Keep watching",
+  endNow: "End race",
   leader: "Leader",
   speedOf: "{name} speed",
   headingOf: "{name} heading",
@@ -482,6 +490,7 @@ export default function ObserverApp() {
     | { state: "done"; value: Debrief }
   >({ state: "idle" });
   const [resultOpen, setResultOpen] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [replayTick, setReplayTick] = useState<number | null>(null);
   const text = language === "ja" ? ja : en;
   const { race } = snapshot;
@@ -561,6 +570,7 @@ export default function ObserverApp() {
   }, [language]);
   useEffect(() => {
     if (terminal) {
+      setConfirmEnd(false);
       setReplayTick(null);
       setResultOpen(true);
     }
@@ -653,74 +663,12 @@ export default function ObserverApp() {
       </header>
       <main className="sailing-layout">
         <aside className="control-panel">
-          <div className="intro">
-            <span className="practice-label">{text.practice}</span>
-            <h1>{text.title}</h1>
-          </div>
-          <label className="field-label" htmlFor="engine">
-            {text.mode}
-          </label>
-          <Select
-            id="engine"
-            size="small"
-            fullWidth
-            value={snapshot.mode}
-            disabled={active}
-            onChange={(event) =>
-              runtime.setMode(event.target.value as "preview" | "decider")
-            }
-          >
-            <MenuItem value="preview">{text.preview}</MenuItem>
-            <MenuItem value="decider" disabled={health !== "ready"}>
-              {text.decider}
-            </MenuItem>
-          </Select>
-          <p className={`engine-note ${snapshot.mode}`}>
-            {snapshot.mode === "preview"
-              ? text.previewNote
-              : cloud
-                ? `${text.cloudNote} ${runtime.deadline / 1000}${text.seconds}`
-                : text.modelNote}
-          </p>
-          {health === "signed_out" && cloud ? (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => void startSignIn(cloud)}
-            >
-              {text.signIn}
-            </Button>
-          ) : (
-            health !== "ready" && (
-              <>
-                {health === "worker_stopped" && (
-                  <p className="engine-note">{text.workerStopped}</p>
-                )}
-                <Button size="small" onClick={() => void connect()}>
-                  {health === "loading" ? text.loading : text.connect}
-                </Button>
-              </>
-            )
+          {race.status === "ready" && (
+            <div className="intro">
+              <span className="practice-label">{text.practice}</span>
+              <h1>{text.title}</h1>
+            </div>
           )}
-          <label className="field-label" htmlFor="scenario">
-            {text.scenario}
-          </label>
-          <Select
-            id="scenario"
-            size="small"
-            fullWidth
-            value={race.scenario}
-            disabled={active}
-            onChange={(event) =>
-              runtime.configure(event.target.value as Scenario)
-            }
-          >
-            {(["dynamic", "steady", "shift", "pressure"] as const).map((s) => (
-              <MenuItem key={s} value={s}>
-                {text[s]}
-              </MenuItem>
-            ))}
-          </Select>
           {race.status === "ready" ? (
             <fieldset className="prediction-options">
               <legend>{text.prediction}</legend>
@@ -778,7 +726,7 @@ export default function ObserverApp() {
               >
                 {race.status === "paused" ? text.resume : text.pause}
               </Button>
-              <Button variant="outlined" onClick={() => runtime.finish()}>
+              <Button variant="outlined" onClick={() => setConfirmEnd(true)}>
                 {text.end}
               </Button>
             </div>
@@ -787,6 +735,93 @@ export default function ObserverApp() {
             <Button fullWidth variant="contained" onClick={reset}>
               {text.again}
             </Button>
+          )}
+          <p className={`engine-note ${snapshot.mode}`}>
+            {snapshot.mode === "preview"
+              ? text.previewNote
+              : cloud
+                ? `${text.cloudNote} ${runtime.deadline / 1000}${text.seconds}`
+                : text.modelNote}
+          </p>
+          {race.status === "ready" && (
+            <details className="race-settings">
+              <summary>
+                {text.settings}
+                <span>
+                  {snapshot.mode === "preview" ? text.preview : text.decider}
+                </span>
+              </summary>
+              <p className={`engine-status health-${health}`}>
+                <i />
+                {health === "ready"
+                  ? text.ready
+                  : health === "loading"
+                    ? text.loading
+                    : health === "signed_out"
+                      ? text.signedOut
+                      : health === "worker_stopped"
+                        ? text.workerStopped
+                        : text.offline}
+              </p>
+              <label className="field-label" htmlFor="engine">
+                {text.mode}
+              </label>
+              <Select
+                id="engine"
+                size="small"
+                fullWidth
+                value={snapshot.mode}
+                disabled={active}
+                onChange={(event) =>
+                  runtime.setMode(event.target.value as "preview" | "decider")
+                }
+              >
+                <MenuItem value="preview">{text.preview}</MenuItem>
+                <MenuItem value="decider" disabled={health !== "ready"}>
+                  {text.decider}
+                </MenuItem>
+              </Select>
+              {health === "signed_out" && cloud ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => void startSignIn(cloud)}
+                >
+                  {text.signIn}
+                </Button>
+              ) : (
+                health !== "ready" && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void connect()}
+                  >
+                    {health === "loading" ? text.loading : text.connect}
+                  </Button>
+                )
+              )}
+              <label className="field-label" htmlFor="scenario">
+                {text.scenario}
+              </label>
+              <Select
+                id="scenario"
+                size="small"
+                fullWidth
+                value={race.scenario}
+                disabled={active}
+                onChange={(event) =>
+                  runtime.configure(event.target.value as Scenario)
+                }
+              >
+                {(["dynamic", "steady", "shift", "pressure"] as const).map(
+                  (s) => (
+                    <MenuItem key={s} value={s}>
+                      {text[s]}
+                    </MenuItem>
+                  ),
+                )}
+              </Select>
+            </details>
           )}
           <div className="fleet-standing">
             <h2>{text.rank}</h2>
@@ -878,6 +913,31 @@ export default function ObserverApp() {
         <span>{text.footer}</span>
         <span>{snapshot.mode === "preview" ? text.preview : text.decider}</span>
       </footer>
+      <Dialog
+        open={confirmEnd}
+        onClose={() => setConfirmEnd(false)}
+        aria-describedby="end-confirm"
+      >
+        <DialogContent>
+          <p id="end-confirm" className="end-confirm">
+            {text.endConfirm}
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmEnd(false)}>
+            {text.keepWatching}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConfirmEnd(false);
+              runtime.finish();
+            }}
+          >
+            {text.endNow}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog
         open={resultOpen}
         onClose={() => setResultOpen(false)}

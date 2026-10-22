@@ -141,8 +141,19 @@ export function fleetOptions(observation: FleetObservation): string[] {
     if (distance(observation.boat, observation.mark) < 45)
       options.push("approach_mark");
   }
-  for (const patch of observation.pressure)
+  for (const patch of observation.pressure) {
+    if (
+      observation.boat.leg === "upwind" &&
+      !(patch.y > observation.boat.y + 5 && patch.y < 120)
+    )
+      continue;
+    if (
+      observation.boat.leg === "downwind" &&
+      !(patch.y < observation.boat.y - 5 && patch.y > -15)
+    )
+      continue;
     options.push(`seek_visible_pressure_${patch.id}`);
+  }
   return options;
 }
 

@@ -1,0 +1,1135 @@
+{
+  "scope": "Local Mac MPS, synthetic fleet observations; not AWS latency or sailing quality",
+  "observationVersion": "fleet-observation-v2",
+  "modelRevision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
+  "warmup": [
+    {
+      "case": 0,
+      "httpStatus": 200,
+      "latencyMs": 1168.2693329994436,
+      "inferenceMs": 1146.2512079997396,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 1,
+      "httpStatus": 200,
+      "latencyMs": 1185.2081659999385,
+      "inferenceMs": 1184.2015840002205,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 2,
+      "httpStatus": 200,
+      "latencyMs": 1300.4497080000874,
+      "inferenceMs": 1299.632916000519,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 3,
+      "httpStatus": 200,
+      "latencyMs": 1291.508165999403,
+      "inferenceMs": 1290.6116249996558,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 4,
+      "httpStatus": 200,
+      "latencyMs": 1087.188459000572,
+      "inferenceMs": 1086.0665830005019,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 5,
+      "httpStatus": 200,
+      "latencyMs": 1160.066459000518,
+      "inferenceMs": 1159.1090829997484,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 6,
+      "httpStatus": 200,
+      "latencyMs": 1269.984167000075,
+      "inferenceMs": 1268.9833750000616,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 7,
+      "httpStatus": 200,
+      "latencyMs": 1428.274708000572,
+      "inferenceMs": 1427.176624999447,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 8,
+      "httpStatus": 200,
+      "latencyMs": 1091.9979579994106,
+      "inferenceMs": 1091.0235830006059,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 9,
+      "httpStatus": 200,
+      "latencyMs": 1164.773041999979,
+      "inferenceMs": 1163.7727910001558,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 10,
+      "httpStatus": 200,
+      "latencyMs": 1206.1689580004895,
+      "inferenceMs": 1205.1078340000458,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 11,
+      "httpStatus": 200,
+      "latencyMs": 1450.2730419999352,
+      "inferenceMs": 1449.320916999568,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    }
+  ],
+  "questionVersions": ["fleet-v4"],
+  "count": 100,
+  "p50Ms": 1200.663062500098,
+  "p95Ms": 1421.820083000057,
+  "expired": 0,
+  "failed": 0,
+  "results": [
+    {
+      "case": 0,
+      "httpStatus": 200,
+      "latencyMs": 1095.1697079999576,
+      "inferenceMs": 1094.2248749997816,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 1,
+      "httpStatus": 200,
+      "latencyMs": 1203.904957999839,
+      "inferenceMs": 1202.9720000000452,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 2,
+      "httpStatus": 200,
+      "latencyMs": 1309.2759580003985,
+      "inferenceMs": 1308.2111670000813,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 3,
+      "httpStatus": 200,
+      "latencyMs": 1315.2231249996476,
+      "inferenceMs": 1314.029875000415,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 4,
+      "httpStatus": 200,
+      "latencyMs": 1101.6746660006902,
+      "inferenceMs": 1100.542874999519,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 5,
+      "httpStatus": 200,
+      "latencyMs": 1159.676041000239,
+      "inferenceMs": 1158.6238749996483,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 6,
+      "httpStatus": 200,
+      "latencyMs": 1271.622125000249,
+      "inferenceMs": 1270.706125000288,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 7,
+      "httpStatus": 200,
+      "latencyMs": 1429.1449590000411,
+      "inferenceMs": 1428.2482079997862,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 8,
+      "httpStatus": 200,
+      "latencyMs": 1082.6287500003673,
+      "inferenceMs": 1081.7309169997316,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 9,
+      "httpStatus": 200,
+      "latencyMs": 1172.748375000083,
+      "inferenceMs": 1171.741791000386,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 10,
+      "httpStatus": 200,
+      "latencyMs": 1192.1057080007813,
+      "inferenceMs": 1191.0292499997013,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 11,
+      "httpStatus": 200,
+      "latencyMs": 1391.7755830007081,
+      "inferenceMs": 1390.7257499995467,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 12,
+      "httpStatus": 200,
+      "latencyMs": 1164.4109999997454,
+      "inferenceMs": 1163.3252080000602,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 13,
+      "httpStatus": 200,
+      "latencyMs": 1194.8275830000057,
+      "inferenceMs": 1193.9869170000748,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 14,
+      "httpStatus": 200,
+      "latencyMs": 1296.2402499997552,
+      "inferenceMs": 1295.3188330002376,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 15,
+      "httpStatus": 200,
+      "latencyMs": 1441.9047080000382,
+      "inferenceMs": 1440.897125000447,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 16,
+      "httpStatus": 200,
+      "latencyMs": 1099.2164580002282,
+      "inferenceMs": 1098.2594170000084,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 17,
+      "httpStatus": 200,
+      "latencyMs": 1205.913666000015,
+      "inferenceMs": 1204.9090420005086,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 18,
+      "httpStatus": 200,
+      "latencyMs": 1261.5682910000032,
+      "inferenceMs": 1260.5666659992494,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 19,
+      "httpStatus": 200,
+      "latencyMs": 1425.4038339995532,
+      "inferenceMs": 1424.5054579996577,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 20,
+      "httpStatus": 200,
+      "latencyMs": 1088.238917000126,
+      "inferenceMs": 1087.3052910001206,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 21,
+      "httpStatus": 200,
+      "latencyMs": 1182.0389160002378,
+      "inferenceMs": 1181.117500000255,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 22,
+      "httpStatus": 200,
+      "latencyMs": 1297.1667499996329,
+      "inferenceMs": 1296.2514999999257,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 23,
+      "httpStatus": 200,
+      "latencyMs": 1421.9031249995169,
+      "inferenceMs": 1420.9250829999291,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 24,
+      "httpStatus": 200,
+      "latencyMs": 1167.7813750002315,
+      "inferenceMs": 1166.7066659992997,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 25,
+      "httpStatus": 200,
+      "latencyMs": 1190.757458999542,
+      "inferenceMs": 1189.8017909998089,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 26,
+      "httpStatus": 200,
+      "latencyMs": 1297.8315410000505,
+      "inferenceMs": 1296.8621250001888,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 27,
+      "httpStatus": 200,
+      "latencyMs": 1304.2643750004572,
+      "inferenceMs": 1303.2980420002787,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 28,
+      "httpStatus": 200,
+      "latencyMs": 1091.7689580001024,
+      "inferenceMs": 1090.6166250006208,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 29,
+      "httpStatus": 200,
+      "latencyMs": 1180.3837919997022,
+      "inferenceMs": 1179.3454580001708,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 30,
+      "httpStatus": 200,
+      "latencyMs": 1319.730332999825,
+      "inferenceMs": 1318.704291999893,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 31,
+      "httpStatus": 200,
+      "latencyMs": 1421.820083000057,
+      "inferenceMs": 1420.824249999896,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 32,
+      "httpStatus": 200,
+      "latencyMs": 1086.4823749998322,
+      "inferenceMs": 1085.5192500002886,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 33,
+      "httpStatus": 200,
+      "latencyMs": 1175.7505420000598,
+      "inferenceMs": 1174.76033299954,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 34,
+      "httpStatus": 200,
+      "latencyMs": 1302.9373749996012,
+      "inferenceMs": 1301.8842080000468,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 35,
+      "httpStatus": 200,
+      "latencyMs": 1290.1382909994936,
+      "inferenceMs": 1289.1131669994138,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 36,
+      "httpStatus": 200,
+      "latencyMs": 1152.5555419993907,
+      "inferenceMs": 1151.6776669996034,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 37,
+      "httpStatus": 200,
+      "latencyMs": 1193.5560000001715,
+      "inferenceMs": 1192.625458999828,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 38,
+      "httpStatus": 200,
+      "latencyMs": 1285.3879169997526,
+      "inferenceMs": 1284.34204199948,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 39,
+      "httpStatus": 200,
+      "latencyMs": 1307.226208999964,
+      "inferenceMs": 1306.0403330000554,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 40,
+      "httpStatus": 200,
+      "latencyMs": 1097.1087079997233,
+      "inferenceMs": 1096.0493749998932,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 41,
+      "httpStatus": 200,
+      "latencyMs": 1185.4650420000326,
+      "inferenceMs": 1184.4822080001904,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 42,
+      "httpStatus": 200,
+      "latencyMs": 1279.0224999998827,
+      "inferenceMs": 1277.92537500045,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 43,
+      "httpStatus": 200,
+      "latencyMs": 1411.11091699986,
+      "inferenceMs": 1410.1257080001233,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 44,
+      "httpStatus": 200,
+      "latencyMs": 1092.2624999993786,
+      "inferenceMs": 1091.3303749994157,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 45,
+      "httpStatus": 200,
+      "latencyMs": 1188.8774169992757,
+      "inferenceMs": 1187.9565829995045,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 46,
+      "httpStatus": 200,
+      "latencyMs": 1293.1488340000215,
+      "inferenceMs": 1292.2235829992132,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 47,
+      "httpStatus": 200,
+      "latencyMs": 1413.775166999585,
+      "inferenceMs": 1412.8357500003403,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 48,
+      "httpStatus": 200,
+      "latencyMs": 1159.5604999993157,
+      "inferenceMs": 1158.62237500005,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 49,
+      "httpStatus": 200,
+      "latencyMs": 1190.2651669997795,
+      "inferenceMs": 1189.3074999998134,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 50,
+      "httpStatus": 200,
+      "latencyMs": 1193.2066249992204,
+      "inferenceMs": 1192.1446250007648,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 51,
+      "httpStatus": 200,
+      "latencyMs": 1342.6125830001183,
+      "inferenceMs": 1341.6657500001747,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 52,
+      "httpStatus": 200,
+      "latencyMs": 1094.9854580003375,
+      "inferenceMs": 1094.003375000284,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 53,
+      "httpStatus": 200,
+      "latencyMs": 1188.6334170003465,
+      "inferenceMs": 1187.56674999986,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 54,
+      "httpStatus": 200,
+      "latencyMs": 1283.9782910004942,
+      "inferenceMs": 1282.9382090003492,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 55,
+      "httpStatus": 200,
+      "latencyMs": 1301.1671659996864,
+      "inferenceMs": 1300.1185000002806,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 56,
+      "httpStatus": 200,
+      "latencyMs": 1104.4111660003182,
+      "inferenceMs": 1103.3912499997314,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 57,
+      "httpStatus": 200,
+      "latencyMs": 1197.421167000357,
+      "inferenceMs": 1196.4182920000894,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 58,
+      "httpStatus": 200,
+      "latencyMs": 1303.8440419995823,
+      "inferenceMs": 1302.8267090003283,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 59,
+      "httpStatus": 200,
+      "latencyMs": 1406.5215829996305,
+      "inferenceMs": 1405.4945829993812,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 60,
+      "httpStatus": 200,
+      "latencyMs": 1100.340291000066,
+      "inferenceMs": 1099.3648330004362,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 61,
+      "httpStatus": 200,
+      "latencyMs": 1195.3746660001343,
+      "inferenceMs": 1194.4400000002133,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 62,
+      "httpStatus": 200,
+      "latencyMs": 1283.0297910004447,
+      "inferenceMs": 1282.0228749997113,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 63,
+      "httpStatus": 200,
+      "latencyMs": 1304.8439999993207,
+      "inferenceMs": 1303.9778749998732,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 64,
+      "httpStatus": 200,
+      "latencyMs": 1085.8430830003272,
+      "inferenceMs": 1085.0114579998262,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 65,
+      "httpStatus": 200,
+      "latencyMs": 1162.6888749997306,
+      "inferenceMs": 1161.8225419997543,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 66,
+      "httpStatus": 200,
+      "latencyMs": 1273.430458999428,
+      "inferenceMs": 1272.67537500029,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 67,
+      "httpStatus": 200,
+      "latencyMs": 1428.4631659993465,
+      "inferenceMs": 1427.5386249992152,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 68,
+      "httpStatus": 200,
+      "latencyMs": 1092.9657500000758,
+      "inferenceMs": 1092.0529170007285,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 69,
+      "httpStatus": 200,
+      "latencyMs": 1191.0209159996157,
+      "inferenceMs": 1190.1342920000388,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 70,
+      "httpStatus": 200,
+      "latencyMs": 1192.00974999967,
+      "inferenceMs": 1190.9481249995224,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 71,
+      "httpStatus": 200,
+      "latencyMs": 1406.511916999989,
+      "inferenceMs": 1405.5779580003218,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 72,
+      "httpStatus": 200,
+      "latencyMs": 1151.5245420005158,
+      "inferenceMs": 1150.5435419994683,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 73,
+      "httpStatus": 200,
+      "latencyMs": 1179.1457500003162,
+      "inferenceMs": 1178.16616699929,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 74,
+      "httpStatus": 200,
+      "latencyMs": 1297.8662080004142,
+      "inferenceMs": 1296.960582999418,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 75,
+      "httpStatus": 200,
+      "latencyMs": 1420.5218330007483,
+      "inferenceMs": 1419.6209579995411,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 76,
+      "httpStatus": 200,
+      "latencyMs": 1090.678165999634,
+      "inferenceMs": 1089.6461659995111,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 77,
+      "httpStatus": 200,
+      "latencyMs": 1184.8138330005895,
+      "inferenceMs": 1183.8282090002394,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 78,
+      "httpStatus": 200,
+      "latencyMs": 1267.4299159998554,
+      "inferenceMs": 1266.4982080004847,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 79,
+      "httpStatus": 200,
+      "latencyMs": 1408.2210840006155,
+      "inferenceMs": 1407.3066669998298,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 80,
+      "httpStatus": 200,
+      "latencyMs": 1091.5563329999713,
+      "inferenceMs": 1090.6414579994816,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 81,
+      "httpStatus": 200,
+      "latencyMs": 1169.7496249998949,
+      "inferenceMs": 1168.9187500005573,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 82,
+      "httpStatus": 200,
+      "latencyMs": 1314.8580830002174,
+      "inferenceMs": 1313.9105419995758,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 83,
+      "httpStatus": 200,
+      "latencyMs": 1413.4836670000368,
+      "inferenceMs": 1412.5564170008147,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 84,
+      "httpStatus": 200,
+      "latencyMs": 1146.4548339999965,
+      "inferenceMs": 1145.4102500001682,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 85,
+      "httpStatus": 200,
+      "latencyMs": 1161.1234590000095,
+      "inferenceMs": 1160.1095420001002,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 86,
+      "httpStatus": 200,
+      "latencyMs": 1310.852041000544,
+      "inferenceMs": 1310.0030830000833,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 87,
+      "httpStatus": 200,
+      "latencyMs": 1300.4669160000049,
+      "inferenceMs": 1299.5282080000834,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 88,
+      "httpStatus": 200,
+      "latencyMs": 1086.2767919998078,
+      "inferenceMs": 1085.3968749997875,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 89,
+      "httpStatus": 200,
+      "latencyMs": 1185.8142499995665,
+      "inferenceMs": 1184.8385419998522,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 90,
+      "httpStatus": 200,
+      "latencyMs": 1313.6360839998815,
+      "inferenceMs": 1312.6567089993841,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 91,
+      "httpStatus": 200,
+      "latencyMs": 1403.1242080000084,
+      "inferenceMs": 1402.1273750004184,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 92,
+      "httpStatus": 200,
+      "latencyMs": 1086.0471660007534,
+      "inferenceMs": 1085.0809590001518,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 93,
+      "httpStatus": 200,
+      "latencyMs": 1172.843625000496,
+      "inferenceMs": 1171.9080839993694,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 94,
+      "httpStatus": 200,
+      "latencyMs": 1316.3008330002413,
+      "inferenceMs": 1315.3901249997944,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 95,
+      "httpStatus": 200,
+      "latencyMs": 1304.3619579993901,
+      "inferenceMs": 1303.4149999994042,
+      "selected": "jibe_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 96,
+      "httpStatus": 200,
+      "latencyMs": 1174.0264999998544,
+      "inferenceMs": 1173.0934160004836,
+      "selected": "approach_mark",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 97,
+      "httpStatus": 200,
+      "latencyMs": 1209.1309589995944,
+      "inferenceMs": 1208.0547079995085,
+      "selected": "tack_now",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 98,
+      "httpStatus": 200,
+      "latencyMs": 1317.501667000215,
+      "inferenceMs": 1316.5004170004977,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    },
+    {
+      "case": 99,
+      "httpStatus": 200,
+      "latencyMs": 1302.1266249998007,
+      "inferenceMs": 1301.0051250003016,
+      "selected": "hold_course",
+      "source": "decider",
+      "questionVersion": "fleet-v4",
+      "error": null
+    }
+  ]
+}

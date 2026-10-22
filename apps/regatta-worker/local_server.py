@@ -99,6 +99,10 @@ def options_for(obs: Observation) -> dict[str, str]:
             "Steer toward the finish at (0,0), crossing south between x=-30 and 30."
         )
     for patch in obs.pressure:
+        if obs.boat.leg == "upwind" and not (obs.boat.y + 5 < patch.y < 120):
+            continue
+        if obs.boat.leg == "downwind" and not (-15 < patch.y < obs.boat.y - 5):
+            continue
         options[f"seek_visible_pressure_{patch.id}"] = (
             f"Seek gust {patch.id} only if its extra wind is worth the detour from the course mark."
         )
@@ -130,7 +134,7 @@ def choose(engine, obs: Observation) -> dict:
         }
     question = TypedQuestion(
         name="choose_sailing_tactic",
-        version="fleet-v3",
+        version="fleet-v4",
         instructions="Choose a tactic to finish first. Units: meters, m/s, compass degrees (north=0). Wind is FROM the given bearing. Cannot sail within 34 degrees of wind. Tack changes sides upwind; jibe downwind. Profiles: pressure seeks gusts, windward prioritizes upwind progress, balanced limits risk, opportunist exploits shifts. Course-error values compare the current plan and the opposite tack against the NEXT required course waypoint, not a weather forecast. Minimize needless course error, detours and maneuver loss. No future wind is known.",
         options=options,
     )
@@ -175,24 +179,24 @@ def choose(engine, obs: Observation) -> dict:
         "hold_course_error_deg": round(error(hold_heading), 1),
         "opposite_tack_error_deg": round(error(opposite_heading), 1),
     }
-    state = json.dumps(
-        {
-            "self": obs.boat.id,
-            "profile": obs.profile,
-            "current_plan": obs.currentPlan.model_dump(),
-            "navigation": navigation,
-            "boat_columns": ["id", "x", "y", "heading", "speed", "leg", "mark_stage"],
-            "boats": rows,
-            "wind_from": round(obs.wind.directionDeg, 1),
-            "wind_speed": round(obs.wind.speedMps, 2),
-            "mark": [0, 100],
-            "gust_columns": ["id", "x", "y", "radius", "extra_speed"],
-            "visible_gusts": [
-                [p.id, round(p.x, 1), round(p.y, 1), round(p.radius, 1), round(p.extraSpeed, 2)]
-                for p in obs.pressure
-            ],
-        },
-        separators=(",", ":"),
+    comparison = (
+        "the current plan has less angular error than the opposite tack"
+        if navigation["hold_course_error_deg"] < navigation["opposite_tack_error_deg"]
+        else "the opposite tack has less angular error than the current plan"
+    )
+    state = (
+        f"Boat {boat.id}, profile {obs.profile}, on the {boat.leg} leg, mark stage {boat.markPhase}. "
+        f"Position east={boat.x:.1f}m north={boat.y:.1f}m, heading={boat.headingDeg:.1f}deg, speed={boat.speedMps:.1f}m/s. "
+        f"True wind comes from {obs.wind.directionDeg:.1f}deg at {obs.wind.speedMps:.1f}m/s. "
+        f"Current plan is {plan.mode}, wind-relative angle {plan.relativeWindDeg:.1f}deg, target {plan.target}. "
+        f"The next required course waypoint is {waypoint}, distance {navigation['distance_m']}m, bearing {navigation['bearing_deg']}deg. "
+        f"Keeping the current plan gives a course angle error of {navigation['hold_course_error_deg']}deg. "
+        f"Changing to the opposite tack gives a course angle error of {navigation['opposite_tack_error_deg']}deg. "
+        f"Geometrically, {comparison}. This compares alignment only, not total race time. "
+        f"A tack loses speed. Rounding a nearby mark to port is required before heading south to finish. "
+        f"Other boats [id,x,y,heading,speed,leg,mark_stage]: {rows[1:]}. "
+        f"Currently visible gusts [id,x,y,radius,extra_wind]: {[[p.id, round(p.x, 1), round(p.y, 1), round(p.radius, 1), round(p.extraSpeed, 1)] for p in obs.pressure]}. "
+        f"Future wind is unknown."
     )
     choice = StrandsDecider(engine, question).choose(state)
     return {
@@ -280,7 +284,7 @@ def main():
                     "calls": service.calls,
                     "error": service.error,
                     "device": args.device,
-                    "questionVersion": "fleet-v3",
+                    "questionVersion": "fleet-v4",
                     "model": "Strands Decider 2B",
                     "revision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
                 },
@@ -328,7 +332,7 @@ def main():
                         "seq": request.seq,
                         "boatId": request.boatId,
                         "latencyMs": elapsed,
-                        "questionVersion": "fleet-v3",
+                        "questionVersion": "fleet-v4",
                     },
                 )
             except Exception:

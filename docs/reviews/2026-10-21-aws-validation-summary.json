@@ -74,15 +74,8 @@
         "name": "v4_real_trace",
         "pass": true,
         "source": "model",
-        "eligible": [
-          "grooming_tip",
-          "clarify",
-          "offer_finish"
-        ],
-        "invoked": [
-          "bedrock.observe",
-          "bedrock.explain"
-        ]
+        "eligible": ["grooming_tip", "clarify", "offer_finish"],
+        "invoked": ["bedrock.observe", "bedrock.explain"]
       },
       {
         "name": "image_deleted",
@@ -283,13 +276,8 @@
         "name": "supported_actual_decider",
         "pass": true,
         "selected": "grooming_tip",
-        "eligible": [
-          "grooming_tip",
-          "offer_finish"
-        ],
-        "invoked": [
-          "bedrock.explain"
-        ]
+        "eligible": ["grooming_tip", "offer_finish"],
+        "invoked": ["bedrock.explain"]
       },
       {
         "name": "create_session_6",
@@ -309,10 +297,7 @@
       {
         "name": "atomic_concurrent_upload_acceptance",
         "pass": true,
-        "statuses": [
-          202,
-          409
-        ]
+        "statuses": [202, 409]
       },
       {
         "name": "concurrent_winner_completed",
@@ -486,11 +471,7 @@
     "passed": 382,
     "skipped": 1
   },
-  "startup_seconds": [
-    145.6,
-    149.9,
-    162.2
-  ],
+  "startup_seconds": [145.6, 149.9, 162.2],
   "limitations": [
     "synthetic_images_and_seeded_observation_fixtures",
     "no_human_quality_evaluation",

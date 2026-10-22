@@ -1,0 +1,146 @@
+[
+  {
+    "profile": "balanced",
+    "x": -30,
+    "heading": 46,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 1030.6139590002203,
+    "error": null
+  },
+  {
+    "profile": "balanced",
+    "x": 60,
+    "heading": 46,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 964.4181250000656,
+    "error": null
+  },
+  {
+    "profile": "balanced",
+    "x": 35,
+    "heading": 314,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 1010.7545420000861,
+    "error": null
+  },
+  {
+    "profile": "balanced",
+    "x": -60,
+    "heading": 314,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 948.9949590001743,
+    "error": null
+  },
+  {
+    "profile": "pressure",
+    "x": -30,
+    "heading": 46,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 956.3270410003497,
+    "error": null
+  },
+  {
+    "profile": "pressure",
+    "x": 60,
+    "heading": 46,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 944.0794580000329,
+    "error": null
+  },
+  {
+    "profile": "pressure",
+    "x": 35,
+    "heading": 314,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 947.4063329998899,
+    "error": null
+  },
+  {
+    "profile": "pressure",
+    "x": -60,
+    "heading": 314,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 945.1564999999391,
+    "error": null
+  },
+  {
+    "profile": "windward",
+    "x": -30,
+    "heading": 46,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 946.9901249999566,
+    "error": null
+  },
+  {
+    "profile": "windward",
+    "x": 60,
+    "heading": 46,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 946.4507920001779,
+    "error": null
+  },
+  {
+    "profile": "windward",
+    "x": 35,
+    "heading": 314,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 944.0951249998761,
+    "error": null
+  },
+  {
+    "profile": "windward",
+    "x": -60,
+    "heading": 314,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 947.4422920002326,
+    "error": null
+  },
+  {
+    "profile": "opportunist",
+    "x": -30,
+    "heading": 46,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 943.1739999999991,
+    "error": null
+  },
+  {
+    "profile": "opportunist",
+    "x": 60,
+    "heading": 46,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 961.9161670002541,
+    "error": null
+  },
+  {
+    "profile": "opportunist",
+    "x": 35,
+    "heading": 314,
+    "expected": "hold_course",
+    "selected": "tack_now",
+    "latencyMs": 944.5773750003355,
+    "error": null
+  },
+  {
+    "profile": "opportunist",
+    "x": -60,
+    "heading": 314,
+    "expected": "tack_now",
+    "selected": "tack_now",
+    "latencyMs": 943.9069590002873,
+    "error": null
+  }
+]

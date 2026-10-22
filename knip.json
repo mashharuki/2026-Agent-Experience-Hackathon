@@ -9,6 +9,9 @@
         "src/api/generated/**": ["exports", "types"]
       }
     },
+    "apps/regatta-web": {
+      "entry": ["src/App.tsx", "src/**/*.test.ts"]
+    },
     "apps/cdk": {
       "entry": ["bin/cdk.ts", "test/**/*.test.ts"],
       "ignoreDependencies": ["ts-node"]

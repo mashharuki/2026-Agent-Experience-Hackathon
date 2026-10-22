@@ -426,6 +426,12 @@ export default function ObserverApp() {
   const { race } = snapshot;
   const active = ["running", "paused"].includes(race.status);
   const terminal = ["finished", "timed_out", "aborted"].includes(race.status);
+  useEffect(() => {
+    if (active)
+      document
+        .querySelector<HTMLElement>(".control-panel")
+        ?.scrollTo({ top: 0 });
+  }, [active]);
   const connect = async () => {
     setHealth("loading");
     try {

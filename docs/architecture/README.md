@@ -1,6 +1,6 @@
 # システムアーキテクチャ・技術スタック
 
-> **以下は旧写真支援アプリの構成**。専用AWSリソースは2026-10-21に削除した。[新ゲームの設計](../../specs/002-snipe-ai-regatta/plan.md)・[新構成図](diagrams/snipe-regatta.drawio) を参照。新ゲームは未実装・未デプロイ。
+> **以下は旧写真支援アプリの構成**。専用AWSリソースは2026-10-21に削除した。現行は[4艇の観戦・勝者予想の設計](../../specs/003-regatta-spectator/plan.md)。ローカル実Decider接続まで実装済みで、新AWS構成は未デプロイ。[旧ゲームの構成図](diagrams/snipe-regatta.drawio)は002の人間対AI案であり、現行の4艇構成を表していない。
 
 > 本書は初期設計の基準を含む。2026-10-19時点の実装・検証状態は [技術一覧](../tech-stack.md) と [修正検証記録](../reviews/2026-10-19-remediation-validation.md) を参照。API・worker・CDKは実装済み。今回の変更では確認回答、原子的受付、期限・取消、画像回収監視を追加した。
 

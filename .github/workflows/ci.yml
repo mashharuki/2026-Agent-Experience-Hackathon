@@ -27,11 +27,17 @@ jobs:
       - run: pnpm --filter frontend lint
       - run: pnpm --filter frontend test
       - run: pnpm --filter frontend build
+      - run: pnpm --filter sailing-sim test
+      - run: pnpm --filter sailing-sim build
+      - run: pnpm --filter regatta-web lint
+      - run: pnpm --filter regatta-web test
+      - run: pnpm --filter regatta-web build
       - run: pnpm --filter cdk exec jest --runInBand
       - run: pnpm --filter cdk build
       - run: pnpm check:quality
       - run: pnpm --filter frontend exec playwright install --with-deps chromium
       - run: pnpm --filter frontend test:e2e
+      - run: pnpm --filter regatta-web test:e2e
   python:
     runs-on: ubuntu-24.04
     strategy:
@@ -52,6 +58,11 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check . ../../packages/photoprep-common/src
       - run: uv run pytest
+      - name: Check local regatta bridge without loading model weights
+        if: matrix.app == 'worker'
+        run: |
+          uv run ruff check ../regatta-worker
+          uv run pytest ../regatta-worker/tests -c ../regatta-worker/pyproject.toml
       - name: Validate offline synthetic evaluation cases (no model weights)
         if: matrix.app == 'worker'
         run: uv run python -m tools.evaluate_decisions validate --cases-dir evaluation/cases

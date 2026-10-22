@@ -87,6 +87,7 @@ def request(case, token):
         "inferenceMs": body.get("latencyMs"),
         "selected": body.get("selected"),
         "source": body.get("source"),
+        "questionVersion": body.get("questionVersion"),
         "error": body.get("error"),
     }
 
@@ -111,6 +112,9 @@ def main():
         "observationVersion": "fleet-observation-v2",
         "modelRevision": "216d1ccb46a9e9b036eb9187b248db98480f77d4",
         "warmup": warmup,
+        "questionVersions": sorted(
+            {r["questionVersion"] for r in results if r.get("questionVersion")}
+        ),
         "count": args.count,
         "p50Ms": statistics.median(latencies),
         "p95Ms": latencies[max(0, int(len(latencies) * 0.95 + 0.9999) - 1)],

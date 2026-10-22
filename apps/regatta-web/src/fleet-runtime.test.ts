@@ -135,4 +135,24 @@ describe("spectator runtime", () => {
     runtime.finish();
     vi.useRealTimers();
   });
+  it("aborts after two inference failures without applying a substitute tactic", async () => {
+    const transport = vi.fn().mockRejectedValue(new Error("inference_failed"));
+    const runtime = new FleetRuntime(transport);
+    runtime.setMode("decider");
+    runtime.predict("aurora");
+    runtime.start();
+    runtime.advance(1000 / 30);
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    expect(runtime.race.status).toBe("running");
+    for (let i = 0; i < 60; i++) runtime.advance(1000 / 30);
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(runtime.race.status).toBe("aborted");
+    expect(runtime.mode).toBe("decider");
+    expect(runtime.logs).toHaveLength(2);
+    expect(runtime.logs.every((entry) => entry.appliedTick === null)).toBe(
+      true,
+    );
+    expect(runtime.logs.every((entry) => entry.status === "failed")).toBe(true);
+  });
 });

@@ -64,7 +64,7 @@ def test_adapter_validates_scores_and_contains_no_prediction():
         def ask(self, state, question):
             assert "prediction" not in state
             assert "seed" not in state
-            assert "current_plan" in state
+            assert "Current plan" in state
             assert list(question) == ["choose_sailing_tactic"]
             ids = list(options_for(Observation.model_validate(observation(1))))
             return SimpleNamespace(

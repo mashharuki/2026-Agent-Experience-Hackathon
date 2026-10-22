@@ -945,3 +945,18 @@ select {
     font-size: 14px;
   }
 }
+@media (min-width: 681px) and (max-height: 850px) {
+  .observer-app .sailing-layout {
+    min-height: 680px;
+  }
+  .observer-app .course-chart {
+    display: none;
+  }
+  .observer-app .decision-feed {
+    top: auto;
+    bottom: 185px;
+    max-height: calc(100% - 500px);
+    min-height: 130px;
+    overflow-y: auto;
+  }
+}

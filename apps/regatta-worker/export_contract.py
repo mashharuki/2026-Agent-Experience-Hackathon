@@ -25,9 +25,7 @@ document = {
         "/health": {
             "get": {
                 "responses": {
-                    "200": {
-                        "description": "Readiness, device and call count; no inference."
-                    },
+                    "200": {"description": "Readiness, device and call count; no inference."},
                     "403": {"description": "Missing/wrong local token or origin."},
                 }
             }

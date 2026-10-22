@@ -16,10 +16,16 @@ test("latency gate has no running service, public API, inbound rule or NAT", () 
   template.resourceCountIs("AWS::ApiGatewayV2::Api", 0);
   template.resourceCountIs("AWS::ECS::TaskDefinition", 1);
   template.hasResourceProperties("AWS::ECS::TaskDefinition", {
-    Cpu: "4096", Memory: "16384",
-    RuntimePlatform: { CpuArchitecture: "X86_64", OperatingSystemFamily: "LINUX" },
+    Cpu: "4096",
+    Memory: "16384",
+    RuntimePlatform: {
+      CpuArchitecture: "X86_64",
+      OperatingSystemFamily: "LINUX",
+    },
   });
-  for (const group of Object.values(template.findResources("AWS::EC2::SecurityGroup"))) {
+  for (const group of Object.values(
+    template.findResources("AWS::EC2::SecurityGroup"),
+  )) {
     expect(group.Properties.SecurityGroupIngress ?? []).toHaveLength(0);
   }
   expect(() => app.synth()).not.toThrow();

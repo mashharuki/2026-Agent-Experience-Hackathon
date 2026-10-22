@@ -7,4 +7,6 @@ const app = new cdk.App();
 new RegattaProbeStack(app, "RegattaProbeStack", {
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: "ap-northeast-1" },
 });
-cdk.Validations.of(app).addPlugins(new AwsSolutionsChecks(app, { verbose: true }));
+cdk.Validations.of(app).addPlugins(
+  new AwsSolutionsChecks(app, { verbose: true }),
+);

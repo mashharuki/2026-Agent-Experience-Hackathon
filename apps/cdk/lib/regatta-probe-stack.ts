@@ -13,15 +13,23 @@ export class RegattaProbeStack extends cdk.Stack {
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 1,
       natGateways: 0,
-      subnetConfiguration: [{ name: "public", subnetType: ec2.SubnetType.PUBLIC }],
-      gatewayEndpoints: { S3: { service: ec2.GatewayVpcEndpointAwsService.S3 } },
+      subnetConfiguration: [
+        { name: "public", subnetType: ec2.SubnetType.PUBLIC },
+      ],
+      gatewayEndpoints: {
+        S3: { service: ec2.GatewayVpcEndpointAwsService.S3 },
+      },
     });
     const security = new ec2.SecurityGroup(this, "Security", {
       vpc,
       allowAllOutbound: false,
       description: "Bounded regatta latency probe; no inbound access",
     });
-    security.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), "ECR and logs");
+    security.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      "ECR and logs",
+    );
     const repository = new ecr.Repository(this, "Repository", {
       imageTagMutability: ecr.TagMutability.IMMUTABLE,
       imageScanOnPush: true,
@@ -47,21 +55,32 @@ export class RegattaProbeStack extends cdk.Stack {
       logging: ecs.LogDrivers.awsLogs({ logGroup, streamPrefix: "probe" }),
       stopTimeout: cdk.Duration.seconds(10),
     });
-    acknowledge(vpc, [{
-      id: "AwsSolutions::AwsSolutions-VPC7",
-      reason: "Temporary no-inbound benchmark VPC; task logs suffice without paid flow logs.",
-    }]);
-    acknowledge(task, [{
-      id: "AwsSolutions::AwsSolutions-ECS2",
-      reason: "No credentials or secrets in environment; no AWS SDK calls from this task.",
-    }, {
-      id: "AwsSolutions::AwsSolutions-IAM5[Resource::*]",
-      reason: "ECR authorization token does not support resource-level permissions; image access is restricted to this repository.",
-    }]);
-    acknowledge(cluster, [{
-      id: "AwsSolutions::AwsSolutions-ECS4",
-      reason: "One short-lived benchmark uses task logs; paid Container Insights is unnecessary.",
-    }]);
+    acknowledge(vpc, [
+      {
+        id: "AwsSolutions::AwsSolutions-VPC7",
+        reason:
+          "Temporary no-inbound benchmark VPC; task logs suffice without paid flow logs.",
+      },
+    ]);
+    acknowledge(task, [
+      {
+        id: "AwsSolutions::AwsSolutions-ECS2",
+        reason:
+          "No credentials or secrets in environment; no AWS SDK calls from this task.",
+      },
+      {
+        id: "AwsSolutions::AwsSolutions-IAM5[Resource::*]",
+        reason:
+          "ECR authorization token does not support resource-level permissions; image access is restricted to this repository.",
+      },
+    ]);
+    acknowledge(cluster, [
+      {
+        id: "AwsSolutions::AwsSolutions-ECS4",
+        reason:
+          "One short-lived benchmark uses task logs; paid Container Insights is unnecessary.",
+      },
+    ]);
     for (const [name, value] of Object.entries({
       RepositoryUri: repository.repositoryUri,
       Cluster: cluster.clusterArn,
@@ -69,7 +88,8 @@ export class RegattaProbeStack extends cdk.Stack {
       SecurityGroup: security.securityGroupId,
       Subnet: vpc.publicSubnets[0].subnetId,
       LogGroup: logGroup.logGroupName,
-    })) new cdk.CfnOutput(this, name, { value });
+    }))
+      new cdk.CfnOutput(this, name, { value });
     cdk.Tags.of(this).add("Project", "SnipeAIRegatta");
     cdk.Tags.of(this).add("Purpose", "bounded-latency-gate");
   }

@@ -25,6 +25,7 @@ import {
 import { en, ja } from "./i18n";
 import { PracticeRuntime, replayAt } from "./runtime";
 import { mountScene } from "./scene";
+import "./legacy.css";
 
 type Text = typeof ja;
 const timeLabel = (seconds: number) =>

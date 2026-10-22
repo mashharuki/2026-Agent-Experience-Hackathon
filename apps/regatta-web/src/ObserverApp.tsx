@@ -240,7 +240,7 @@ const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60)
     .toString()
     .padStart(2, "0")}`;
-const TACTIC_ICON = { hold: "→", maneuver: "↺", pressure: "≋", mark: "⚑" };
+const TACTIC_ICON = { hold: "→", maneuver: "↺", pressure: "≈", mark: "⚑" };
 const color = (value: number) => `#${value.toString(16).padStart(6, "0")}`;
 const meta = (id: string) => FLEET.find((b) => b.id === id) ?? FLEET[0];
 const tactic = (value: string, text: Text) =>

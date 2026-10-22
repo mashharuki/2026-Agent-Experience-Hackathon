@@ -42,3 +42,41 @@ apps/worker/.venv/bin/python apps/regatta-worker/run_cloud_probe.py \
 4. Bedrockによる振り返りと応募成果物を確認。CPUの合格だけでハッカソン準拠済みと報告しない。
 
 使用後は単発タスクの停止を確認。残るECRイメージとログにも保存費用があるため、製品用構成への移行時に整理する。
+
+## 計測結果（2026-10-22〜23）
+
+同じ`fleet-v4`の問い・合成観測100件、12件ウォームアップ後。モデル単体の時間で、API・配送は含まない。
+
+| 構成 | p50 | p95 | 3秒超 | ピークRSS | 記録 |
+| --- | --- | --- | --- | --- | --- |
+| 4 vCPU / 16 GiB、4スレッド | 9.4秒 | 11.4秒 | 100/100 | 11.5 GiB | [cpu4](../../docs/reviews/2026-10-22-fleet-aws-cpu4-latency.json) |
+| 16 vCPU / 32 GiB、16スレッド | 3.1秒 | 3.7秒 | 59/100（最大3.8秒） | 11.5 GiB | [cpu16](../../docs/reviews/2026-10-22-fleet-aws-cpu16-latency.json) |
+
+GPUは東京のG系オンデマンド上限が0のため、締切までの選択肢から外した。
+ユーザー合意（16 vCPUで測ってから期限を6〜12秒で決める）に基づき、AWS版の判断期限を**6秒**とした。
+ローカルの3秒期限は変えていない。サーバーの受付上限は端末時計のずれを見込み9秒。期限後の返答は従来どおり適用しない。
+
+## 公開構成 `SnipeRegattaStack`
+
+- S3＋CloudFront（OAC）、Cognito（Code＋PKCE、scope `regatta/race`）。
+- HTTP API：`GET /health`・`POST /decide`はVPC Link→Cloud Map→Fargate、`POST /debrief`はLambda。全ルートがJWTとscope必須。利用者IDはAPI Gatewayが`sub`から付与し、クライアントの同名ヘッダーは上書き。
+- Deciderタスクは16 vCPU/32 GiB、既定0台。VPC Linkのセキュリティグループからのみ受信。ALB・NATなし。
+- 振り返りはNova Lite 1回、出力800 tokens上限、利用者5回・全体20回/日をDynamoDBで原子的に予約、存在しない判断番号の参照は削除。
+- イメージはProbeスタックのECRに`decider-v1`タグで追加（同じ固定モデル入りベース）。
+
+## 運用手順
+
+```sh
+# デプロイ（ワーカー停止のまま）
+cd apps/cdk && AWS_PROFILE=... pnpm exec cdk deploy --app 'pnpm exec ts-node bin/regatta.ts' \
+  -o cdk.out-regatta -c regatta:repositoryName=<probe ECR repository> -c regatta:imageTag=decider-v1 \
+  -c regatta:workerCpu=16384 -c regatta:desiredCount=0 -c regatta:maxLeadMs=9000 \
+  --outputs-file ../../.local/regatta/stack-outputs.json
+# SPAの公開（config.jsonの判断期限は既定6000ms）
+AWS_PROFILE=... sh scripts/regatta-publish.sh .local/regatta/stack-outputs.json
+# 撮影前に起動、終わったら必ず0へ
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 1
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 0
+```
+
+16 vCPU/32 GiBは東京で約$0.99/時（IPv4込み、2026-10-22の単価）。稼働中は待機時間も課金される。

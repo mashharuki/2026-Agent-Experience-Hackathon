@@ -21,7 +21,7 @@ new RegattaStack(app, "SnipeRegattaStack", {
   imageTag: String(context("imageTag") ?? ""),
   workerCpu: cpu,
   desiredCount: desired,
-  maxLeadMs: Number(context("maxLeadMs") ?? 15000),
+  budgetMs: Number(context("budgetMs") ?? 6000),
 });
 cdk.Validations.of(app).addPlugins(
   new AwsSolutionsChecks(app, { verbose: true }),

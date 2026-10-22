@@ -49,10 +49,12 @@ class Limits:
 
 
 class CloudService:
-    def __init__(self, service: Service, limits: Limits, max_lead_ms: float, device: str):
+    def __init__(self, service: Service, limits: Limits, budget_ms: float, device: str):
         self.service = service
         self.limits = limits
-        self.max_lead_ms = max_lead_ms
+        # Measured from receipt on this server's monotonic clock. The browser's absolute
+        # expiresAt is not trusted: a client clock several seconds slow expired valid work.
+        self.budget_ms = budget_ms
         self.device = device
 
     def health(self) -> tuple[int, dict]:
@@ -64,16 +66,23 @@ class CloudService:
             "questionVersion": QUESTION_VERSION,
             "model": "Strands Decider 2B",
             "revision": REVISION,
-            "maxLeadMs": self.max_lead_ms,
+            "budgetMs": self.budget_ms,
         }
 
-    def decide(self, user: str, body: bytes, now: float | None = None) -> tuple[int, dict]:
+    def decide(
+        self, user: str, body: bytes, now: float | None = None, received: float | None = None
+    ) -> tuple[int, dict]:
+        received = time.perf_counter() if received is None else received
+
+        def late() -> bool:
+            return (time.perf_counter() - received) * 1000 >= self.budget_ms
+
         if not USER.match(user):
             return 403, {"error": "forbidden"}
         if not 0 < len(body) <= 16384:
             return 413, {"error": "body_size"}
         try:
-            request = validate_request(body, self.max_lead_ms)
+            request = validate_request(body, max_lead_ms=None)
         except (ValueError, ValidationError):
             return 400, {"error": "invalid_request"}
         if self.service.engine is None:
@@ -86,7 +95,7 @@ class CloudService:
             refused = self.limits.reserve(user, today)
             if refused:
                 return 429, {"error": refused}
-            if time.time() * 1000 >= request.expiresAt:
+            if late():
                 return 410, {"error": "expired"}
             self.service.calls += 1
             start = time.perf_counter()
@@ -94,7 +103,7 @@ class CloudService:
                 result = choose(self.service.engine, request.observation)
             elapsed = (time.perf_counter() - start) * 1000
             # Never return a decision the client would have to apply late.
-            if time.time() * 1000 >= request.expiresAt:
+            if late():
                 return 410, {"error": "expired", "latencyMs": elapsed}
             return 200, {
                 **result,
@@ -148,12 +157,15 @@ def make_handler(cloud: CloudService):
                 return self.reply(400, {"error": "invalid_request"})
             if not 0 < length <= 16384:
                 return self.reply(413, {"error": "body_size"})
+            received = time.perf_counter()
             self.connection.settimeout(4)
             try:
                 body = self.rfile.read(length)
             except TimeoutError:
                 return self.reply(400, {"error": "invalid_request"})
-            return self.reply(*cloud.decide(self.headers.get("x-regatta-user", ""), body))
+            return self.reply(
+                *cloud.decide(self.headers.get("x-regatta-user", ""), body, received=received)
+            )
 
     return Handler
 
@@ -163,15 +175,15 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--threads", type=int, default=int(os.environ.get("REGATTA_THREADS", "4")))
     args = parser.parse_args()
-    max_lead_ms = float(os.environ.get("REGATTA_MAX_LEAD_MS", "15000"))
+    budget_ms = float(os.environ.get("REGATTA_BUDGET_MS", "6000"))
     limits = Limits(
         int(os.environ.get("REGATTA_USER_DAILY_LIMIT", "300")),
         int(os.environ.get("REGATTA_PROCESS_LIMIT", "1500")),
     )
-    if not 1000 <= max_lead_ms <= 30000:
-        raise ValueError("REGATTA_MAX_LEAD_MS must be 1000-30000")
+    if not 1000 <= budget_ms <= 20000:
+        raise ValueError("REGATTA_BUDGET_MS must be 1000-20000")
     service = Service()
-    cloud = CloudService(service, limits, max_lead_ms, "cpu")
+    cloud = CloudService(service, limits, budget_ms, "cpu")
     server = ThreadingHTTPServer(("0.0.0.0", args.port), make_handler(cloud))  # noqa: S104
     server.daemon_threads = True
     threading.Thread(

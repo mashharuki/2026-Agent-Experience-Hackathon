@@ -26,8 +26,8 @@ export interface RegattaStackProps extends cdk.StackProps {
   readonly workerCpu: 4096 | 8192 | 16384;
   /** 0 keeps the paid worker stopped; it is started only for demos. */
   readonly desiredCount: 0 | 1;
-  /** Longest observation-to-apply window the Decider accepts (ms). */
-  readonly maxLeadMs: number;
+  /** Server-side decision budget, measured from receipt on the task's own clock (ms). */
+  readonly budgetMs: number;
 }
 
 /** Routes that reach the Decider task; every route requires the regatta scope. */
@@ -46,8 +46,8 @@ export class RegattaStack extends cdk.Stack {
     super(scope, id, props);
     if (!/^[a-zA-Z0-9_-]{1,64}$/.test(props.imageTag))
       throw new Error("An immutable image tag is required");
-    if (!(props.maxLeadMs >= 1000 && props.maxLeadMs <= 30000))
-      throw new Error("maxLeadMs must be 1000-30000");
+    if (!(props.budgetMs >= 1000 && props.budgetMs <= 20000))
+      throw new Error("budgetMs must be 1000-20000");
 
     const site = new Frontend(this, "Site", {
       comment: "Snipe AI Regatta SPA",
@@ -141,7 +141,7 @@ export class RegattaStack extends cdk.Stack {
         String(props.workerCpu / 1024),
       ],
       environment: {
-        REGATTA_MAX_LEAD_MS: String(props.maxLeadMs),
+        REGATTA_BUDGET_MS: String(props.budgetMs),
         REGATTA_USER_DAILY_LIMIT: "300",
         REGATTA_PROCESS_LIMIT: "1500",
       },

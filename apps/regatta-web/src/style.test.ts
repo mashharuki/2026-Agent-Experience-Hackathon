@@ -25,11 +25,19 @@ const opaque = (value: string) => value.slice(0, 7);
 describe("spectator design tokens", () => {
   it("keeps small text at 4.5:1 or more on panels and over the sea", () => {
     for (const background of ["surface", "surface-selected"]) {
-      expect(contrast(token("text-muted"), token(background))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(token("ink"), token(background))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(token("positive"), token(background))).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(token("text-muted"), token(background)),
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(token("ink"), token(background))).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      expect(
+        contrast(token("positive"), token(background)),
+      ).toBeGreaterThanOrEqual(4.5);
     }
-    expect(contrast(token("on-sea"), opaque(token("scrim")))).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(token("on-sea"), opaque(token("scrim"))),
+    ).toBeGreaterThanOrEqual(4.5);
   });
   it("never sets text below 11px", () => {
     const sizes = [...css.matchAll(/font-size:\s*([\d.]+)px/g)].map((m) =>

@@ -949,7 +949,9 @@ export default function ObserverApp() {
                 <li
                   key={boat.id}
                   className={
-                    boat.id === snapshot.prediction ? "is-prediction" : undefined
+                    boat.id === snapshot.prediction
+                      ? "is-prediction"
+                      : undefined
                   }
                 >
                   <i

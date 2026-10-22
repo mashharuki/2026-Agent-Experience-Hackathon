@@ -71,7 +71,9 @@ describe("spectator fleet", () => {
     const remaining = ranked.map(fleetRemaining);
     expect(remaining).toEqual([...remaining].sort((a, b) => a - b));
     expect(ranked[0].id).toBe("jade");
-    expect(fleetRemaining({ ...race.boats[0], leg: "finished", finishTime: 70 })).toBe(-1);
+    expect(
+      fleetRemaining({ ...race.boats[0], leg: "finished", finishTime: 70 }),
+    ).toBe(-1);
   });
   for (const scenario of ["steady", "shift", "pressure", "dynamic"] as const) {
     it(`can complete a preview race in ${scenario} without modifying prior state`, () => {

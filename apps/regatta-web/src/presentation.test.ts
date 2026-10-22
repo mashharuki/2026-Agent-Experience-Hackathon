@@ -20,9 +20,9 @@ describe("standings", () => {
     const rows = standings(createFleetRace(1, "steady"), "coral");
     expect(rows.map((r) => r.rank)).toEqual([1, 2, 3, 4]);
     expect(rows[0].gapMeters).toBe(0);
-    expect(
-      rows.every((r) => r.gapMeters !== null && r.gapMeters >= 0),
-    ).toBe(true);
+    expect(rows.every((r) => r.gapMeters !== null && r.gapMeters >= 0)).toBe(
+      true,
+    );
     expect(rows.filter((r) => r.isPrediction).map((r) => r.id)).toEqual([
       "coral",
     ]);

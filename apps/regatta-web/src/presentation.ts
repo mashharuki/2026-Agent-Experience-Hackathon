@@ -26,18 +26,14 @@ export function standings(
 ): StandingRow[] {
   const ranked = fleetRanking(race);
   const racing = ranked.filter((boat) => boat.finishTime === null);
-  const lead = racing.length
-    ? Math.min(...racing.map(fleetRemaining))
-    : 0;
+  const lead = racing.length ? Math.min(...racing.map(fleetRemaining)) : 0;
   return ranked.map((boat, index) => ({
     id: boat.id,
     rank: index + 1,
     isPrediction: boat.id === prediction,
     finishTime: boat.finishTime,
     gapMeters:
-      boat.finishTime === null
-        ? Math.round(fleetRemaining(boat) - lead)
-        : null,
+      boat.finishTime === null ? Math.round(fleetRemaining(boat) - lead) : null,
   }));
 }
 

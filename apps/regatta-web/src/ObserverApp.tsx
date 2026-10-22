@@ -35,7 +35,7 @@ import {
   startSignIn,
 } from "./cloud";
 import { FleetRuntime, replayFleet } from "./fleet-runtime";
-import { raceOutcome } from "./presentation";
+import { raceOutcome, standings, tacticKind } from "./presentation";
 import { mountScene } from "./scene";
 
 const ja = {
@@ -79,7 +79,6 @@ const ja = {
   left: "残り",
   wind: "真風",
   heading: "針路",
-  tacks: "タック",
   chart: "コース図",
   result: "レースの結果",
   hit: "予想的中！",
@@ -87,6 +86,10 @@ const ja = {
   noWinner: "レース不成立・予想判定なし",
   unscored: "予想なし・判定対象外",
   yourPick: "予想",
+  leader: "先頭",
+  speedOf: "{name}の艇速",
+  headingOf: "{name}の針路",
+  predictedRank: "予想艇の順位",
   winner: "勝者",
   replay: "航跡を振り返る",
   export: "記録を保存",
@@ -173,7 +176,6 @@ const en: Record<keyof typeof ja, string> = {
   left: "Time left",
   wind: "True wind",
   heading: "Heading",
-  tacks: "Tacks",
   chart: "Course chart",
   result: "Race result",
   hit: "You picked the winner!",
@@ -181,6 +183,10 @@ const en: Record<keyof typeof ja, string> = {
   noWinner: "No valid result / prediction not scored",
   unscored: "No prediction — not scored",
   yourPick: "Your pick",
+  leader: "Leader",
+  speedOf: "{name} speed",
+  headingOf: "{name} heading",
+  predictedRank: "Your pick",
   winner: "Winner",
   replay: "Review the tracks",
   export: "Save recording",
@@ -234,6 +240,7 @@ const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60)
     .toString()
     .padStart(2, "0")}`;
+const TACTIC_ICON = { hold: "→", maneuver: "↺", pressure: "≋", mark: "⚑" };
 const color = (value: number) => `#${value.toString(16).padStart(6, "0")}`;
 const meta = (id: string) => FLEET.find((b) => b.id === id) ?? FLEET[0];
 const tactic = (value: string, text: Text) =>
@@ -331,6 +338,9 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
     };
   }, [runtime]);
   const status = race.status === "ready" ? text.readyRace : text[race.status];
+  const pickRank = snapshot.prediction
+    ? standings(race, snapshot.prediction).find((row) => row.isPrediction)?.rank
+    : undefined;
   return (
     <section className="sea-shell" aria-label={text.practice}>
       <div
@@ -408,16 +418,23 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
         <Chart runtime={runtime} race={race} label={text.chart} />
       </div>
       <div className="instruments" aria-live="off">
-        <div className="speed-instrument">
-          <span>{text.speed}</span>
-          <strong>
-            {(boat.speed * 1.94384).toFixed(1)}
-            <small>kn</small>
-          </strong>
-        </div>
         <div className="time-instrument">
           <span>{text.left}</span>
           <strong>{clock((MAX_TICKS - race.tick) * STEP)}</strong>
+        </div>
+        <div className="rank-instrument">
+          <span>{text.predictedRank}</span>
+          <strong>
+            {pickRank ?? "—"}
+            <small>/ {race.boats.length}</small>
+          </strong>
+        </div>
+        <div>
+          <span>{text.speedOf.replace("{name}", meta(boat.id).name)}</span>
+          <b>
+            {(boat.speed * 1.94384).toFixed(1)}
+            <small>kn</small>
+          </b>
         </div>
         <div>
           <span>{text.wind}</span>
@@ -427,12 +444,8 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
           </b>
         </div>
         <div>
-          <span>{text.heading}</span>
+          <span>{text.headingOf.replace("{name}", meta(boat.id).name)}</span>
           <b>{Math.round(degrees(boat.heading))}°</b>
-        </div>
-        <div>
-          <span>{text.tacks}</span>
-          <b>{boat.tacks}</b>
         </div>
         <div>
           <span>{text.mode}</span>
@@ -777,23 +790,29 @@ export default function ObserverApp() {
           )}
           <div className="fleet-standing">
             <h2>{text.rank}</h2>
-            {fleetRanking(race).map((boat, index) => (
+            {standings(race, snapshot.prediction).map((row) => (
               <button
                 type="button"
-                key={boat.id}
-                aria-pressed={race.boats[snapshot.focusIndex].id === boat.id}
-                onClick={() => runtime.focus(boat.id)}
+                key={row.id}
+                className={row.isPrediction ? "is-prediction" : undefined}
+                aria-pressed={race.boats[snapshot.focusIndex].id === row.id}
+                onClick={() => runtime.focus(row.id)}
               >
-                <span>{index + 1}</span>
+                <span>{row.rank}</span>
                 <i
                   className="boat-dot"
-                  style={{ background: color(meta(boat.id).color) }}
+                  style={{ background: color(meta(row.id).color) }}
                 />
-                <strong>{meta(boat.id).name}</strong>
+                <strong>{meta(row.id).name}</strong>
+                {row.isPrediction && (
+                  <em className="pick-tag">{text.yourPick}</em>
+                )}
                 <small>
-                  {boat.finishTime === null
-                    ? `${(boat.speed * 1.94384).toFixed(1)} kn`
-                    : text.finishedBoat}
+                  {row.finishTime !== null
+                    ? clock(row.finishTime)
+                    : row.gapMeters === 0
+                      ? text.leader
+                      : `+${row.gapMeters} m`}
                 </small>
               </button>
             ))}
@@ -818,7 +837,8 @@ export default function ObserverApp() {
             .reverse()
             .map((log) => (
               <div
-                className="decision-item"
+                className={`decision-item${log.boatId === snapshot.prediction ? " is-prediction" : ""}`}
+                data-kind={tacticKind(log.selected)}
                 key={`${log.boatId}-${log.observedTick}-${log.source}`}
               >
                 <span
@@ -827,18 +847,23 @@ export default function ObserverApp() {
                 />
                 <div>
                   <strong>{meta(log.boatId).name}</strong>
-                  <span>{tactic(log.selected, text)}</span>
+                  <span>
+                    <i className="tactic-icon" aria-hidden="true">
+                      {TACTIC_ICON[tacticKind(log.selected)]}
+                    </i>
+                    {tactic(log.selected, text)}
+                  </span>
                 </div>
                 <small>
                   {clock(log.observedTick * STEP)}
-                  <b>
+                  <b className={`source-badge source-${log.source}`}>
                     {log.source === "decider"
                       ? text.real
                       : log.source === "preview"
                         ? text.rule
-                        : text.fallback}{" "}
-                    · {text[log.status]}
+                        : text.fallback}
                   </b>
+                  <em>{text[log.status]}</em>
                 </small>
               </div>
             ))}

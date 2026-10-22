@@ -1090,3 +1090,75 @@ select {
     order: 1;
   }
 }
+
+/* The predicted boat stays marked wherever it appears. */
+.observer-app .instruments .time-instrument strong,
+.observer-app .instruments .rank-instrument strong {
+  font-size: 36px;
+  letter-spacing: -1.5px;
+  line-height: 0.95;
+}
+.rank-instrument strong small {
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #4b6573;
+}
+.fleet-standing button.is-prediction {
+  box-shadow: inset 3px 0 #ef8354;
+}
+.fleet-standing .pick-tag,
+.decision-item .pick-tag {
+  font-style: normal;
+}
+.decision-item.is-prediction {
+  box-shadow: inset 3px 0 #ef8354;
+  padding-left: 6px;
+}
+.decision-item[data-kind="hold"] div > span {
+  color: #4b6573;
+}
+.decision-item:not([data-kind="hold"]) div > span {
+  font-weight: 650;
+  color: #102f43;
+}
+.tactic-icon {
+  display: inline-block;
+  width: 14px;
+  margin-right: 3px;
+  font-style: normal;
+}
+.decision-item[data-kind="maneuver"] .tactic-icon {
+  color: #ef8354;
+}
+.decision-item[data-kind="pressure"] .tactic-icon {
+  color: #2f7fa3;
+}
+.decision-item[data-kind="mark"] .tactic-icon {
+  color: #2e7d68;
+}
+.decision-item > small em {
+  display: block;
+  font-style: normal;
+  margin-top: 2px;
+}
+.decision-item .source-badge {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.source-decider {
+  background: #244d61;
+  color: #fff;
+}
+.source-preview {
+  background: #e2eef0;
+  color: #244d61;
+}
+.source-fallback {
+  background: #fde6db;
+  color: #8a3c17;
+}

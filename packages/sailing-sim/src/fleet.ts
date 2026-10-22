@@ -328,17 +328,19 @@ export function previewTactic(observation: FleetObservation): string {
   return "hold_course";
 }
 
+/** Approximate course distance still to sail; -1 once finished. */
+export function fleetRemaining(boat: Boat): number {
+  return boat.leg === "finished"
+    ? -1
+    : boat.leg === "downwind"
+      ? distance(boat, { x: 0, y: 0 })
+      : MARK.y + 40 + distance(boat, MARK) - boat.markPhase * 10;
+}
 export function fleetRanking(race: FleetRace): Boat[] {
-  const remaining = (boat: Boat) =>
-    boat.leg === "finished"
-      ? -1
-      : boat.leg === "downwind"
-        ? distance(boat, { x: 0, y: 0 })
-        : MARK.y + 40 + distance(boat, MARK) - boat.markPhase * 10;
   return [...race.boats].sort((a, b) =>
     a.finishTime !== null && b.finishTime !== null
       ? a.finishTime - b.finishTime
-      : remaining(a) - remaining(b),
+      : fleetRemaining(a) - fleetRemaining(b),
   );
 }
 export function fleetWinners(race: FleetRace): string[] {

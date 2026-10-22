@@ -25,6 +25,11 @@ test("locks a prediction, observes explicit preview decisions, and resets after 
     .click();
   await expect(page.locator(".mark-indicator")).toContainText("Jade");
   await expect(page.locator(".locked-prediction")).toContainText("Aurora");
+  await expect(page.locator(".fleet-standing .is-prediction")).toHaveCount(1);
+  await expect(page.locator(".fleet-standing .is-prediction")).toContainText(
+    "Aurora",
+  );
+  await expect(page.locator(".instruments")).toContainText("Jadeの艇速");
   await page.getByRole("button", { name: "一時停止", exact: true }).click();
   await expect(page.getByRole("button", { name: "観戦を再開" })).toBeVisible();
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();

@@ -13,7 +13,7 @@
       "entry": ["src/App.tsx", "src/**/*.test.ts"]
     },
     "apps/cdk": {
-      "entry": ["bin/cdk.ts", "test/**/*.test.ts"],
+      "entry": ["bin/regatta-probe.ts", "bin/regatta.ts", "test/**/*.test.ts"],
       "ignoreDependencies": ["ts-node"]
     },
     "packages/*": {}

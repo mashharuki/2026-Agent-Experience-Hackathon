@@ -135,6 +135,54 @@ describe("spectator runtime", () => {
     runtime.finish();
     vi.useRealTimers();
   });
+  it.each([
+    [5000, "applied"],
+    [8100, "expired"],
+  ])(
+    "with an 8 s cloud deadline, a reply after %i ms is %s",
+    async (wait, status) => {
+      vi.useFakeTimers();
+      let request: DecisionRequest | undefined;
+      let resolve: ((reply: DecisionReply) => void) | undefined;
+      const runtime = new FleetRuntime(
+        (packet) => {
+          request = packet;
+          return new Promise<DecisionReply>((done) => {
+            resolve = done;
+          });
+        },
+        12,
+        8000,
+      );
+      runtime.setMode("decider");
+      runtime.predict("aurora");
+      runtime.start();
+      runtime.advance(1000 / 30);
+      const sent = request as DecisionRequest;
+      expect(sent.expiresAt - Date.now()).toBeLessThanOrEqual(8000);
+      expect(sent.expiresAt - Date.now()).toBeGreaterThan(7000);
+      vi.advanceTimersByTime(wait);
+      resolve?.(response(sent, "hold_course"));
+      for (let i = 0; i < 3; i++) await Promise.resolve();
+      runtime.advance(1000 / 30);
+      expect(runtime.logs[0].status).toBe(status);
+      expect(runtime.logs[0].appliedTick === null).toBe(status === "expired");
+      runtime.finish();
+      vi.useRealTimers();
+    },
+  );
+  it("switches transport and deadline only before the start", () => {
+    const runtime = new FleetRuntime(vi.fn());
+    const cloud = vi.fn();
+    expect(runtime.setTransport(cloud, 50_000)).toBe(false);
+    expect(runtime.setTransport(cloud, 8000)).toBe(true);
+    expect(runtime.deadline).toBe(8000);
+    runtime.predict("jade");
+    runtime.start();
+    expect(runtime.setTransport(vi.fn(), 3000)).toBe(false);
+    expect(runtime.deadline).toBe(8000);
+    runtime.finish();
+  });
   it("aborts after two inference failures without applying a substitute tactic", async () => {
     const transport = vi.fn().mockRejectedValue(new Error("inference_failed"));
     const runtime = new FleetRuntime(transport);

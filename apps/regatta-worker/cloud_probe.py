@@ -25,8 +25,14 @@ def main():
     with offline_only():
         engine, identity = load_local(Path("/models/hub"), args.threads, 42)
         startup = time.perf_counter() - started
+        print(json.dumps({"modelLoadedSeconds": startup}), flush=True)
         for case in range(12):
+            before = time.perf_counter()
             choose(engine, Observation.model_validate(observation(case)))
+            print(
+                json.dumps({"warmup": case, "latencyMs": (time.perf_counter() - before) * 1000}),
+                flush=True,
+            )
         results = []
         for case in range(args.count):
             before = time.perf_counter()
@@ -39,8 +45,9 @@ def main():
                     "source": result["source"],
                 }
             )
-            if (case + 1) % 10 == 0:
-                print(json.dumps({"progress": case + 1, "total": args.count}), flush=True)
+            print(
+                json.dumps({"progress": case + 1, "total": args.count, **results[-1]}), flush=True
+            )
     durations = sorted(item["latencyMs"] for item in results)
     report = {
         "scope": "Linux x86_64 CPU inference only; API and queue overhead excluded",

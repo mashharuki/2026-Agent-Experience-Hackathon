@@ -109,7 +109,9 @@ def options_for(obs: Observation) -> dict[str, str]:
     return options
 
 
-def validate_request(payload: bytes) -> Request:
+def validate_request(payload: bytes, max_lead_ms: float | None = 4000) -> Request:
+    """Validate a decision request. With max_lead_ms=None the caller enforces its own
+    deadline from receipt, so a skewed client clock cannot expire valid requests."""
     request = Request.model_validate_json(payload)
     obs = request.observation
     if request.boatId != obs.boat.id or {b.id for b in obs.others} != IDS - {obs.boat.id}:
@@ -118,7 +120,9 @@ def validate_request(payload: bytes) -> Request:
         raise ValueError("duplicate_pressure")
     if obs.mark.x != 0 or obs.mark.y != 100:
         raise ValueError("wrong_course")
-    if not time.time() * 1000 < request.expiresAt <= time.time() * 1000 + 4000:
+    if max_lead_ms is not None and not (
+        time.time() * 1000 < request.expiresAt <= time.time() * 1000 + max_lead_ms
+    ):
         raise ValueError("expired")
     return request
 
@@ -215,11 +219,11 @@ class Service:
         self.calls = 0
         self.error = None
 
-    def load(self, threads, device):
+    def load(self, threads, device, cache: Path | None = None):
         try:
             with offline_only():
                 engine, self.identity = load_local(
-                    Path.home() / ".cache/huggingface/hub", threads, 42, device=device
+                    cache or Path.home() / ".cache/huggingface/hub", threads, 42, device=device
                 )
                 from benchmark import observation
 

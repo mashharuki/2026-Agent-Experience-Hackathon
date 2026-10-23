@@ -68,7 +68,7 @@ Deciderに**型付きの選択問題** `choose_sailing_tactic`（版 `fleet-v4`�
 
 意図して決めたこと：
 
-- **候補を絞るのはコード、選ぶのはモデル。** 今は不正・無意味な選択肢（レグが違う、後ろにあるブローなど）はコードが外します。ただし「最善手」をコードが決めて、モデルに追認させることはしません。合法な候補が1つだけなら、モデルは呼ばずに `policy` として記録します。
+- **候補を絞るのはコード、選ぶのはモデル。** 今は不正・無意味な選択肢（レグが違う、後ろにあるブローなど）はコードが外します。ただし「最善手」をコードが決めて、モデルに追認させることはしません。レース中の艇には合法な候補が常に2つ以上あるので、モデルは毎回実際に選択します。
 - **選んだ戦術で航路が変わる。** 選ばれた戦術は目標針路になり、全艇共通の操舵コードがそれを追います。選択が違えば、航跡がはっきり分かれます。
 - **観客に見えることだけを渡す。** 観測に含めるのは、自艇、他の3艇、自艇位置の今の風、今見えているブロー、マーク、今の計画だけです。未来の風、乱数のseed、あなたの予想は含めません。
 - **遅れた返答は捨てて、適用しない。** 判断にはレースID・epoch・連番・艇を付けます。期限（ローカル3秒、AWS 6秒）に遅れた返答、一時停止や再戦の前のレースへの返答、艇のレグと合わなくなった返答は、期限切れ・不採用として記録するだけで何も変えません。2回続けて失敗したら、ルールで黙って代用せず「不成立」としてレースを終えます。
@@ -92,17 +92,14 @@ Deciderの呼び出し部分は、このプロジェクトの独立した判断�
 
 ## AWS構成
 
-```mermaid
-flowchart LR
-  U["ブラウザー<br/>React + Three.js<br/>30Hzシミュレーション"] -->|HTTPS| CF["CloudFront<br/>+ 非公開S3"]
-  U -->|"サインイン（Code + PKCE）"| COG["Amazon Cognito"]
-  U -->|"JWT・scope regatta/race"| API["API Gateway<br/>HTTP API"]
-  API -->|"VPC Link + Cloud Map<br/>/health・/decide"| DEC["ECS on Fargate<br/>16 vCPU / 32 GiB<br/>Strands Decider 2B"]
-  API -->|/debrief| LAM["AWS Lambda<br/>振り返り"]
-  LAM --> BR["Amazon Bedrock<br/>Nova Lite"]
-  LAM --> DDB[("DynamoDB<br/>1日の上限")]
-  ECR["Amazon ECR<br/>固定モデルのイメージ"] -.-> DEC
-```
+![Snipe AI Regatta のAWS構成](docs/architecture/diagrams/snipe-regatta-system.png)
+
+1回の戦術判断が、ブラウザーでの観測から操舵まで流れる様子：
+
+![1回の判断：観測、候補、選択、検査、操舵](docs/architecture/diagrams/snipe-regatta-decision.png)
+
+図の文字は英語です。編集できる元ファイルは [`snipe-regatta.drawio`](docs/architecture/diagrams/snipe-regatta.drawio)（2ページ・AWS公式アイコン入り）で、
+[`generate-regatta.py`](docs/architecture/diagrams/generate-regatta.py) で生成します。
 
 | 部品 | 役割 |
 | --- | --- |

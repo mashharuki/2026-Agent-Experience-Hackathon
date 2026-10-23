@@ -1,18 +1,20 @@
 # アーキテクチャ図
 
-## Snipe AI Regatta の初期設計図
+## Snipe AI Regatta（2026-10-23にデプロイした構成）
 
-`snipe-regatta.drawio` は2ページ（AWS構成／戦術判断と操船）。既存のAWS公式SVGを埋め込み、ノードと矢印を編集できる。
-`snipe-regatta-system.png` と `snipe-regatta-decision.png` はプレビュー。
+`snipe-regatta.drawio` は2ページ構成で、文字は英語。既存のAWS公式SVGを埋め込み、ノードと矢印を編集できる。
 
-**注意：** これは2026-10-21時点の設計案（人間スキッパー対AI、SQS経由の非同期判断）の図で、デプロイした構成とは異なる。
-実際にAWSへデプロイした構成（API Gateway → VPC Link → Fargate上のDecider、Lambda＋Bedrockの振り返り）は
-[README](../../../README.md#architecture-on-aws) のMermaid図と [`apps/cdk/lib/regatta-stack.ts`](../../../apps/cdk/lib/regatta-stack.ts) を正とする。
+- ページ1 `snipe-regatta-system.png`：`SnipeRegattaStack` のAWS構成（CloudFront＋S3、Cognito、HTTP API、VPC Link＋Cloud Map、Fargate上のDecider、Lambda＋Bedrock＋DynamoDB、ECR）
+- ページ2 `snipe-regatta-decision.png`：1回の戦術判断（観測→コードによる候補の絞り込み→Decider→期限・状態の検査→操舵）と、破棄・記録・振り返り
+
+正本はコード（[`apps/cdk/lib/regatta-stack.ts`](../../../apps/cdk/lib/regatta-stack.ts)、[`apps/regatta-web/src/fleet-runtime.ts`](../../../apps/regatta-web/src/fleet-runtime.ts)）。構成を変えたら、スクリプトの文言も合わせて直す。
+2026-10-21時点の設計案（人間スキッパー対AI、SQS経由）の図は、この版で置き換えた（Gitの履歴に残る）。
 
 ```sh
 python3 docs/architecture/diagrams/generate-regatta.py
-drawio --export --format png --page-index 1 --scale 1.3 --border 20 --theme light --output docs/architecture/diagrams/snipe-regatta-system.png docs/architecture/diagrams/snipe-regatta.drawio
-drawio --export --format png --page-index 2 --scale 1.3 --border 20 --theme light --output docs/architecture/diagrams/snipe-regatta-decision.png docs/architecture/diagrams/snipe-regatta.drawio
+cd docs/architecture/diagrams
+drawio --export --format png --page-index 1 --scale 1.3 --border 20 --theme light --output snipe-regatta-system.png snipe-regatta.drawio
+drawio --export --format png --page-index 2 --scale 1.3 --border 20 --theme light --output snipe-regatta-decision.png snipe-regatta.drawio
 ```
 
 生成スクリプトは標準ライブラリだけを使用する。GUIで編集した内容は生成スクリプトへ自動反映されない。

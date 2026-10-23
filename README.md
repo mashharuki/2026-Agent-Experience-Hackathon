@@ -1,315 +1,236 @@
 # Snipe AI Regatta
 
-Predict the winner, then watch four Snipe dinghies choose tactics on a changing sea. The local app supports real Strands Decider and an explicitly labelled rule-based preview. Select a boat to follow; your prediction is locked at the start.
+<p align="center"><img src="docs/brand/regatta/cover.png" alt="Snipe AI Regatta: read the wind, pick the winner" width="760"></p>
 
-[Current requirements](specs/003-regatta-spectator/spec.md) · [Implementation plan](specs/003-regatta-spectator/plan.md) · [Run locally](specs/003-regatta-spectator/quickstart.md)
-
-New AWS services and Bedrock debriefs are pending. Local model latency is not AWS performance or a guarantee of sailing skill. The previous photo-assistant AWS deployment was deleted; its code and evidence remain below.
-
-## Legacy photo-assistant archive
-
-<p align="center"><img src="docs/brand/logo-lockup.svg" alt="A little prep before the photo (撮る前のひと手間)" width="520"></p>
-
-[日本語版はこちら → README_ja.md](README_ja.md)
+**Read the wind. Pick the winner.** Four Snipe dinghies race on a changing sea. Before the start you pick
+the boat you think will win; then you watch. Each boat's tactics (tack now, hold the course, chase a gust,
+round the mark, jibe) are chosen live by **Strands Decider 2B**, and after the finish **Amazon Bedrock**
+writes a short debrief grounded in the decisions that were actually made.
 
 A submission to the [AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider).
 
-**Tags: `#strands-decider-2b` `#tool-selection`** · License: [MIT](LICENSE) (OSI approved) · [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
+**Tags: `#strands-decider-2b` `#tool-selection`** · License: [MIT](LICENSE) · [日本語 → README_ja.md](README_ja.md)
 
-## Overview
+## How it plays
 
-Before an ID or profile photo, you pick **one** small change (your brows or your bangs), try it, take a
-second photo, compare before and after, and choose for yourself. The app never rates your appearance, never
-suggests more than one thing at a time, and lets you stop at any moment.
+1. **Pick a winner.** Four boats with identical performance but different tactical profiles. Your pick is
+   locked at the start and never sent to the AI.
+2. **Watch the race.** A 30 Hz sailing simulation on a sea whose wind direction, wind speed and visible gusts
+   change over time. Follow any boat, ride on board, or switch to an overview. Pause, resume or end at any time.
+3. **See every decision.** A live feed shows which tactic each boat chose and whether it was applied, came
+   too late, or was rejected, and labels the source of every decision (real Decider or rule preview).
+4. **Check your pick.** Finish order decides the winner (ties count for everyone; no winner if nobody
+   finishes). Replay the tracks, save the record, and ask Bedrock for a debrief.
 
-The interesting part is who decides what:
-
-- **Strands Decider 2B** decides *which kind of help comes next*: a grooming tip, a tip about the shooting
-  setup, a clarifying question, or an offer to finish.
-- **Amazon Bedrock (Nova Lite)** looks at the photo and writes the explanation, only when the Decider's
-  choice needs one.
-- **Ordinary code (guards)** enforces what must always hold, whatever a model says: your explicit
-  restrictions, the two-change limit, and ending when you say so.
-
-The decision structure is extracted as a reusable pattern, see [Decision pattern](#decision-pattern-tool-selection).
-
-## Features
-
-- **Four screens**: Consult (what to look at, an optional wish, consent) → First photo → Try one thing →
-  Compare and choose.
-- **One suggestion at a time**, at most **two changes** and **three analyses** per session. You can finish
-  at any moment, from any screen.
-- **Choose explicit restrictions** before capture (for example "do not touch my brows"). They are passed to code guards; the optional wish text does not confirm a structured restriction.
-- **Answer clarifying questions** without another upload when a valid observation covers the chosen area. This uses one of the same three analysis slots.
-- **Honest about what cannot be seen**: backlight, dim light, a face out of frame or a photo that cannot be
-  compared with the earlier one lead to a single shooting tip or a retake, never to a confident claim.
-- **Privacy by design**: the photo is sent to the cloud only after you agree, is deleted right after
-  processing (and deletion is requested when you end the session), with periodic cleanup for failures.
-  Observation notes may be reused for up to ten minutes for a clarification, then removed after answering,
-  finishing, or periodic cleanup. Photos used for comparison stay in the browser's memory on your device. Logs contain ids and option names, never photos or your words.
-- **Japanese and English** UI and advice, switchable at any time (the advice follows the chosen language).
-- **Installable (PWA)**: add it to the home screen. The service worker only caches the static app shell; it
-  never touches the API, S3, Cognito, the sign-in callback or photos.
-- **Email-verified sign-up and sign-in** with Amazon Cognito (Authorization Code + PKCE).
-- **Cost controls**: the worker runs only when started, scales to zero, and the app enforces per-person and
-  daily quotas. A "door" tells you when the service is closed or warming up, instead of failing.
-
-## Architecture
-
-![System architecture](docs/architecture/diagrams/system-overview.en.png)
-
-> A Japanese version is [`system-overview.png`](docs/architecture/diagrams/system-overview.png). The editable
-> sources are [`photo-prep.en.drawio`](docs/architecture/diagrams/photo-prep.en.drawio) (English) and
-> [`photo-prep.drawio`](docs/architecture/diagrams/photo-prep.drawio) (Japanese): two pages each, official AWS icons.
-
-| Piece | What it does |
+| Boat | Profile given to the Decider |
 | --- | --- |
-| **SPA** (S3 + CloudFront with OAC) | React app served from a private bucket. Takes the photo in the browser. |
-| **Amazon Cognito** | Email-verified self-registration and sign-in, Authorization Code + PKCE, public client. |
-| **API Gateway HTTP API + Lambda** | JWT authorizer, then ownership checks in code. Python (Connexion + Mangum) built from the OpenAPI file. Accepts a request (202) and returns the result later. |
-| **S3 (images)** | Private bucket for temporary photos. The browser uploads with a signed POST, so photos never pass through the API. |
-| **DynamoDB** | Sessions, jobs, results, quotas and the service status. No images. |
-| **SQS (+ dead-letter queue)** | Carries only the job id to the worker. |
-| **ECS on Fargate worker** | Python worker (4 vCPU / 16 GB, one job at a time) that loads Strands Decider 2B once and calls Bedrock. In a public subnet with no inbound traffic; no NAT gateway or load balancer. |
-| **Amazon Bedrock** | Nova Lite (Converse API, Tokyo) observes the photo and explains. |
-| **Operations Lambdas** (EventBridge Scheduler) | Redispatch unsent jobs, sweep leftover images, start/stop and reconcile the worker. |
-| **CloudWatch, Budgets** | Logs without images; budget e-mails (a notification, not a spending limit). |
+| Aurora | Balance progress and risk |
+| Zephyr | Seek visible pressure (gusts) |
+| Coral | Prioritize windward progress |
+| Jade | Exploit wind shifts and openings |
 
-The AI part of the worker, in detail:
+The profile is the only difference. Boat speed, turning and sail handling are the same for all four, so
+tactics, not hidden bonuses, decide the race.
 
-![Inside the worker](docs/architecture/diagrams/decision-flow.png)
+## How we use Strands Decider (`#tool-selection`)
 
-More: [architecture baseline](docs/architecture/README.md) ·
-[why these technologies](docs/architecture/technology-selection.md) ·
-[cost estimate](docs/architecture/cost-estimate.md).
+The simulation runs in the browser and never waits for the model. Every 8 simulated seconds per boat (one
+request in flight at a time, at most 96 per race), the browser takes a snapshot and asks the Decider one
+**typed choice question**, `choose_sailing_tactic` (version `fleet-v4`):
 
-## How we use Strands Decider and Amazon Bedrock
-
-One analysis goes through four steps (code: [`apps/worker/src/photoprep_worker/`](apps/worker/src/photoprep_worker/)):
-
-1. **Bedrock observes** (`observe.py`). Nova Lite gets the photo and the scope and must answer with a JSON
-   object: what is visible, what is uncertain, lighting, framing and a confidence. The answer is validated
-   (pydantic); anything else fails the job instead of being guessed at. The prompt says not to infer what is
-   not visible and to ignore any text written in the photo.
-2. **The Decider chooses** (`decider.py`). The Decider never sees the image. It gets a *text state*: the
-   scope, the person's wish and restrictions, the observation, how many changes were used, the last advice.
-   It answers a **typed choice question** with four options, each with a plain description of when it is right:
-   `grooming_tip`, `capture_setup_tip`, `clarify`, `offer_finish`. We get back a probability for every option
-   and a confidence.
-3. **Guards overrule when they must** (`guards.py`). A missing or unreadable photo, an explicit restriction,
-   the two-change limit and "the person chose to finish" are checked in ordinary code. An override carries a
-   reason code that is recorded.
-4. **Only the selected tool runs** (`pipeline.py`, `explain.py`). `grooming_tip` calls Bedrock a second time
-   to write one short, undoable suggestion. The other three use fixed, neutral wording and call no model.
+| Option | When code offers it | What runs if chosen |
+| --- | --- | --- |
+| `hold_course` | always | keep the current plan |
+| `tack_now` | upwind leg | turn through the wind to the opposite tack |
+| `approach_mark` | upwind, within 45 m of the mark | round the mark to port |
+| `jibe_now` | downwind leg | jibe to the opposite broad reach |
+| `head_to_finish` | downwind leg | steer for the finish line |
+| `seek_visible_pressure_<gust>` | a gust that is visible and ahead | steer toward that gust |
 
 What we did on purpose:
 
-- **The Decider's choice changes what runs**, not just what is logged. Each option is wired to a handler and
-  only the chosen handler executes. Bedrock is called at most twice per analysis (one observation, at most one
-  explanation, 800 output tokens each, temperature 0), and a failed call is never replaced by canned advice
-  that looks like the model wrote it.
-- **Models are not trusted with rules.** In our smoke test the Decider still chose `grooming_tip` when the
-  state said "do not touch the brows"; the guard replaced it with `clarify` and recorded `restriction`.
-  That is why restrictions and limits live in code.
-- **We did not invent a confidence threshold.** Sensible choices came back with a confidence around 0.69, so a
-  fixed "reject below 0.8" would have thrown them away. The confidence guard is switched off until it can be
-  calibrated on evaluation data, and the confidence is never shown as "the probability the advice is right".
-- **Every decision leaves a record** (`DecisionRecord`: the options, probabilities, confidence, override reason
-  and which models ran), with no image and none of the person's words. An export tool turns them into a
-  demonstration table.
-- **Reproducible and offline**: the Decider and its base weights are fetched at image build time from pinned
-  revisions (the build fails if the Hub moved), and nothing is downloaded at run time.
-- **A small, honest surface for the user**: one suggestion, no scores, a comparison the person judges.
+- **Code narrows, the model chooses.** Code removes options that are illegal or pointless right now (wrong
+  leg, a gust behind the boat). It never picks the "best" one for the model to rubber-stamp. With a single
+  legal option, the model is not called and the decision is recorded as `policy`.
+- **The choice changes the boat's course.** The selected tactic becomes a target that the same steering code
+  every boat uses then follows. Different choices visibly split the fleet's tracks.
+- **Only what a spectator could see.** The observation holds the boat, the other three boats, the current
+  wind at the boat, the gusts visible now, the mark and the current plan. It never includes future wind, the
+  random seed, or your prediction.
+- **Late answers are discarded, never applied.** Each request carries the race id, epoch, sequence and boat. A
+  reply that misses the deadline (3 s locally, 6 s on AWS), belongs to a paused or restarted race, or no
+  longer fits the boat's leg is logged as expired or rejected and changes nothing. Two failures in a row end
+  the race as "no result" instead of quietly substituting rules.
+- **Honest labels.** The rule-based preview never calls the model and is always labelled as rules. Model
+  confidence is never shown as a chance of winning.
+- **Replays are deterministic.** A saved record contains the physics and wind versions and the applied
+  decisions; replaying it reproduces the race without calling any model.
 
-### Decision pattern (`#tool-selection`)
+The Decider plumbing reuses the project's standalone decision package
+([`apps/worker/src/photoprep_worker/decision_pattern/`](apps/worker/src/photoprep_worker/decision_pattern/),
+explained in [docs/decision-pattern.md](docs/decision-pattern.md)): a typed question, the Decider call, and
+validation of its probabilities. The sailing question and its options live in
+[`apps/regatta-worker/local_server.py`](apps/regatta-worker/local_server.py).
 
-"Typed question → Decider's choice → guards → only the chosen tool runs" is packaged on its own:
-[docs/decision-pattern.md](docs/decision-pattern.md), code in
-[`apps/worker/src/photoprep_worker/decision_pattern/`](apps/worker/src/photoprep_worker/decision_pattern/)
-(copy that directory into another app; tests check it depends on nothing else here). A runnable example:
+## How we use Amazon Bedrock
 
-```sh
-cd apps/worker && PYTHONPATH=src uv run python -m photoprep_worker.decision_pattern.example
+After a race, one button asks **Nova Lite** (Converse API, Tokyo) for a 3–5 sentence debrief
+([`apps/regatta-debrief/handler.py`](apps/regatta-debrief/handler.py)):
+
+- The browser sends a **strict summary**: finish times, outcome, your pick, and the decision log as enums and
+  ticks. There is no free text, so nothing in it can act as an instruction.
+- Each decision is labelled `[D1]`, `[D2]`…; the model is told to cite them and not to invent reasoning or
+  "this would have won" claims. **References to decisions that do not exist are removed** before the text is
+  shown.
+- One call per request, 800 output tokens at most, no automatic retry. A per-user and global daily quota is
+  reserved atomically in DynamoDB before Bedrock is called.
+- Races with only preview (rule) decisions are not sent to Bedrock.
+
+## Architecture on AWS
+
+```mermaid
+flowchart LR
+  U["Browser<br/>React + Three.js<br/>30 Hz simulation"] -->|HTTPS| CF["CloudFront<br/>+ private S3"]
+  U -->|"sign-in (Code + PKCE)"| COG["Amazon Cognito"]
+  U -->|"JWT, scope regatta/race"| API["API Gateway<br/>HTTP API"]
+  API -->|"VPC link + Cloud Map<br/>/health, /decide"| DEC["ECS on Fargate<br/>16 vCPU / 32 GiB<br/>Strands Decider 2B"]
+  API -->|/debrief| LAM["AWS Lambda<br/>debrief"]
+  LAM --> BR["Amazon Bedrock<br/>Nova Lite"]
+  LAM --> DDB[("DynamoDB<br/>daily quota")]
+  ECR["Amazon ECR<br/>pinned model image"] -.-> DEC
 ```
 
-## Tech stack
-
-Full table with the status of every choice: [docs/tech-stack.md](docs/tech-stack.md).
-
-| Area | Technology |
+| Piece | Role |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite 8, Material UI, TanStack Query, hand-written i18n (ja/en), PWA (manifest + service worker) |
-| API contract | OpenAPI 3.0.3 YAML as the source of truth ([`packages/api-spec`](packages/api-spec/openapi.yaml)); Orval generates the TypeScript client |
-| API | Python 3.12, Connexion 3 + Flask, Mangum on AWS Lambda, boto3 |
-| Worker | Python 3.12, PyTorch (CPU), Strands Decider 2B, pydantic, Pillow; Docker image on Amazon ECR |
-| AI | Strands Decider 2B (`StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`), Amazon Bedrock Nova Lite (`amazon.nova-lite-v1:0`) |
-| AWS | CloudFront, S3, Cognito, API Gateway (HTTP API), Lambda, DynamoDB, SQS, ECS on Fargate, ECR, EventBridge Scheduler, CloudWatch, Budgets (Tokyo `ap-northeast-1`) |
-| Infrastructure as code | AWS CDK v2 (TypeScript) with cdk-nag |
-| Tooling | pnpm workspaces, uv, Biome, Oxlint, Knip, jscpd, GitHub Spec Kit |
-| Tests | pytest + moto (API, worker), Vitest + Testing Library (frontend), Jest + CDK assertions (infrastructure) |
+| CloudFront + S3 (OAC) | Serves the static app from a private bucket. |
+| Cognito | Self sign-up with email verification; Authorization Code + PKCE; tokens kept in memory only. |
+| API Gateway HTTP API | JWT authorizer and scope on **every** route. It forwards the user id from the token and overwrites any client-supplied copy. |
+| Fargate Decider service | Loads the pinned Decider once, answers one request at a time, enforces per-user and per-process limits and a 6 s budget timed on its own clock. Reached only through the VPC link: no load balancer, no NAT gateway, and **0 tasks unless started**. |
+| Lambda + Bedrock + DynamoDB | The debrief described above. |
 
-## Getting started
+Infrastructure is [AWS CDK](apps/cdk/lib/regatta-stack.ts) with cdk-nag; the tests assert that every route
+is authenticated, that only the VPC link can reach the task, that the worker starts at 0 tasks, and that the
+Lambda may invoke only Nova Lite.
 
-### Run it locally (no AWS needed)
+## What we measured
 
-The frontend has a built-in **mock API** (the page shows a banner saying so). Photos stay in the browser and
-the advice is fixed replay data, not a real analysis.
+Numbers are from synthetic observations or a single real race, as noted. They describe speed and wiring, not
+how good the tactics are.
 
-```sh
-pnpm install
-pnpm --filter frontend dev
-```
+| Check | Result | Record |
+| --- | --- | --- |
+| Decider on a Mac (MPS), 100 decisions | p50 1.2 s, p95 1.4 s, 0 failures | [local](docs/reviews/2026-10-22-fleet-validation.md) |
+| Decider on Fargate, 4 vCPU, 100 decisions | p50 9.4 s, p95 11.4 s: too slow for real time | [cpu4](docs/reviews/2026-10-22-fleet-aws-cpu4-latency.json) |
+| Decider on Fargate, 16 vCPU, 100 decisions | p50 3.1 s, p95 3.7 s, max 3.8 s → cloud deadline set to 6 s | [cpu16](docs/reviews/2026-10-22-fleet-aws-cpu16-latency.json) |
+| Signed-in race on AWS | 47/47 decisions returned in time (p50 2.3 s, p95 2.7 s through the API); 4 boats finished; tack, hold and jibe applied; a reply that arrived after its boat finished was rejected | [AWS run](docs/reviews/2026-10-23-regatta-aws-validation.md) |
+| Bedrock debrief on AWS | Japanese debrief citing only logged decisions | same |
+| Unauthenticated calls | 401 on every route; CORS only for the app's origin | same |
+| Simple navigation cases (local) | the expected option in 16 of 16 | [local](docs/reviews/2026-10-22-fleet-validation.md) |
 
-Open the printed address. The mock banner lets you pick a scenario (normal, backlight, vague, failure) and the
-service door state. Run the tests (none of them touch AWS):
+A bug found only on AWS: a laptop whose clock was 4 seconds slow made every reply "expired", because the server
+trusted the browser's absolute deadline. The server now measures its budget from when it receives the
+request.
 
-```sh
-pnpm --filter frontend test
-(cd apps/api && uv sync && uv run pytest)
-(cd apps/worker && uv sync && uv run pytest)
-pnpm --filter cdk test
-```
+## Run it locally
 
-### Deploy to AWS
-
-You need: Node.js and pnpm 10.32.1, [uv](https://docs.astral.sh/uv/), Docker, the AWS CLI signed in to an
-account with permission to deploy, Amazon Bedrock access to Nova Lite in Tokyo, and a one-time
-`cdk bootstrap` for `ap-northeast-1`. **Never commit credentials or personal face photos.**
-
-Costs: the Fargate worker is billed while it runs (about $0.30 per hour), including when idle. Everything else
-is small at this scale. See the [cost estimate](docs/architecture/cost-estimate.md); the budget only sends
-e-mail, it does not stop spending.
-
-Run each `cdk` command **on its own**; two at once collide on `cdk.out`.
+You need Node.js with pnpm 10.32.1. For the real model you also need Python 3.12 with
+[uv](https://docs.astral.sh/uv/) and the pinned model cache.
 
 ```sh
-pnpm install
-pnpm build:lambda                       # the API package (code + Linux dependencies + the OpenAPI file)
+pnpm install --frozen-lockfile
+pnpm --filter regatta-web dev          # http://127.0.0.1:5174
 ```
 
-First deploy (the worker service starts at 0 tasks, so nothing is billed for compute yet):
+Without a model, choose **Rule-based preview**: the race runs on fixed rules, labelled as such. To use the
+real Decider on your machine (Apple silicon GPU shown; `--device cpu` also works), start the local bridge in
+another terminal. It reads the pinned model cache and does not download anything:
 
 ```sh
-cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com
+(cd apps/worker && uv sync --frozen)
+apps/worker/.venv/bin/python apps/regatta-worker/local_server.py --device mps
 ```
 
-Build and push the worker image (about 5 to 6 GB with the model weights; the repository is immutable, so use a new tag each time):
+More detail: [quickstart](specs/003-regatta-spectator/quickstart.md). Tests (none of them call AWS):
 
 ```sh
-docker build --platform linux/amd64 -f apps/worker/Dockerfile -t photoprep-worker:v1 .
-aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin <account>.dkr.ecr.ap-northeast-1.amazonaws.com
-docker tag photoprep-worker:v1 <WorkerRepositoryUri>:v1
-docker push <WorkerRepositoryUri>:v1
+pnpm --filter sailing-sim test         # 44: sailing, wind, fleet, tactics
+pnpm --filter regatta-web test         # 37: runtime, deadlines, replay, cloud client
+pnpm --filter regatta-web test:e2e     # Playwright spectator flow (preview mode)
+apps/worker/.venv/bin/python -m pytest -q apps/regatta-worker/tests -c apps/regatta-worker/pyproject.toml   # 28
+(cd apps/regatta-debrief && ../worker/.venv/bin/python -m pytest -q)                                        # 15
+pnpm --filter cdk test                 # includes 8 assertions for the regatta stack
 ```
 
-Deploy again with the image tag (a deploy stops a running worker; add `-c photoprep:workerDesiredCount=1` to keep it
-running), then publish the frontend. Users register through Cognito and confirm their email:
+## Deploy to AWS
+
+You need Docker, the AWS CLI signed in, Bedrock access to Nova Lite in Tokyo, and `cdk bootstrap` for
+`ap-northeast-1`. The 16 vCPU worker costs about **$0.99 per hour while it runs**, idle included. Start it
+only to play or record, then stop it.
 
 ```sh
-cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1
-pnpm --filter frontend run publish:plan     # prints what would be uploaded
-pnpm --filter frontend run publish:apply
+# 1. Images: the pinned base (downloads the model at build time), then the Decider service on top
+docker build --platform linux/amd64 -f apps/worker/Dockerfile -t photoprep-worker:base .
+docker build --platform linux/amd64 --build-arg BASE_IMAGE=photoprep-worker:base \
+  -f apps/regatta-worker/Dockerfile -t regatta-worker:decider-v2 .
+
+# 2. An ECR repository (the probe stack also runs the latency gate), then push with a new tag
+cd apps/cdk && pnpm exec cdk deploy --app 'pnpm exec ts-node bin/regatta-probe.ts' \
+  -o cdk.out-regatta-probe -c regatta:probeCpu=16384 --outputs-file ../../.local/regatta/probe-outputs.json
+docker tag regatta-worker:decider-v2 <RepositoryUriOutput>:decider-v2 && docker push <RepositoryUriOutput>:decider-v2
+
+# 3. The app stack (worker stopped), then publish the web app
+cd apps/cdk && pnpm exec cdk deploy --app 'pnpm exec ts-node bin/regatta.ts' -o cdk.out-regatta \
+  -c regatta:repositoryName=<repository name> -c regatta:imageTag=decider-v2 \
+  -c regatta:workerCpu=16384 -c regatta:desiredCount=0 -c regatta:budgetMs=6000 \
+  --outputs-file ../../.local/regatta/stack-outputs.json
+sh scripts/regatta-publish.sh .local/regatta/stack-outputs.json
+
+# 4. Start the worker (ready in about 3.5 minutes), and stop it afterwards
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 1
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 0
 ```
 
-Open the `SpaUrl`, choose **Create account**, register your email and a password (12+ characters with uppercase, lowercase, a number and a symbol), and enter the emailed verification code. Existing users can choose **Sign in**.
-
-### Start and stop the worker
-
-The service is **closed until the worker is started** (the app shows why). Starting takes a couple of minutes
-(image pull and model load); the door opens by itself when the model is ready.
-
-```sh
-aws lambda invoke --function-name <WorkerControlFunction> --region ap-northeast-1 --payload '{"action":"start"}' --cli-binary-format raw-in-base64-out /dev/stdout
-aws lambda invoke --function-name <WorkerControlFunction> --region ap-northeast-1 --payload '{"action":"stop"}'  --cli-binary-format raw-in-base64-out /dev/stdout
-```
-
-A nightly stop (03:00 JST) and a five-minute reconcile also scale the worker to zero. More in
-[docs/operations.md](docs/operations.md).
-
-### Delete everything
-
-1. Stop the worker (above).
-2. Keep anything you want (for example `apps/worker/tools/export_decisions.py`).
-3. The user pool and the table are **retained by default**. Deploy once with `destroyData=true`, then destroy
-   (this deletes the Cognito users and all stored data for good):
-
-```sh
-cd apps/cdk && pnpm exec cdk deploy -c photoprep:alertEmail=you@example.com -c photoprep:workerImageTag=v1 -c photoprep:destroyData=true
-cd apps/cdk && pnpm exec cdk destroy -c photoprep:destroyData=true
-```
-
-4. Check that nothing is left, and that no other `cdk` command ran in the meantime (it can recreate the stack):
-
-```sh
-aws cloudformation describe-stacks --stack-name PhotoPrepStack --region ap-northeast-1
-```
-
-5. Remove leftovers: ECR images, log groups, and the bootstrap stack if you will not use CDK again. Then check
-   Billing for what remains (ECR storage, public IPv4 addresses).
+Open the `SiteUrl`, create an account, sign in, and choose **Real Strands Decider**. To remove everything,
+delete `SnipeRegattaStack` and `RegattaProbeStack` (the ECR images go with it), plus the log groups that CDK's
+helper functions leave behind. Full runbook: [AWS validation](specs/003-regatta-spectator/aws-validation.md).
 
 ## Status
 
-A dated record (local remediation checks: 2026-10-19; AWS measurements: 2026-10-17). Details in [`specs/001-pre-photo-grooming-assist/`](specs/001-pre-photo-grooming-assist/)
-(spec, plan, research, tasks).
-
-| Item | State |
+| Item | State (2026-10-23) |
 | --- | --- |
-| Code | API, worker, frontend and infrastructure implemented with tests first. Local checks: API 378, worker 177, frontend 136, CDK 51, mock browser E2E 3; three optional tests skipped. See [validation record](docs/reviews/2026-10-19-remediation-validation.md). The latest changes have not been deployed to AWS |
-| Deployed to AWS | **Yes, once, for verification** (Tokyo). Sign-in, the door, photo upload, one real analysis (Nova Lite + Decider on Fargate) and the advice screen worked end to end, in English and Japanese. The compare-and-finish half has not been run on AWS. The environment is torn down after verification, so there is no public URL |
-| Measured on AWS | One analysis took about 9 seconds from acceptance to result (single sample, cold worker). The worker was ready 124 seconds after being started. **Not measured**: Decider peak memory and latency on Fargate, image deletion beyond the success path, quality of the advice (in either language) |
-| Known defects found only on AWS | Four, all fixed with tests: a token race after sign-in, a Lambda import error, a missing "open the door" call in the worker, and S3 upload forms signed for the global endpoint |
-| Demo video and article | Drafts only ([article](docs/article/draft.md), [script](docs/demo-script.md)) with `[MEASURE]`/`[TODO]` markers; not published |
-| Not done | AWS validation of the latest changes; the parts of "restrictions", "uncertain observations" and "limits" that need real photos. Knip and mock Playwright checks now pass; the new CI workflow has not run on GitHub yet |
+| Game | Prediction, four-boat race, live decision feed, three camera views, result, replay and record export; Japanese and English |
+| Real Decider | Locally (Mac) and on AWS Fargate (16 vCPU), end to end in a signed-in race |
+| Bedrock debrief | Working on AWS |
+| AWS environment | Deployed, verified and recorded on 2026-10-23, then **deleted**; no public URL is running |
+| Not measured | Tactical quality beyond the 16 simple cases; fairness of profiles and start positions over many races; stability across many races and devices; whether each debrief sentence matches the log (only references are checked) |
 
 ## Repository layout
 
 ```text
-apps/frontend/             React app (screens, i18n, PWA, mock API, publish script)
-apps/api/                  Python API for Lambda (Connexion) and the operations Lambdas
-apps/worker/               Python AI worker, Dockerfile, the reusable decision_pattern package
-apps/cdk/                  CDK stacks and constructs, with tests
-packages/api-spec/         openapi.yaml, the contract (source of truth)
-packages/photoprep-common/ State rules, DynamoDB store, log allow-list shared by API and worker
-docs/                      Architecture and diagrams, tech stack, operations, article and demo drafts
-docs/brand/               Logo and background images (SVG)
-specs/                     Spec Kit artifacts for the feature (spec, plan, research, tasks)
+apps/regatta-web/        React + MUI + Three.js spectator game, cloud client, Playwright test
+apps/regatta-worker/     Decider service (Fargate) and local bridge, latency probe, tests
+apps/regatta-debrief/    Bedrock debrief Lambda and tests
+packages/sailing-sim/    Deterministic sailing physics, wind, fleet, tactics (TypeScript, 30 Hz)
+apps/cdk/                CDK: SnipeRegattaStack, RegattaProbeStack (and the legacy photo-app stack)
+apps/worker/             Pinned model image and the reusable decision_pattern package
+specs/003-regatta-spectator/   Current spec, plan, tasks and AWS runbook
+docs/reviews/            Measurements and validation records
+docs/brand/regatta/      Cover image (SVG + PNG, generator script)
 ```
 
-Before making the repository public: `sh scripts/check-publishable.sh`.
+## Built with
 
-## Development workflow
+React 19, TypeScript, Vite 8, Material UI, Three.js · Python 3.12, uv, pydantic · Strands Decider 2B
+(`StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`, pinned revision) · Amazon Bedrock Nova Lite · AWS
+CloudFront, S3, Cognito, API Gateway, ECS on Fargate, ECR, Lambda, DynamoDB, Cloud Map · AWS CDK v2 with
+cdk-nag · Vitest, Playwright, pytest, Jest, Biome, Oxlint, Ruff, Knip, jscpd · GitHub Spec Kit.
 
-Work follows GitHub Spec Kit (Specify CLI 1.0.3) with the project constitution in
-[`.specify/memory/constitution.md`](.specify/memory/constitution.md): `specify`, `clarify`, `plan`, `tasks`,
-`implement`, with tests first. The OpenAPI YAML is edited first and the client regenerated
-(`pnpm --filter frontend api:generate`); generated code is never edited by hand. Read
-[docs/tech-stack.md](docs/tech-stack.md) before planning, and keep adopted choices apart from
-recommendations and unverified assumptions.
+## History
 
-## Branding
-
-The logo and background images are plain SVG files in [`docs/brand/`](docs/brand/), released under the same
-[MIT license](LICENSE) as the code. The mark shows a viewfinder (the photo to come), one brow (the one thing
-to tidy) and one small yellow dot (one small touch).
-
-| File | Use |
-|---|---|
-| [`logo-mark.svg`](docs/brand/logo-mark.svg) | Icon only |
-| [`logo-lockup.svg`](docs/brand/logo-lockup.svg) | Icon with the name (follows light/dark) |
-| [`background-landscape.svg`](docs/brand/background-landscape.svg) · [dark](docs/brand/background-landscape-dark.svg) | 1920×1080, slides and video |
-| [`background-portrait.svg`](docs/brand/background-portrait.svg) · [dark](docs/brand/background-portrait-dark.svg) | 1080×1920, phone screens |
-| [`title-card.png`](docs/brand/title-card.png) · [`end-card.png`](docs/brand/end-card.png) (SVG and `-dark` variants too) | 1920×1080 video title and end cards; rebuild with `python3 docs/brand/make-cards.py` |
-
-<p>
-  <img src="docs/brand/logo-mark.svg" alt="Logo mark" width="120">
-  <img src="docs/brand/background-landscape.svg" alt="Landscape background" width="360">
-  <img src="docs/brand/background-portrait.svg" alt="Portrait background" width="120">
-</p>
-
-The text in the lockup uses installed fonts (Noto Sans JP, Hiragino Sans, Yu Gothic); convert the text to
-outlines before using it in a final deliverable. The app's own favicon and PWA icons are not replaced yet.
+This repository started as a photo-preparation assistant that used the same Decider pattern. Its README,
+code and AWS evidence are kept: [docs/legacy/photo-assistant.md](docs/legacy/photo-assistant.md).
 
 ## License
 
-[MIT](LICENSE). AWS architecture icons are AWS's own artwork, used to explain the architecture
-([notice](docs/architecture/diagrams/README.md)). Other third-party notices: [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). Model weights are downloaded from their publishers under their own licenses; see
+[third-party notices](docs/THIRD_PARTY_NOTICES.md).

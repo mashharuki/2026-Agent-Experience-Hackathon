@@ -110,7 +110,8 @@ def build():
         + wake([(1060, 860), (1230, 760), (1150, 700), (1210, 652)], "#f6e2b5", 3)
         + wake([(1880, 740), (1760, 670), (1820, 630), (1720, 608)], "#c4eadf", 2.5)
     )
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}">
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" role="img" aria-labelledby="cover-title">
+  <title id="cover-title">Snipe AI Regatta: four AI sailboats race toward a mark. Read the wind. Pick the winner.</title>
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#8fc0d6"/>

@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/brand/regatta/cover.png" alt="Snipe AI Regatta: read the wind, pick the winner" width="760"></p>
 
-<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ Watch the demo video</strong></a></p>
+<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ Watch the demo video</strong></a> · <a href="https://d1ot40x9jd3rql.cloudfront.net"><strong>⛵ Try the live demo</strong></a></p>
 
 **Read the wind. Pick the winner.** Four Snipe dinghies race on a changing sea. Before the start you pick
 the boat you think will win; then you watch. Each boat's tactics (tack now, hold the course, chase a gust,
@@ -12,6 +12,30 @@ writes a short debrief grounded in the decisions that were actually made.
 A submission to the [AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider).
 
 **Tags: `#strands-decider-2b` `#tool-selection`** · License: [MIT](LICENSE) · [日本語 → README_ja.md](README_ja.md)
+
+## Try the live demo
+
+**https://d1ot40x9jd3rql.cloudfront.net** (desktop Chrome or Safari)
+
+| Mode | What you need | What runs |
+| --- | --- | --- |
+| **Rule-based preview** | Nothing; no sign-in | The full race on fixed rules, always available and labelled as rules |
+| **Real Strands Decider** | Create an account (email code), sign in, and the AWS worker must be running | Every tactic is chosen live by the Decider on AWS Fargate; after the finish, ask Bedrock for a debrief |
+
+The Decider runs on a 16 vCPU Fargate task that costs about $0.99 per hour even when idle, so it is **stopped
+by default and started on demand** (for judging or a demo). While it is stopped, the app says *"The AWS
+decision worker is stopped"* and the real model cannot be selected; the preview still works. After a start,
+the model is ready in about 3.5 minutes; press **Check model connection** in the app.
+
+For the maintainer, starting and stopping the worker (the names come from the stack outputs):
+
+```sh
+aws cloudformation describe-stacks --stack-name SnipeRegattaStack --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='ClusterName' || OutputKey=='ServiceName']"
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 1   # start
+aws ecs wait services-stable --cluster <ClusterName> --services <ServiceName>             # running
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 0   # stop
+```
 
 ## How it plays
 
@@ -203,7 +227,7 @@ helper functions leave behind. Full runbook: [AWS validation](specs/003-regatta-
 | Game | Prediction, four-boat race, live decision feed, three camera views, result, replay and record export; Japanese and English |
 | Real Decider | Locally (Mac) and on AWS Fargate (16 vCPU), end to end in a signed-in race |
 | Bedrock debrief | Working on AWS |
-| AWS environment | Deployed, verified and recorded on 2026-10-23, then **deleted**; no public URL is running |
+| AWS environment | **Live** at https://d1ot40x9jd3rql.cloudfront.net (redeployed 2026-10-23 after the recorded verification). The Decider worker is stopped by default and started on demand |
 | Not measured | Tactical quality beyond the 16 simple cases; fairness of profiles and start positions over many races; stability across many races and devices; whether each debrief sentence matches the log (only references are checked) |
 
 ## Repository layout

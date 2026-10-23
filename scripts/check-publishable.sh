@@ -9,9 +9,10 @@ ok() { echo "ok:   $1"; }
 # 1. An OSI-approved license is present (MIT).
 if [ -f LICENSE ] && head -1 LICENSE | grep -q "MIT License"; then ok "LICENSE is MIT"; else fail "LICENSE is missing or not MIT"; fi
 
-# 2. No tracked photos: only the two architecture diagrams and the four app icons may be images.
+# 2. No tracked photos: only generated diagrams, the cover image and the four app icons may be images.
 images=$(git ls-files | grep -iE '\.(jpe?g|png|gif|webp|heic|bmp|tiff?)$' \
-  | grep -vE '^docs/architecture/diagrams/(system-overview|decision-flow)\.png$' \
+  | grep -vE '^docs/architecture/diagrams/snipe-regatta-(system|decision)\.png$' \
+  | grep -vE '^docs/brand/regatta/cover(-1280)?\.png$' \
   | grep -vE '^apps/frontend/public/icons/(icon-192|icon-512|icon-maskable-512|apple-touch-icon)\.png$')
 if [ -z "$images" ]; then ok "no photos tracked"; else fail "images tracked: $images"; fi
 if git ls-files | grep -E '^evaluation/(holdout|dev-examples)/.+\.(jpe?g|png)$' >/dev/null; then

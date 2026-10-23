@@ -16,8 +16,8 @@
 以下の一覧は、特記のない限り旧写真支援アプリの実装スナップショット。
 
 更新日：2026-10-21。Spec Kitによる計画・タスク分解・実装時の参照資料。
-選定理由は[技術選定書](architecture/technology-selection.md)、サービス間の責務とデータフローは
-[アーキテクチャ設計書](architecture/README.md)、費用は[試算](architecture/cost-estimate.md)を参照する。
+選定理由は[技術選定書](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/architecture/technology-selection.md)、サービス間の責務とデータフローは
+[アーキテクチャ設計書](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/architecture/README.md)、費用は[試算](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/architecture/cost-estimate.md)を参照する。
 
 ## 状態の読み方
 
@@ -104,7 +104,7 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 ## Spec Kitでの適用ルール
 
 1. 各工程の開始時に本書、[憲章](../.specify/memory/constitution.md)、
-   [MVP案](mvp.md)、[アーキテクチャ](architecture/README.md)を読む。
+   [MVP案](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/mvp.md)、[アーキテクチャ](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/architecture/README.md)を読む。
    本書は技術選定の一覧であり、憲章や公式ハッカソン要件を緩和しない。
 2. **specify / clarify**：利用体験・制約を定める。採用技術を理由に未合意の機能を追加しない。
 3. **plan**：Technical Contextに本書へのリンクと、その機能が使う技術を記載する。
@@ -121,20 +121,20 @@ FastAPIは比較した代替案であり、現在の推奨構成へ同時に追�
 
 ## レビュー修正の検証範囲（2026-10-19）
 
-確認質問の回答API、短命な観察の再利用、原子的な受付、待機中の終了、画像回収の部分失敗検出を追加した。詳細と実行結果は [検証記録](reviews/2026-10-19-remediation-validation.md)。今回差分はローカル・モック検証までで、AWSでの検証済みという意味ではない。Vite+、Swagger UI、追加言語は今回導入していない。
+確認質問の回答API、短命な観察の再利用、原子的な受付、待機中の終了、画像回収の部分失敗検出を追加した。詳細と実行結果は [検証記録](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-19-remediation-validation.md)。今回差分はローカル・モック検証までで、AWSでの検証済みという意味ではない。Vite+、Swagger UI、追加言語は今回導入していない。
 
 ## 追加実装・モデル実験（2026-10-20実装・ローカル実験済み）
 
-[評価ハーネス](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md)は既存Python／pytest／Pydantic／JSONLとCPU Deciderを使い、新規依存なし。初回275判断ではv2の改善がなく不採用とした。[初回結果](reviews/2026-10-20-local-model-evaluation.md)は保持する。その後の[実行可能性分離](../specs/001-pre-photo-grooming-assist/eligibility-plan.md)では、既定v4がコードで候補を制限し、複数候補のみ実モデルへ渡す。終了だけならDeciderを省き、source=policy・スコアnullで記録する。confidence閾値0は維持。旧データと分けた合成40件で検証し、通常CIはfakeと全データ版の検査のみ。実写真・今回差分のAWS性能・人間のラベル検証は未実施。
+[評価ハーネス](../specs/001-pre-photo-grooming-assist/model-evaluation-plan.md)は既存Python／pytest／Pydantic／JSONLとCPU Deciderを使い、新規依存なし。初回275判断ではv2の改善がなく不採用とした。[初回結果](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-20-local-model-evaluation.md)は保持する。その後の[実行可能性分離](../specs/001-pre-photo-grooming-assist/eligibility-plan.md)では、既定v4がコードで候補を制限し、複数候補のみ実モデルへ渡す。終了だけならDeciderを省き、source=policy・スコアnullで記録する。confidence閾値0は維持。旧データと分けた合成40件で検証し、通常CIはfakeと全データ版の検査のみ。実写真・今回差分のAWS性能・人間のラベル検証は未実施。
 
 ## 比較・任意保存（実装済み・ローカル検証）
 
-[比較・任意保存](../specs/001-pre-photo-grooming-assist/photo-completion-plan.md)は既存React／MUIと端末内のBlob URLを使う。任意ガイド、並置／A・B切替、明示した前／後／変更なし画像の保存要求を実装した。新規API・S3保存・写真の自動キャッシュは追加していない。[検証記録](reviews/2026-10-19-photo-completion-validation.md)に合成映像での撮影・JPEG・ダウンロード内容の確認を記載。終了時はメモリを解放し、本人が保存したファイルは端末に残る。iOS／Android実機での保存操作は未確認。
+[比較・任意保存](../specs/001-pre-photo-grooming-assist/photo-completion-plan.md)は既存React／MUIと端末内のBlob URLを使う。任意ガイド、並置／A・B切替、明示した前／後／変更なし画像の保存要求を実装した。新規API・S3保存・写真の自動キャッシュは追加していない。[検証記録](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-19-photo-completion-validation.md)に合成映像での撮影・JPEG・ダウンロード内容の確認を記載。終了時はメモリを解放し、本人が保存したファイルは端末に残る。iOS／Android実機での保存操作は未確認。
 
 ## 最新のAWS検証（2026-10-21）
 
-[検証記録](reviews/2026-10-21-aws-validation.md)に、実API・Cognito PKCE・Nova Lite／Decider v4の動作を記録した。合成画像による一手→前後比較→選択保存と、合成Observationによる確認回答・上限を区別する。処理が速く終了した場合の冪等再送不具合をAPIで修正し、382テストとAWS再実行で確認した。外部契約の型・生成クライアント・依存スタックに変更はない。検証終了後はワーカー0台、受付停止。人間による品質評価・実機保存・通知到達は別途確認する。
+[検証記録](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-21-aws-validation.md)に、実API・Cognito PKCE・Nova Lite／Decider v4の動作を記録した。合成画像による一手→前後比較→選択保存と、合成Observationによる確認回答・上限を区別する。処理が速く終了した場合の冪等再送不具合をAPIで修正し、382テストとAWS再実行で確認した。外部契約の型・生成クライアント・依存スタックに変更はない。検証終了後はワーカー0台、受付停止。人間による品質評価・実機保存・通知到達は別途確認する。
 
 ## セルフ登録（2026-10-21）
 
-ユーザー依頼により、Cognitoのメール確認コード付きセルフ登録を公開した。ログイン前に日英の登録導線を表示し、Hosted UIから既存PKCEコールバックへ戻る。既存プールを維持し、業務OpenAPI・生成クライアント・利用制限は変更していない。[検証記録](reviews/2026-10-21-signup-validation.md)参照。実際のメール受信・コード入力後の本人操作は未検証。
+ユーザー依頼により、Cognitoのメール確認コード付きセルフ登録を公開した。ログイン前に日英の登録導線を表示し、Hosted UIから既存PKCEコールバックへ戻る。既存プールを維持し、業務OpenAPI・生成クライアント・利用制限は変更していない。[検証記録](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-21-signup-validation.md)参照。実際のメール受信・コード入力後の本人操作は未検証。

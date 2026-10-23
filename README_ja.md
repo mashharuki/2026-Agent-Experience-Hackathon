@@ -224,7 +224,7 @@ Vitest、Playwright、pytest、Jest、Biome、Oxlint、Ruff、Knip、jscpd · Gi
 ## これまでの経緯
 
 このリポジトリは、同じDeciderの判断パターンを使った写真の身支度アシスタントとして始まりました。
-そのREADME・コード・AWSでの検証記録は残してあります：[docs/legacy/photo-assistant_ja.md](docs/legacy/photo-assistant_ja.md)。
+コードは `apps/` と `specs/001-pre-photo-grooming-assist/` に残しています。README・文書・AWSでの検証記録は `docs/` から削除し、Gitの履歴に残しています：[コミット5cc9448時点の写真アプリのREADME](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/legacy/photo-assistant_ja.md)。
 
 ## ライセンス
 

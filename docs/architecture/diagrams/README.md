@@ -1,9 +1,13 @@
 # アーキテクチャ図
 
-## 現行企画：Snipe AI Regatta（未実装の設計）
+## Snipe AI Regatta の初期設計図
 
 `snipe-regatta.drawio` は2ページ（AWS構成／戦術判断と操船）。既存のAWS公式SVGを埋め込み、ノードと矢印を編集できる。
-`snipe-regatta-system.png` と `snipe-regatta-decision.png` はプレビュー。以下で再生成する。
+`snipe-regatta-system.png` と `snipe-regatta-decision.png` はプレビュー。
+
+**注意：** これは2026-10-21時点の設計案（人間スキッパー対AI、SQS経由の非同期判断）の図で、デプロイした構成とは異なる。
+実際にAWSへデプロイした構成（API Gateway → VPC Link → Fargate上のDecider、Lambda＋Bedrockの振り返り）は
+[README](../../../README.md#architecture-on-aws) のMermaid図と [`apps/cdk/lib/regatta-stack.ts`](../../../apps/cdk/lib/regatta-stack.ts) を正とする。
 
 ```sh
 python3 docs/architecture/diagrams/generate-regatta.py
@@ -11,32 +15,10 @@ drawio --export --format png --page-index 1 --scale 1.3 --border 20 --theme ligh
 drawio --export --format png --page-index 2 --scale 1.3 --border 20 --theme light --output docs/architecture/diagrams/snipe-regatta-decision.png docs/architecture/diagrams/snipe-regatta.drawio
 ```
 
-## 旧企画：写真支援アプリ
+生成スクリプトは標準ライブラリだけを使用する。GUIで編集した内容は生成スクリプトへ自動反映されない。
 
-`photo-prep.drawio` をdraw.io Desktop / diagrams.netで開いて編集する。
-ページ1は全体構成、ページ2はAI処理とデータ保護。ノード・矢印・テキストを編集できる。
-公式SVGアイコンをファイル内に埋め込んでおり、表示時の外部通信は不要。
-
-## 出力
-
-日本語版（`photo-prep.drawio`）と英語版（`photo-prep.en.drawio`）を同じスクリプトで生成する。
-文言は `generate.py` の `L(日本語, English)` に対で書いてあるので、片方だけ直さない。
-
-```sh
-python3 docs/architecture/diagrams/generate.py        # 日本語版
-python3 docs/architecture/diagrams/generate.py en     # English
-cd docs/architecture/diagrams
-drawio --export --format png --page-index 1 --scale 1.5 --border 20 --theme light --output system-overview.png photo-prep.drawio
-drawio --export --format png --page-index 2 --scale 1.5 --border 20 --theme light --output decision-flow.png photo-prep.drawio
-drawio --export --format png --page-index 1 --scale 1.5 --border 20 --theme light --output system-overview.en.png photo-prep.en.drawio
-drawio --export --format png --page-index 2 --scale 1.5 --border 20 --theme light --output decision-flow.en.png photo-prep.en.drawio
-```
-
-プレゼン資料（`docs/presentation/images/`）には、英語版PNGの上端（タイトルと副題）を切り落としたものを置いている。
-
-draw.io Desktop 31.1.8で書き出し確認。生成スクリプトは標準ライブラリだけを使用する。
-GUIで編集した内容は生成スクリプトへ自動反映されないため、編集後はスクリプトを更新するか、
-再生成せずdraw.ioファイルを正本として書き出す。
+旧写真支援アプリの図（`photo-prep*.drawio`、`system-overview*.png`、`decision-flow*.png`、`generate.py`）は
+2026-10-23に削除した。Gitの履歴（コミット5cc9448まで）に残っている。
 
 ## AWS公式アイコン
 

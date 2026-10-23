@@ -42,7 +42,7 @@ G1/G2と性能全般の合格は別途必要。
 **Decision**: 判断間隔8秒以上、観測→適用p95≤2秒目標、3秒期限。100回の実測を先行ゲートにする。
 **Rationale**: 旧起動時間146〜162秒は温まった判断遅延の根拠ではない。リアルタイム対戦への適合は未検証。
 **Alternatives**: 状態短縮・候補調整を先に行い、GPUや別モデルへ無条件に増額しない。停止型モードへの変更は合意後。
-**Source**: [旧AWS検証](../../docs/reviews/2026-10-21-aws-validation.md)。
+**Source**: [旧AWS検証](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-21-aws-validation.md)。
 
 ## 事後解説と再生
 

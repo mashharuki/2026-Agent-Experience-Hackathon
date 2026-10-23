@@ -1,4 +1,9 @@
-"""Generate the two-page editable regatta design using existing AWS SVG icons."""
+"""Generate the editable two-page diagram of the deployed Snipe AI Regatta (draw.io).
+
+Page 1: the AWS architecture of SnipeRegattaStack as deployed on 2026-10-23.
+Page 2: one tactical decision, from the browser snapshot to the steering.
+Standard library only; official AWS icons are embedded from aws-icons/.
+"""
 
 import base64
 import xml.etree.ElementTree as ET
@@ -30,13 +35,7 @@ def page(name, width, height):
 
 def cell(key, value, x, y, width, height, style, parent="1"):
     node = ET.SubElement(
-        ROOT,
-        "mxCell",
-        id=key,
-        value=value,
-        style=FONT + style,
-        vertex="1",
-        parent=parent,
+        ROOT, "mxCell", id=key, value=value, style=FONT + style, vertex="1", parent=parent
     )
     ET.SubElement(
         node,
@@ -49,21 +48,17 @@ def cell(key, value, x, y, width, height, style, parent="1"):
     )
 
 
-def text(key, value, x, y, width, height, size=17, parent="1"):
-    cell(
-        key,
-        value,
-        x,
-        y,
-        width,
-        height,
-        f"text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;"
-        f"fontSize={size};strokeColor=none;fillColor=none;",
-        parent,
+def text(key, value, x, y, width, height, size=17, parent="1", bold=False, color=None, valign="middle"):
+    style = (
+        f"text;html=0;whiteSpace=wrap;align=left;verticalAlign={valign};"
+        f"fontSize={size};strokeColor=none;fillColor=none;fontStyle={int(bold)};"
     )
+    if color:
+        style += f"fontColor={color};"
+    cell(key, value, x, y, width, height, style, parent)
 
 
-def panel(key, title, x, y, width, height, fill="#F2F7FB"):
+def panel(key, title, x, y, width, height, fill="#F2F7FB", stroke="#A9BECF", dashed=False):
     cell(
         key,
         "",
@@ -71,12 +66,12 @@ def panel(key, title, x, y, width, height, fill="#F2F7FB"):
         y,
         width,
         height,
-        f"rounded=1;fillColor={fill};strokeColor=#A9BECF;strokeWidth=2;",
+        f"rounded=1;arcSize=6;fillColor={fill};strokeColor={stroke};strokeWidth=2;dashed={int(dashed)};",
     )
-    text(key + "-title", title, x + 18, y + 8, width - 36, 36, 20)
+    text(key + "-title", title, x + 18, y + 8, width - 36, 34, 18, bold=True)
 
 
-def service(key, title, body, icon, x, y, width=230, height=160):
+def service(key, title, body, icon, x, y, width=250, height=170, accent="#779AB4"):
     cell(
         key,
         "",
@@ -84,12 +79,10 @@ def service(key, title, body, icon, x, y, width=230, height=160):
         y,
         width,
         height,
-        "rounded=1;fillColor=#FFFFFF;strokeColor=#779AB4;strokeWidth=2;",
+        f"rounded=1;arcSize=8;fillColor=#FFFFFF;strokeColor={accent};strokeWidth=2;",
     )
     if icon:
-        svg = base64.b64encode(
-            (HERE / "aws-icons" / f"{icon}.svg").read_bytes()
-        ).decode()
+        svg = base64.b64encode((HERE / "aws-icons" / f"{icon}.svg").read_bytes()).decode()
         cell(
             key + "-icon",
             "",
@@ -100,13 +93,13 @@ def service(key, title, body, icon, x, y, width=230, height=160):
             "shape=image;imageAspect=0;image=data:image/svg+xml," + svg + ";",
             key,
         )
-        text(key + "-label", title, 68, 10, width - 80, 50, 19, key)
+        text(key + "-label", title, 68, 10, width - 80, 52, 18, key, bold=True)
     else:
-        text(key + "-label", title, 16, 10, width - 32, 50, 20, key)
-    text(key + "-body", body, 16, 70, width - 32, height - 80, 16, key)
+        text(key + "-label", title, 16, 10, width - 32, 52, 19, key, bold=True)
+    text(key + "-body", body, 16, 68, width - 32, height - 78, 15, key, color="#3A5670", valign="top")
 
 
-def edge(key, source, target, label="", anchors="", dashed=False, points=()):
+def edge(key, source, target, label="", anchors="", dashed=False, points=(), color="#426782"):
     node = ET.SubElement(
         ROOT,
         "mxCell",
@@ -117,276 +110,243 @@ def edge(key, source, target, label="", anchors="", dashed=False, points=()):
         edge="1",
         parent="1",
         style=FONT
-        + "edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#426782;strokeWidth=2;"
-        f"endArrow=block;labelBackgroundColor=#FFFFFF;fontSize=15;dashed={int(dashed)};"
+        + f"edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor={color};strokeWidth=2;"
+        f"endArrow=block;labelBackgroundColor=#FFFFFF;fontSize=14;dashed={int(dashed)};"
         + anchors,
     )
-    geometry = ET.SubElement(
-        node, "mxGeometry", relative="1", attrib={"as": "geometry"}
-    )
+    geometry = ET.SubElement(node, "mxGeometry", relative="1", attrib={"as": "geometry"})
     if points:
         array = ET.SubElement(geometry, "Array", attrib={"as": "points"})
         for x, y in points:
             ET.SubElement(array, "mxPoint", x=str(x), y=str(y))
 
 
-page("01 AWS architecture", 1700, 1110)
-text("title", "Snipe AI Regatta  |  人間スキッパー vs AI", 40, 20, 1600, 50, 30)
+RIGHT = "exitX=1;exitY=0.5;entryX=0;entryY=0.5;"
+DOWN = "exitX=0.5;exitY=1;entryX=0.5;entryY=0;"
+
+# --- Page 1: AWS architecture ---------------------------------------------------------
+page("01 AWS architecture", 1720, 1150)
+text("title", "Snipe AI Regatta  |  AWS architecture (SnipeRegattaStack)", 40, 18, 1600, 48, 30, bold=True)
 text(
     "subtitle",
-    "設計案・未実装 / 2026-10-21 / 操船と描画はブラウザー、戦術判断はAWS",
+    "Deployed and verified 2026-10-23 · Tokyo ap-northeast-1 (CloudFront is global) · "
+    "simulation and rendering run in the browser; only tactical choices and the debrief go to AWS",
     42,
-    78,
-    1550,
-    34,
-    20,
-)
-panel(
-    "aws",
-    "AWS Tokyo（CloudFrontはグローバル） / 新スタックは未作成",
-    350,
-    135,
-    1310,
-    810,
-)
-panel(
-    "runtime",
-    "レース中の判断経路：8秒以上間隔 / 処理中1件 / 最大24回",
-    370,
-    425,
-    1270,
-    260,
+    70,
+    1640,
+    30,
+    16,
+    color="#4F6B82",
 )
 service(
     "browser",
-    "プレイヤーのPC\nReact + Three.js",
-    "舵・メイン操作\n物理30Hz / 描画補間\nネットワーク待ちで停止しない",
+    "Browser (desktop)\nReact + Three.js",
+    "30 Hz sailing simulation and rendering.\nNever waits for the model.\nApplies a reply only if it is fresh.",
     None,
-    35,
-    460,
-    280,
-    195,
+    40,
+    470,
+    250,
+    190,
+    "#4B83C3",
 )
-service("cdn", "Amazon\nCloudFront", "HTTPS / SPA配信\nOAC", "cloudfront", 390, 220)
-service("site", "Amazon S3", "静的アセット専用\n非公開・暗号化", "s3", 690, 220)
+panel("aws", "AWS Cloud  /  ap-northeast-1", 330, 120, 1350, 870)
+service("cdn", "Amazon\nCloudFront", "HTTPS, serves the SPA.\nOrigin access control.", "cloudfront", 380, 180)
+service("site", "Amazon S3", "Private bucket with the\nstatic build and config.json.", "s3", 700, 180)
 service(
     "auth",
     "Amazon\nCognito",
-    "Code + PKCE\naccess token / scope",
+    "Email-verified sign-up.\nCode + PKCE, public client.\nScope regatta/race.",
     "cognito",
-    1250,
-    220,
-    270,
-)
-service("api", "API Gateway", "HTTP API / JWT\n受付と結果取得", "apigateway", 390, 490)
-service(
-    "lambda", "AWS Lambda", "所有権・quota・lease\n原子的なjob受付", "lambda", 690, 490
+    1380,
+    180,
+    260,
 )
 service(
-    "queue", "Amazon SQS", "job IDのみ / DLQ\n期限後は推論しない", "sqs", 990, 490, 210
+    "api",
+    "Amazon\nAPI Gateway",
+    "HTTP API, JWT + scope on\nevery route; sets\nx-regatta-user from sub.\nThrottle 5 req/s.",
+    "apigateway",
+    380,
+    470,
+    250,
+    190,
+)
+panel("vpc", "VPC  /  public subnets  ·  no NAT gateway, no load balancer", 680, 410, 960, 300, "#F5F9EE", "#779C46")
+service(
+    "map",
+    "AWS Cloud Map",
+    "Routes /health and /decide\nto decider.regatta.internal\n(SRV, port 8080).",
+    None,
+    720,
+    470,
+    250,
+    190,
+    "#779C46",
 )
 service(
-    "worker",
-    "ECS Fargate",
-    "Decider 2B / CPU\n起動時のみ1、普段0\n候補選択 → ツール",
+    "decider",
+    "ECS on Fargate\nDecider service",
+    "Strands Decider 2B, pinned revision.\n16 vCPU / 32 GiB, one request at a time.\n6 s budget on its own clock; per-user\nand per-process limits. 0 tasks by default.",
     "fargate",
-    1250,
-    490,
-    270,
+    1040,
+    470,
+    560,
+    190,
+    "#E28B27",
 )
 service(
-    "ddb",
-    "Amazon\nDynamoDB",
-    "race・job・判断・航跡\n所有者付き / 24時間",
-    "dynamodb",
-    690,
-    755,
-    280,
-)
-service(
-    "ecr", "Amazon ECR", "固定revisionのモデル\nDockerイメージ", "ecr", 1010, 755, 220
+    "lambda",
+    "AWS Lambda\nDebrief",
+    "Strict race summary in.\n[D#] references checked\nagainst the decision log.",
+    "lambda",
+    380,
+    780,
+    250,
 )
 service(
     "bedrock",
     "Amazon\nBedrock",
-    "Nova Lite / 事後解説\nレース後1回のみ",
+    "Nova Lite, Converse API.\nOne call, 800 tokens max,\nno automatic retry.",
     "bedrock",
-    1280,
-    755,
-    270,
+    700,
+    780,
+    250,
 )
-edge(
-    "web",
-    "browser",
-    "cdn",
-    "SPA",
-    "exitX=0.5;exitY=0;entryX=0;entryY=0.5;",
-    points=[(170, 300)],
+service(
+    "ddb",
+    "Amazon\nDynamoDB",
+    "Daily debrief quota per user\nand overall, reserved\natomically. No race data.",
+    "dynamodb",
+    1020,
+    780,
+    250,
 )
-edge("origin", "cdn", "site", "OAC")
+service("ecr", "Amazon ECR", "Pinned Decider image\n(model weights inside).", "ecr", 1340, 780, 260)
+edge("e-https", "browser", "cdn", "HTTPS", "exitX=0.5;exitY=0;entryX=0;entryY=0.5;", points=[(165, 265)])
+edge("e-oac", "cdn", "site", "OAC", RIGHT)
 edge(
-    "oauth",
+    "e-login",
     "browser",
     "auth",
-    "Code + PKCE",
-    "exitX=0.8;exitY=0;entryX=0.5;entryY=0;",
+    "sign-in (Code + PKCE)",
+    "exitX=0.25;exitY=0;entryX=0.5;entryY=0;",
     True,
-    [(260, 200), (1385, 200)],
+    [(102, 110), (1510, 110)],
+    "#8C63B5",
 )
-edge("request", "browser", "api", "JWT API")
-edge("route", "api", "lambda", "JWT")
-edge("send", "lambda", "queue", "enqueue")
-edge("pull", "queue", "worker", "取得")
-edge("state", "lambda", "ddb", "受付・記録", "exitX=0.3;exitY=1;entryX=0.3;entryY=0;")
+edge("e-jwt", "browser", "api", "Bearer JWT", RIGHT)
 edge(
-    "save",
-    "worker",
-    "ddb",
-    "判断保存",
-    "exitX=0;exitY=0.85;entryX=0.8;entryY=0;",
-    points=[(1235, 710), (915, 710)],
+    "e-issuer",
+    "auth",
+    "api",
+    "JWT issuer / audience",
+    "exitX=0.5;exitY=1;entryX=0.5;entryY=0;",
+    True,
+    [(1510, 395), (505, 395)],
+    "#8C63B5",
 )
-edge("image", "ecr", "worker", "", "exitX=0.5;exitY=0;entryX=0.8;entryY=1;", True)
-edge(
-    "explain",
-    "worker",
-    "bedrock",
-    "終了後のみ",
-    "exitX=0.65;exitY=1;entryX=0.65;entryY=0;",
-)
+edge("e-link", "api", "map", "VPC link", RIGHT)
+edge("e-srv", "map", "decider", "SRV :8080", RIGHT)
+edge("e-debrief", "api", "lambda", "/debrief", DOWN)
+edge("e-converse", "lambda", "bedrock", "Converse", RIGHT)
+edge("e-quota", "lambda", "ddb", "quota", "exitX=0.5;exitY=1;entryX=0.5;entryY=1;", points=[(505, 970), (1145, 970)])
+edge("e-pull", "ecr", "decider", "image pull", "exitX=0.5;exitY=0;entryX=0.85;entryY=1;", True, color="#9B7B51")
+panel("ops", "Operations and cost", 40, 1010, 1640, 110, "#FFF8EC", "#E9C489")
 text(
-    "return",
-    "結果はDynamoDB → Lambda → SPA。3秒超・古いepoch・終了後の返答は適用しない。",
-    400,
-    918,
-    1210,
-    28,
-    17,
-)
-panel("ops", "運用・信頼境界", 35, 975, 1625, 100, "#FFF6E6")
-text(
-    "ops-body",
-    "CloudWatch / Budgets / Scheduler：起動・停止・監視・上限。CPU遅延と残予算の検証前には再デプロイしない。\n競技状態はブラウザーが正本。改ざん防止されたランキングや、実艇の完全再現は初版の対象外。",
-    55,
-    1018,
-    1580,
-    50,
-    17,
+    "ops-text",
+    "The Decider task is started on demand (aws ecs update-service --desired-count 1) and costs about $0.99/hour "
+    "while it runs, idle included; it is stopped again after use.  ·  Logs keep ids, enums and timings for one week, "
+    "never observations or tokens.  ·  Future wind, the random seed and the spectator's prediction never leave the browser.",
+    60,
+    1050,
+    1600,
+    60,
+    15,
 )
 
-page("02 Decision and control", 1650, 970)
-text("title", "風を観測し、戦術を選び、同じ艇性能で実行する", 40, 20, 1550, 50, 30)
+# --- Page 2: one decision -----------------------------------------------------------------
+page("02 One decision", 1720, 760)
+text("title", "One decision: snapshot → options → choice → checks → steering", 40, 18, 1640, 48, 30, bold=True)
 text(
     "subtitle",
-    "設計案 / 未検証の戦術精度・推論遅延を達成済みと扱わない",
+    "Every 8 simulated seconds per boat · one request in flight · at most 96 per race · the race keeps moving while the model thinks",
     42,
-    80,
-    1500,
-    35,
-    20,
+    70,
+    1640,
+    30,
+    16,
+    color="#4F6B82",
 )
-service(
-    "obs",
-    "観測snapshot",
-    "現在の艇と相手\n可視の風・ブロー\n未来の風・seedなし",
-    None,
-    40,
-    190,
-    250,
-    200,
-)
-service(
-    "eligible",
-    "コードで候補制限",
-    "レグ・旋回・場外\n実行不能な候補を除外\n最善の戦術は先に決めない",
-    None,
-    355,
-    190,
-    270,
-    200,
-)
-service(
-    "decider",
-    "Strands Decider 2B",
-    "維持 / タック / ブロー\nアプローチ / ジャイブ\n候補が複数なら実モデル",
-    None,
-    690,
-    190,
-    280,
-    200,
-)
-service(
-    "guard",
-    "期限と状態の検査",
-    "race / epoch / seq\n観測から実時間3秒\n遅い返答は破棄",
-    None,
-    1035,
-    190,
-    250,
-    200,
-)
-service(
-    "control",
-    "通常の操船へ接続",
-    "目標針路 → ラダー\n共通の舵角・回頭制限\n物理tickで航路が変わる",
-    None,
-    1350,
-    190,
-    260,
-    200,
-)
-edge("e1", "obs", "eligible")
-edge("e2", "eligible", "decider")
-edge("e3", "decider", "guard")
-edge("e4", "guard", "control")
-panel(
-    "fallback",
-    "モデルを呼ばない／使えない場合も出所を分ける",
-    40,
-    465,
-    760,
-    170,
-    "#FFF6E6",
-)
+steps = [
+    (
+        "snap",
+        "1  Snapshot (browser)",
+        "This boat, the other three, the current wind at the boat, gusts visible now, the mark, the current plan and the boat's profile.\nNo future wind, no seed, no prediction.",
+        "#4B83C3",
+    ),
+    (
+        "narrow",
+        "2  Code narrows",
+        "Only legal options for the leg: tack upwind, jibe or head to finish downwind, approach the mark within 45 m, gusts that are ahead.\nHold course is always offered, so the model always has a real choice.",
+        "#779AB4",
+    ),
+    (
+        "choose",
+        "3  Strands Decider 2B",
+        "Typed choice question choose_sailing_tactic (fleet-v4).\nReturns one option, the probability of every option and a confidence.",
+        "#E28B27",
+    ),
+    (
+        "check",
+        "4  Freshness checks",
+        "Same race, epoch, sequence and boat; within 6 s on AWS (3 s locally); the boat is still on the same leg.\nOtherwise: expired or rejected.",
+        "#779AB4",
+    ),
+    (
+        "steer",
+        "5  Steering (browser)",
+        "The chosen tactic becomes a target; the steering code shared by all four boats follows it.\nDifferent choices split the tracks.",
+        "#4B83C3",
+    ),
+]
+for index, (key, title, body, accent) in enumerate(steps):
+    service(key, title, body, "fargate" if key == "choose" else None, 40 + index * 334, 140, 300, 250, accent)
+    if index:
+        edge(f"e-{index}", steps[index - 1][0], key, "", RIGHT)
+panel("discard", "Never applied", 40, 430, 530, 270, "#FDF3F2", "#D9A39C")
 text(
-    "fallback-body",
-    "候補1つ：source=policy、モデル値null\n期限切れ・不正応答：source=fallback、以前の戦術を維持\n2回連続の期限超過：クラウド対戦は中断扱い",
-    60,
-    515,
-    715,
-    100,
-    19,
+    "discard-text",
+    "Replies that arrive late, belong to a paused, ended or restarted race, or no longer fit the boat's leg are logged and change nothing.\n\nTwo failures in a row end the race as \"no result\"; rules never stand in for the model silently.\n\nThe rule-based preview never calls the model and is labelled as rules.",
+    62,
+    480,
+    490,
+    210,
+    15,
+    valign="top",
 )
-panel("history", "再生に必要な記録", 850, 465, 760, 170)
+panel("replay", "Recorded and replayable", 595, 430, 530, 270)
 text(
-    "history-body",
-    "物理・風・ポーラの版、両艇の操作、判断の出所\n観測 / 受信 / 適用tick、破棄・上書き理由\nseedだけに頼らず、再生時はモデル呼び出し0回",
-    870,
-    515,
-    715,
-    100,
-    19,
+    "replay-text",
+    "Each decision records the boat, option, source (decider, preview, fallback), observed and applied ticks, status and latency.\n\nA saved race stores the physics and wind versions and the applied decisions; replaying it reproduces the race without calling any model.",
+    617,
+    480,
+    490,
+    210,
+    15,
+    valign="top",
 )
-panel(
-    "debrief",
-    "結果と振り返り：人間が次に試したいことを見つける",
-    40,
-    705,
-    1570,
-    180,
-    "#F4F0FA",
-)
+panel("debrief", "After the finish: Bedrock debrief", 1150, 430, 530, 270, "#F2FBF7", "#8CC6B8")
 text(
-    "debrief-body",
-    "両艇の航跡＋当時の風＋判断マーカー → Bedrockが記録ID付きの事後解説を生成（最大1回）\n『AIがこう考えた』『この手なら必ず勝てた』と内部思考や因果関係を捏造しない。\n生成が失敗しても結果・航跡は表示する。",
-    60,
-    760,
-    1515,
-    100,
-    20,
+    "debrief-text",
+    "One request with a strict summary: finish times, outcome, prediction and the decision log as enums and ticks. No free text.\n\nNova Lite cites decisions as [D1], [D2]…; references to decisions that do not exist are removed. Daily quota, 800 tokens, no retry. Preview-only races are not sent.",
+    1172,
+    480,
+    490,
+    210,
+    15,
+    valign="top",
 )
 
 ET.indent(DOC)
-ET.ElementTree(DOC).write(
-    HERE / "snipe-regatta.drawio", encoding="utf-8", xml_declaration=True
-)
+ET.ElementTree(DOC).write(HERE / "snipe-regatta.drawio", encoding="utf-8", xml_declaration=True)
+print(HERE / "snipe-regatta.drawio")

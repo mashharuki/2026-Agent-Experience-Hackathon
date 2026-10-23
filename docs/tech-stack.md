@@ -1,17 +1,20 @@
 # 技術スタック一覧
 
-> **現行企画はSnipe AI Regatta（4艇の予想・観戦とローカル実Deciderを実装・評価中）**。新設計の採用・再利用候補は [002/plan.mdのTechnical Context](../specs/003-regatta-spectator/plan.md#technical-context)を正本とする。旧AWS環境は2026-10-21に削除済み。新クラウドAPI・Bedrockは未接続であり、旧モデル評価をゲームの品質の証拠にしない。
+> **現行企画はSnipe AI Regatta（4艇の勝者予想・観戦）**。2026-10-23に `SnipeRegattaStack` をAWS（東京）へデプロイし、実Decider・Bedrockの振り返りを通しで確認した。現在もライブデモとして公開中で、Deciderのワーカーは普段0台。構成図は [docs/architecture/diagrams](architecture/diagrams/README.md)、手順は [AWS検証](../specs/003-regatta-spectator/aws-validation.md)。旧写真支援のAWS環境は2026-10-21に削除済みで、旧モデル評価をゲームの品質の証拠にしない。
 
-## 新ゲームの実装状況（2026-10-22）
-
-ローカル推論は固定revisionのStrands Decider 2B（0.1.0）を再利用。Mac MPSはローカル検証用で、AWSのCPU遅延・ヨット戦術品質の証拠にはしない。`apps/regatta-worker/`は実験用のloopback接続であり、公開契約・Cognito・Connexion/Orvalは別工程。
+## 現行ゲームの構成（2026-10-23）
 
 | 領域 | 導入済みの構成 | 状態 |
 | --- | --- | --- |
-| ローカル画面 | React 19 / Vite 8 / MUI / TypeScript、`apps/regatta-web/` | 勝者予想・日英表示・4艇・追従・判断ログ・記録再生（旧操船画面は保持） |
+| 画面 | React 19 / Vite 8 / MUI / TypeScript、`apps/regatta-web/` | 勝者予想・日英表示・4艇・追従・判断ログ・結果・記録再生。CloudFrontで公開中 |
 | 海面と艇 | Three.js 0.180.0、命令型描画 | 独自の水面・空shader、曲面の帆・索具、ヒール・引き波、追従／艇上／俯瞰、DPRによる軽量設定 |
-| 帆走と風 | 純粋TypeScript、`packages/sailing-sim/`、30Hz | `sailing-v2` / `wind-v2`。20秒周期の変化する海面を追加 |
-| 検証 | Vitest / TypeScript / Biome / Oxlint | 操船・現在の風と候補・停止・同じ版での再生を検証 |
+| 帆走と風 | 純粋TypeScript、`packages/sailing-sim/`、30Hz | `sailing-v2` / `wind-v2`。20秒周期の変化する海面 |
+| 戦術判断 | Strands Decider 2B（0.1.0、revision固定）、`apps/regatta-worker/` | 問い `choose_sailing_tactic`（`fleet-v4`）。ローカルはloopbackの橋渡し、AWSは `cloud_server.py`。期限はローカル3秒・AWS 6秒 |
+| Decider実行（AWS） | ECS on Fargate 16 vCPU / 32 GiB、VPC Link＋Cloud Map、ALB・NATなし | 2026-10-23に検証：p50 3.1秒・p95 3.7秒（モデル単体）、実レース47/47が期限内。既定0台、必要時に起動（約$0.99/時） |
+| 振り返り | Lambda（Python、boto3のみ）＋Bedrock Nova Lite＋DynamoDB（1日の上限） | 1回・800 tokens・再試行なし。存在しない判断番号は削除。AWSで動作確認 |
+| 認証・API | Cognito（Code＋PKCE、scope `regatta/race`）、API Gateway HTTP API（全ルートJWT） | 未認証は401。利用者IDはAPI Gatewayが付与 |
+| IaC | AWS CDK v2＋cdk-nag、`apps/cdk/lib/regatta-stack.ts`、`regatta-probe-stack.ts` | Jestでルートの認証・到達経路・0台起動・Bedrock権限を検査 |
+| 検証 | Vitest / Playwright / pytest / Jest / Biome / Oxlint / Ruff | 自動検証の件数はREADMEを参照。戦術の質・公平性・多数レースでの安定性は未計測 |
 
 以下の一覧は、特記のない限り旧写真支援アプリの実装スナップショット。
 

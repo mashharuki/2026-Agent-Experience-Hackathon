@@ -1,8 +1,0 @@
-{
-  "case": "two concurrent probes while the shared local server was already occupied",
-  "results": [
-    { "status": 429, "error": "busy" },
-    { "status": 429, "error": "busy" }
-  ],
-  "limitation": "Both probes were rejected; this does not establish an idle-server 200/429 pair."
-}

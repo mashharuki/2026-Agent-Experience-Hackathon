@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/brand/regatta/cover.png" alt="Snipe AI Regatta：風を読んで、勝者を選べ" width="760"></p>
 
-<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ デモ動画を見る</strong></a></p>
+<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ デモ動画を見る</strong></a> · <a href="https://d1ot40x9jd3rql.cloudfront.net"><strong>⛵ ライブデモで遊ぶ</strong></a></p>
 
 **風を読んで、勝者を選べ。** 変化する海面で、スナイプ級ヨット4艇がレースをします。スタート前に勝つと思う艇を1艇選び、あとは観戦します。
 各艇の戦術（今タックする、針路を維持する、ブローを追う、マークを回る、ジャイブする）は **Strands Decider 2B** がその場で選びます。
@@ -11,6 +11,29 @@
 [AWS Agent Experience Hackathon: Strands Decider](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon-strands-decider) への応募作品です。
 
 **Tags: `#strands-decider-2b` `#tool-selection`** · License: [MIT](LICENSE) · [English → README.md](README.md)
+
+## ライブデモ
+
+**https://d1ot40x9jd3rql.cloudfront.net**（デスクトップのChromeまたはSafari）
+
+| モード | 必要なもの | 動くもの |
+| --- | --- | --- |
+| **ルールのプレビュー** | なし（サインイン不要） | 固定ルールでレース全体を再現。いつでも使え、ルールであることを表示 |
+| **Strands Decider 実モデル** | アカウント作成（メールの確認コード）とサインイン、AWSのワーカーが起動していること | 全戦術をAWS Fargate上のDeciderがその場で選択。フィニッシュ後はBedrockに振り返りを依頼できる |
+
+Deciderは16 vCPUのFargateタスクで動き、待機中も1時間あたり約$0.99かかります。そのため**普段は停止しておき、審査やデモのときだけ起動**します。
+停止中は画面に「AWSの判断ワーカーは停止中です」と表示され、実モデルは選べません。プレビューは使えます。
+起動後、約3.5分でモデルの準備ができます。画面の **モデル接続を確認** を押してください。
+
+管理者向け：ワーカーの起動と停止（名前はスタックの出力から取得します）
+
+```sh
+aws cloudformation describe-stacks --stack-name SnipeRegattaStack --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='ClusterName' || OutputKey=='ServiceName']"
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 1   # 起動
+aws ecs wait services-stable --cluster <ClusterName> --services <ServiceName>             # 稼働を待つ
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired-count 0   # 停止
+```
 
 ## 遊び方
 
@@ -174,7 +197,7 @@ aws ecs update-service --cluster <ClusterName> --service <ServiceName> --desired
 | ゲーム | 予想、4艇のレース、判断のライブ表示、3つの視点、結果、再生、記録の書き出し。日本語・英語 |
 | 実Decider | ローカル（Mac）とAWS Fargate（16 vCPU）で、サインイン済みのレースを通しで確認 |
 | Bedrockの振り返り | AWS上で動作を確認 |
-| AWS環境 | 2026-10-23にデプロイ・検証・記録したあと**削除済み**。公開URLは動いていません |
+| AWS環境 | **公開中**：https://d1ot40x9jd3rql.cloudfront.net（記録した検証のあと、2026-10-23に再デプロイ）。Deciderのワーカーは普段は停止し、必要なときだけ起動 |
 | 未計測 | 16件の単純なケース以外の戦術の質、多数のレースでの方針・開始位置の公平さ、多数のレースや別端末での安定性、振り返りの各文が判断ログと一致するか（確認しているのは参照番号だけ） |
 
 ## リポジトリの構成

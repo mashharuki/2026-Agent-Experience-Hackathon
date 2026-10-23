@@ -76,7 +76,9 @@ test("asks before ending a race", async ({ page }) => {
 test("closes the end confirmation when the race finishes on its own", async ({
   page,
 }) => {
-  test.setTimeout(180_000);
+  // ~760 rendered frames: software WebGL on CI runners is slow, so render small.
+  test.setTimeout(process.env.CI ? 420_000 : 180_000);
+  await page.setViewportSize({ width: 640, height: 480 });
   await page.clock.install();
   await startPreview(page);
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();

@@ -113,7 +113,7 @@ holdout scenes repeated three times, both state renderers achieved 57/90 raw and
 allowed-set matches, with zero final constraint violations. The rules baseline achieved 90/90
 guarded matches. No selection improved, so that initial experiment retained **v1**, threshold **0**.
 This small, single-AI-authored set does not establish general accuracy or model superiority.
-See the [conditions, failures and limitations](reviews/2026-10-20-local-model-evaluation.md).
+See the [conditions, failures and limitations](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/reviews/2026-10-20-local-model-evaluation.md).
 
 The reusable adapter and binding now reject malformed score keys, non-finite/out-of-range
 values, probability sums outside 1±0.01 and a selected option below the maximum probability

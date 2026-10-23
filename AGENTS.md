@@ -13,7 +13,7 @@ The current product is a Snipe race prediction and AI spectator game, specified 
 - `apps/worker/`: Python SQS worker, Bedrock observation, Decider selection, guards and Docker image.
 - `apps/cdk/`: TypeScript AWS CDK infrastructure and Jest assertions.
 - `packages/api-spec/openapi.yaml`: authoritative API contract; `packages/photoprep-common/`: shared Python persistence, states and logging.
-- `specs/001-pre-photo-grooming-assist/`: legacy specifications and evidence. `docs/architecture/`: diagrams and cost assumptions.
+- `specs/001-pre-photo-grooming-assist/`: legacy specifications. `docs/`: tech stack, decision pattern, regatta diagrams, cover image and regatta validation records. Photo-assistant documents and evidence were removed from `docs/` on 2026-10-23 and remain in Git history (last at commit 5cc9448).
 
 ## Specification Workflow
 

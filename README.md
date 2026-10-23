@@ -253,8 +253,9 @@ cdk-nag · Vitest, Playwright, pytest, Jest, Biome, Oxlint, Ruff, Knip, jscpd ·
 
 ## History
 
-This repository started as a photo-preparation assistant that used the same Decider pattern. Its README,
-code and AWS evidence are kept: [docs/legacy/photo-assistant.md](docs/legacy/photo-assistant.md).
+This repository started as a photo-preparation assistant that used the same Decider pattern. Its code stays
+in `apps/` and `specs/001-pre-photo-grooming-assist/`; its README, documents and AWS evidence were removed
+from `docs/` and remain in Git history: [the photo-assistant README at commit 5cc9448](https://github.com/mashharuki/2026-Agent-Experience-Hackathon/blob/5cc9448/docs/legacy/photo-assistant.md).
 
 ## License
 

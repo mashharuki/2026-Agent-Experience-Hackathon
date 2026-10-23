@@ -1,6 +1,6 @@
 # Third-party notices
 
-This project's own code is MIT-licensed (see [LICENSE](LICENSE)). It depends on the following; the
+This project's own code is MIT-licensed (see [LICENSE](../LICENSE)). It depends on the following; the
 full license texts are in each package. Versions are from the lock files at the time of writing
 (2026-10-17). This is a good-faith summary, not legal advice.
 

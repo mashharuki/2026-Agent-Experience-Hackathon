@@ -2,6 +2,8 @@
 
 <p align="center"><img src="docs/brand/regatta/cover.png" alt="Snipe AI Regatta: read the wind, pick the winner" width="760"></p>
 
+<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ Watch the demo video</strong></a></p>
+
 **Read the wind. Pick the winner.** Four Snipe dinghies race on a changing sea. Before the start you pick
 the boat you think will win; then you watch. Each boat's tactics (tack now, hold the course, chase a gust,
 round the mark, jibe) are chosen live by **Strands Decider 2B**, and after the finish **Amazon Bedrock**

@@ -2,6 +2,8 @@
 
 <p align="center"><img src="docs/brand/regatta/cover.png" alt="Snipe AI Regatta：風を読んで、勝者を選べ" width="760"></p>
 
+<p align="center"><a href="https://youtu.be/b2wlUMmQ0_k"><strong>▶ デモ動画を見る</strong></a></p>
+
 **風を読んで、勝者を選べ。** 変化する海面で、スナイプ級ヨット4艇がレースをします。スタート前に勝つと思う艇を1艇選び、あとは観戦します。
 各艇の戦術（今タックする、針路を維持する、ブローを追う、マークを回る、ジャイブする）は **Strands Decider 2B** がその場で選びます。
 フィニッシュ後は **Amazon Bedrock** が、実際に下された判断だけをもとに短い振り返りを書きます。

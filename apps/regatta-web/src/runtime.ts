@@ -20,7 +20,11 @@ export type SceneRuntime = {
   race: Race;
   trails: TrailPoint[][];
   view: "follow" | "helm" | "overview";
-  quality: "high" | "economy";
+  quality: "high" | "standard" | "economy";
+  displayRace?: Race;
+  displayTrails?: TrailPoint[][];
+  tactics?: boolean;
+  cameraMotion?: boolean;
   focusIndex?: number;
   prediction?: string | null;
   advance(milliseconds: number): void;

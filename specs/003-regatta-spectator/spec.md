@@ -56,5 +56,13 @@ FleetRace、Boat、Prediction、TacticPlan、CurrentObservation、DecisionRecord
 
 ## Assumptions
 
+### 観戦体験拡張（2026-10-24）
+
+出走前に風・コース・艇方針を提示し、3秒の取消可能なカウントダウン後に予想を固定する。
+実動作の転機を通知し、手動優先の自動中継、戦術表示、揺れ抑制を選べる。
+結果から転機の3Dリプレイへ移動し、シーク・速度変更・停止ができる。元の勝敗と追加推論数を変えない。
+環境音は明示的な有効化のみ。端末内履歴は実AIとプレビューを区別し、途中終了を集計しない。
+詳細は[spectator-experience-plan.md](spectator-experience-plan.md)、検証範囲は[実装記録](../../docs/reviews/2026-10-24-spectator-experience-validation.md)を参照。
+
 4艇・180シミュレーション秒を初期値とする。予想は成績の表示のみ。初版では公開ランキングを設けない。
 個性は戦術方針であり、艇速を変えて勝敗を演出しない。ローカルのプレビューと実Deciderを分ける。

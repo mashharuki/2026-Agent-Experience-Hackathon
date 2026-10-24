@@ -58,7 +58,7 @@ function spar(
   return mesh;
 }
 
-export function makeBoat(accent: number) {
+export function makeBoat(accent: number, number = 1) {
   const group = new THREE.Group();
   const motion = new THREE.Group();
   group.add(motion);
@@ -169,7 +169,37 @@ export function makeBoat(accent: number) {
   });
   const main = new THREE.Group();
   main.position.set(0, 1.08, -0.66);
-  main.add(new THREE.Mesh(clothGeometry(5.05, 2.45), cloth));
+  const mainCloth = clothGeometry(5.05, 2.45);
+  const mainBase = Float32Array.from(mainCloth.getAttribute("position").array);
+  main.add(new THREE.Mesh(mainCloth, cloth));
+  const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.16), trim);
+  stripe.rotation.y = Math.PI / 2;
+  stripe.position.set(0.2, 2.4, 0.6);
+  main.add(stripe);
+  // Procedural sail number: no external fonts, textures or downloaded models.
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#183846";
+    ctx.font = "bold 80px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(String(number), 128, 90);
+  }
+  const numberTexture = new THREE.CanvasTexture(canvas);
+  const numberMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.85, 0.43),
+    new THREE.MeshBasicMaterial({
+      map: numberTexture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  numberMesh.rotation.y = Math.PI / 2;
+  numberMesh.position.set(0.22, 2.9, 0.63);
+  main.add(numberMesh);
   main.add(
     spar(
       new THREE.Vector3(0, 0, 0),
@@ -203,7 +233,17 @@ export function makeBoat(accent: number) {
   motion.add(main);
   const jib = new THREE.Group();
   jib.position.set(0, 0.85, -2.22);
-  jib.add(new THREE.Mesh(clothGeometry(4.1, 1.55), cloth));
+  const jibCloth = clothGeometry(4.1, 1.55);
+  const jibBase = Float32Array.from(jibCloth.getAttribute("position").array);
+  jib.add(new THREE.Mesh(jibCloth, cloth));
+  const telltale = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0.15, 2, 0.4),
+      new THREE.Vector3(0.16, 2, 0.8),
+    ]),
+    new THREE.LineBasicMaterial({ color: accent }),
+  );
+  jib.add(telltale);
   motion.add(jib);
   // Rudder, tiller and sheet are visible at the transom / in the cockpit.
   const rudder = new THREE.Group();
@@ -250,5 +290,31 @@ export function makeBoat(accent: number) {
     crew.add(person);
   }
   motion.add(crew);
-  return { group, motion, main, jib, rudder, crew };
+  const bowFoam = new THREE.Mesh(
+    new THREE.TorusGeometry(0.55, 0.025, 4, 20, Math.PI),
+    new THREE.MeshBasicMaterial({
+      color: 0xd5ece9,
+      transparent: true,
+      opacity: 0.4,
+      depthWrite: false,
+    }),
+  );
+  bowFoam.rotation.x = -Math.PI / 2;
+  bowFoam.position.set(0, 0.03, -2.1);
+  group.add(bowFoam);
+  return {
+    group,
+    motion,
+    main,
+    jib,
+    rudder,
+    crew,
+    bowFoam,
+    mainCloth,
+    mainBase,
+    jibCloth,
+    jibBase,
+    telltale,
+    numberTexture,
+  };
 }

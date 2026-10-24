@@ -1,9 +1,10 @@
 import { FLEET, MARK, STEP, visiblePressure, windAt } from "sailing-sim";
 import * as THREE from "three";
 import { makeBoat } from "./boat-visual";
-import { createOcean, createSky, waveHeight } from "./ocean";
+import { createOcean, createSky } from "./ocean";
 import { labelPosition } from "./presentation";
 import type { SceneRuntime } from "./runtime";
+import { waveEnvironment, waveSample } from "./wave-field";
 
 function buoy(color: number, size = 1) {
   const group = new THREE.Group();
@@ -113,7 +114,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 0.92;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.domElement.setAttribute("aria-hidden", "true");
   const scene = new THREE.Scene();
@@ -168,7 +169,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
   gate.computeLineDistances();
   scene.add(gate);
   const boats = runtime.race.boats.map((boat, i) =>
-    makeBoat(boat.color ?? (i ? 0x559cc3 : 0xef8354)),
+    makeBoat(boat.color ?? (i ? 0x559cc3 : 0xef8354), i + 1),
   );
   const wakes = boats.map(() => makeWake());
   const trails = boats.map((_, i) => {
@@ -203,12 +204,39 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     const dot = document.createElement("i");
     dot.style.background = `#${meta.color.toString(16).padStart(6, "0")}`;
     const name = document.createElement("span");
-    name.textContent = meta.name;
+    name.textContent = `${FLEET.indexOf(meta) + 1} ${meta.name}`;
     const pick = document.createElement("b");
     pick.textContent = "★";
     label.append(dot, name, pick);
     host.appendChild(label);
     return label;
+  });
+  const pressureRings = Array.from({ length: 3 }, () => {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.95, 1, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0x6bdacb,
+        transparent: true,
+        opacity: 0.45,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    scene.add(ring);
+    return ring;
+  });
+  const windArrows = Array.from({ length: 5 }, () => {
+    const arrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(),
+      9,
+      0xc7ebe5,
+      2,
+      1,
+    );
+    scene.add(arrow);
+    return arrow;
   });
   const projected = new THREE.Vector3();
   let viewWidth = 0;
@@ -230,58 +258,149 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   });
+  const contextNotice = document.createElement("div");
+  contextNotice.className = "context-notice";
+  contextNotice.setAttribute("role", "alert");
+  const restored = () => {
+    contextNotice.textContent =
+      "描画が復旧しました。再開できます。 / Graphics restored. You can resume.";
+  };
   const lost = (event: Event) => {
     event.preventDefault();
     runtime.pause();
+    contextNotice.textContent =
+      "描画を一時停止しました。復旧しない場合は再読み込みしてください。 / Graphics interrupted. Reload if recovery fails.";
+    host.appendChild(contextNotice);
   };
   renderer.domElement.addEventListener("webglcontextlost", lost);
+  renderer.domElement.addEventListener("webglcontextrestored", restored);
   host.appendChild(renderer.domElement);
   resize.observe(host);
   let last = 0;
+  const frameTimes: number[] = [];
+  let metricsTick = 0;
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, last ? (now - last) / 1000 : 0);
+    if (last && !document.hidden) {
+      frameTimes.push(now - last);
+      if (frameTimes.length > 600) frameTimes.shift();
+    }
+    if (++metricsTick % 60 === 0 && frameTimes.length) {
+      const sorted = [...frameTimes].sort((a, b) => a - b);
+      host.dataset.frameP95 =
+        sorted[Math.ceil(sorted.length * 0.95) - 1].toFixed(1);
+      host.dataset.frameSamples = String(sorted.length);
+      host.dataset.quality = runtime.quality;
+    }
     runtime.advance(last ? now - last : 0);
     last = now;
-    const race = runtime.race;
+    const race = runtime.displayRace ?? runtime.race;
+    const displayTrails = runtime.displayTrails ?? runtime.trails;
     const player = race.boats[runtime.focusIndex ?? 0];
     const time = race.tick * STEP;
-    const visualTime = reducedMotion.matches ? 0 : time;
-    const wind = windAt(race.scenario, race.seed, time, player.x, player.y);
+    const still = reducedMotion.matches || runtime.cameraMotion === false;
+    const visualTime = time;
+    const environment = waveEnvironment(race.scenario, race.seed, time);
+    const surfaceAt = (x: number, z: number) =>
+      waveSample(x, z, visualTime, environment);
+    const heightAt = (x: number, z: number) => surfaceAt(x, z).height;
     ocean.update(
       visualTime,
-      wind.speed,
+      windAt(race.scenario, race.seed, time, 0, 0).speed,
       visiblePressure(race.scenario, race.seed, time),
       player.x,
       -player.y,
+      environment,
     );
     if (previousQuality !== runtime.quality) {
       renderer.setPixelRatio(
         Math.min(
           window.devicePixelRatio,
-          runtime.quality === "economy" ? 1 : 1.5,
+          runtime.quality === "economy"
+            ? 0.85
+            : runtime.quality === "standard"
+              ? 1.15
+              : 1.5,
         ),
       );
+      ocean.setQuality(runtime.quality);
       previousQuality = runtime.quality;
     }
     boats.forEach((mesh, i) => {
       const boat = race.boats[i];
-      const bob = waveHeight(boat.x, -boat.y, visualTime);
+      const bob = heightAt(boat.x, -boat.y);
       mesh.group.visible = i === 0 || race.withOpponent;
       mesh.group.position.set(boat.x, bob, -boat.y);
       mesh.group.rotation.y = -boat.heading;
-      const heel = reducedMotion.matches
+      const localWind = windAt(race.scenario, race.seed, time, boat.x, boat.y);
+      const surface = surfaceAt(boat.x, -boat.y);
+      const moving = race.status === "running";
+      const smooth = moving ? 1 - Math.exp(-Math.max(dt, 0.001) * 7) : 1;
+      const roll =
+        surface.dx * Math.cos(boat.heading) +
+        surface.dz * Math.sin(boat.heading);
+      const pitch =
+        surface.dx * Math.sin(boat.heading) -
+        surface.dz * Math.cos(boat.heading);
+      const heel = still
         ? 0
-        : -boat.tackSide * Math.min(0.16, boat.speed * 0.04) +
-          Math.sin(visualTime * 1.3 + i) * 0.015;
+        : -boat.tackSide *
+            Math.min(0.22, boat.speed * localWind.speed * 0.006) +
+          roll;
       mesh.motion.rotation.z = heel;
-      mesh.motion.rotation.x = reducedMotion.matches
-        ? 0
-        : Math.sin(visualTime * 1.7 + boat.y * 0.2) * 0.018;
-      mesh.main.rotation.y = boat.tackSide * (0.1 + boat.mainSheet * 1.25);
-      mesh.jib.rotation.y = boat.tackSide * 0.2;
+      mesh.motion.rotation.x = still ? 0 : -pitch;
+      mesh.main.rotation.y = THREE.MathUtils.lerp(
+        mesh.main.rotation.y,
+        boat.tackSide * (0.1 + boat.mainSheet * 1.25),
+        smooth,
+      );
+      mesh.jib.rotation.y = THREE.MathUtils.lerp(
+        mesh.jib.rotation.y,
+        boat.tackSide * (0.12 + boat.mainSheet * 0.7),
+        smooth,
+      );
       mesh.rudder.rotation.y = -boat.rudder * 0.45;
-      mesh.crew.position.x = boat.tackSide > 0 ? 0 : 1;
-      const trail = runtime.trails[i];
+      mesh.crew.position.x = THREE.MathUtils.lerp(
+        mesh.crew.position.x,
+        boat.tackSide > 0 ? 0 : 1,
+        smooth * 0.6,
+      );
+      mesh.crew.rotation.z = still ? 0 : -heel * 1.2;
+      const windX =
+        -Math.sin(localWind.direction) * localWind.speed -
+        Math.sin(boat.heading) * boat.speed;
+      const windY =
+        -Math.cos(localWind.direction) * localWind.speed -
+        Math.cos(boat.heading) * boat.speed;
+      const apparent = Math.hypot(windX, windY);
+      for (const [geometry, base] of [
+        [mesh.mainCloth, mesh.mainBase],
+        [mesh.jibCloth, mesh.jibBase],
+      ] as const) {
+        const attr = geometry.getAttribute("position") as THREE.BufferAttribute;
+        for (let v = 0; v < attr.count; v++) {
+          const fullness =
+            Math.abs(boat.rudder) < 0.6
+              ? 0.9 + Math.min(0.3, apparent * 0.02)
+              : 0.35;
+          const flutter = still
+            ? 0
+            : Math.sin(time * 15 + base[v * 3 + 1] * 5) *
+              (Math.abs(boat.rudder) < 0.6 ? 0.002 : 0.018);
+          attr.setX(v, base[v * 3] * fullness + flutter * base[v * 3 + 2]);
+        }
+        attr.needsUpdate = true;
+        if (runtime.quality !== "economy") geometry.computeVertexNormals();
+      }
+      const tell = mesh.telltale.geometry.getAttribute(
+        "position",
+      ) as THREE.BufferAttribute;
+      tell.setXYZ(1, 0.16, 2 + (still ? 0 : Math.sin(time * 12) * 0.035), 0.8);
+      tell.needsUpdate = true;
+      mesh.bowFoam.visible = boat.speed > 0.6 && runtime.quality !== "economy";
+      mesh.bowFoam.scale.setScalar(0.7 + boat.speed * 0.1);
+      const trail = displayTrails[i];
+
       const attribute = trails[i].geometry.getAttribute(
         "position",
       ) as THREE.BufferAttribute;
@@ -289,7 +408,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
         attribute.setXYZ(
           j,
           trail[j].x,
-          waveHeight(trail[j].x, -trail[j].y, visualTime) + 0.06,
+          heightAt(trail[j].x, -trail[j].y) + 0.06,
           -trail[j].y,
         );
       attribute.needsUpdate = true;
@@ -307,7 +426,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
           const offset = (side ? 1 : -1) * width;
           const x = p.x + Math.cos(p.heading) * offset;
           const z = -p.y + Math.sin(p.heading) * offset;
-          foam.setXYZ(j * 2 + side, x, waveHeight(x, z, visualTime) + 0.055, z);
+          foam.setXYZ(j * 2 + side, x, heightAt(x, z) + 0.055, z);
         }
       }
       foam.needsUpdate = true;
@@ -316,16 +435,31 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
       wakes[i].visible = i === 0 || race.withOpponent;
     });
     marks.forEach((mark, i) => {
-      mark.position.y = waveHeight(
-        markPositions[i][0],
-        markPositions[i][1],
-        visualTime,
-      );
-      mark.rotation.z = reducedMotion.matches
+      mark.position.y = heightAt(markPositions[i][0], markPositions[i][1]);
+      mark.rotation.z = still
         ? 0
-        : Math.sin(visualTime * 1.1 + i) * 0.04;
+        : surfaceAt(markPositions[i][0], markPositions[i][1]).dx;
     });
-    gate.visible = runtime.view === "overview";
+    const patches = visiblePressure(race.scenario, race.seed, time);
+    pressureRings.forEach((ring, i) => {
+      const p = patches[i];
+      ring.visible = runtime.tactics === true && Boolean(p);
+      if (p) {
+        ring.position.set(p.x, 0.35, -p.y);
+        ring.scale.setScalar(p.radius);
+      }
+    });
+    windArrows.forEach((arrow, i) => {
+      arrow.visible = runtime.tactics === true;
+      const x = (i - 2) * 40,
+        y = 50;
+      const w = windAt(race.scenario, race.seed, time, x, y);
+      arrow.position.set(x, 1, -y);
+      arrow.setDirection(
+        new THREE.Vector3(-Math.sin(w.direction), 0, Math.cos(w.direction)),
+      );
+    });
+    gate.visible = runtime.view === "overview" || runtime.tactics === true;
     const forward = new THREE.Vector3(
       Math.sin(player.heading),
       0,
@@ -341,11 +475,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
       target.set(0, 0, -65);
     } else if (runtime.view === "helm") {
       position
-        .set(
-          player.x,
-          1.85 + waveHeight(player.x, -player.y, visualTime),
-          -player.y,
-        )
+        .set(player.x, 1.85 + heightAt(player.x, -player.y), -player.y)
         .addScaledVector(forward, -0.9)
         .addScaledVector(right, -player.tackSide * 0.85);
       target
@@ -362,8 +492,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
         .addScaledVector(forward, 9)
         .addScaledVector(right, 4);
     }
-    const snap =
-      !initialized || previousView !== runtime.view || reducedMotion.matches;
+    const snap = !initialized || previousView !== runtime.view || still;
     const smoothing = snap ? 1 : 1 - Math.exp(-dt * 4);
     camera.position.lerp(position, smoothing);
     aim.lerp(target, smoothing);
@@ -372,6 +501,7 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     initialized = true;
     sky.position.copy(camera.position);
     camera.updateMatrixWorld();
+    const occupied: { x: number; y: number }[] = [];
     labels.forEach((label, i) => {
       if (!label) return;
       const boat = race.boats[i];
@@ -384,17 +514,35 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
               viewHeight,
             )
           : null;
+      if (spot) {
+        let tries = 0;
+        while (
+          occupied.some(
+            (p) => Math.abs(p.x - spot.x) < 105 && Math.abs(p.y - spot.y) < 23,
+          ) &&
+          tries++ < 4
+        )
+          spot.y -= 25;
+        if (spot.y < 25) {
+          label.hidden = true;
+          return;
+        }
+        occupied.push({ ...spot });
+      }
       label.hidden = spot === null;
       label.classList.toggle("is-prediction", boat.id === runtime.prediction);
       if (spot)
         label.style.transform = `translate(${spot.x}px, ${spot.y}px) translate(-50%, -100%)`;
     });
+    ocean.reflect(renderer, scene, camera, runtime.quality);
     renderer.render(scene, camera);
   });
   return () => {
     renderer.setAnimationLoop(null);
     resize.disconnect();
     renderer.domElement.removeEventListener("webglcontextlost", lost);
+    renderer.domElement.removeEventListener("webglcontextrestored", restored);
+    contextNotice.remove();
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
     scene.traverse((object) => {
@@ -408,6 +556,8 @@ export function mountScene(host: HTMLElement, runtime: SceneRuntime) {
     });
     for (const geometry of geometries) geometry.dispose();
     for (const material of materials) material.dispose();
+    ocean.dispose();
+    for (const boat of boats) boat.numberTexture.dispose();
     renderer.dispose();
     renderer.domElement.remove();
     for (const label of labels) label?.remove();

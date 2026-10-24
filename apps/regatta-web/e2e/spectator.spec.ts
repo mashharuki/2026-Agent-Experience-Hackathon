@@ -18,6 +18,7 @@ test("locks a prediction, observes explicit preview decisions, and resets after 
   await page.getByRole("button", { name: "この艇を予想して出走" }).click();
   await expect(page.locator(".locked-prediction")).toContainText("Aurora");
   await expect(page.locator(".prediction-options")).toHaveCount(0);
+  await page.locator(".decision-feed summary").click();
   await expect(page.locator(".decision-item").first()).toContainText("ルール");
   await page
     .locator(".fleet-standing button")
@@ -81,6 +82,7 @@ test("closes the end confirmation when the race finishes on its own", async ({
   await page.setViewportSize({ width: 640, height: 480 });
   await page.clock.install();
   await startPreview(page);
+  await page.clock.fastForward(3100);
   await page.getByRole("button", { name: "レースを終了", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText(
     "予想の判定は行われません",
@@ -107,6 +109,7 @@ const minHeight = async (page: Page, selector: string) => {
 test("keeps touch targets large enough on phones", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await startPreview(page);
+  await expect(page.locator(".locked-prediction")).toBeVisible();
   expect(await minHeight(page, ".view-switch button")).toBeGreaterThanOrEqual(
     44,
   );
@@ -123,6 +126,7 @@ test("enlarges the course chart without covering the decision log", async ({
   expect(await minHeight(page, ".view-switch button")).toBeGreaterThanOrEqual(
     36,
   );
+  await page.locator(".decision-feed summary").click();
   await expect(page.locator(".decision-item").nth(3)).toBeVisible({
     timeout: 15_000,
   });
@@ -151,6 +155,7 @@ test("keeps long English tactic names from pushing the log onto the chart", asyn
     .filter({ hasText: "Jade" })
     .click();
   await page.getByRole("button", { name: "Lock prediction & start" }).click();
+  await page.locator(".decision-feed summary").click();
   // The first race uses the fixed default seed; Zephyr seeks pressure at 0:10.
   await expect(
     page.locator(".decision-item").filter({ hasText: "pressure" }),
@@ -158,4 +163,36 @@ test("keeps long English tactic names from pushing the log onto the chart", asyn
   const feed = await page.locator(".decision-feed").boundingBox();
   const chart = await page.locator(".course-chart").boundingBox();
   expect(feed && chart && feed.y + feed.height <= chart.y).toBe(true);
+});
+
+test("cancels countdown and opens a transport-free 3D replay", async ({
+  page,
+}) => {
+  await page.route("**/local-decider/health", (route) =>
+    route.fulfill({ json: { ready: false } }),
+  );
+  let inferences = 0;
+  await page.route("**/local-decider/decide", (route) => {
+    inferences++;
+    return route.abort();
+  });
+  await page.goto("/");
+  await page
+    .locator(".prediction-options button")
+    .filter({ hasText: "Aurora" })
+    .click();
+  await page.getByRole("button", { name: "この艇を予想して出走" }).click();
+  await expect(page.locator(".prediction-options")).toBeDisabled();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(page.locator(".status")).toContainText("スタート前");
+  await page.getByRole("button", { name: "この艇を予想して出走" }).click();
+  await expect(page.locator(".status")).toContainText("レース中");
+  await page.getByRole("button", { name: "レースを終了", exact: true }).click();
+  await page.getByRole("button", { name: "終了する", exact: true }).click();
+  await page.getByRole("button", { name: "3Dリプレイ", exact: true }).click();
+  await expect(page.locator(".replay-console")).toBeVisible();
+  await page.getByRole("button", { name: "2×", exact: true }).click();
+  await page.locator(".replay-console").getByRole("slider").press("Home");
+  await expect(page.locator(".replay-console")).toContainText("0:00");
+  expect(inferences).toBe(0);
 });

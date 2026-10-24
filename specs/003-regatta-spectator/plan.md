@@ -9,6 +9,8 @@
 
 ## Technical Context
 
+2026-10-24の観戦表現拡張: `wave-field.ts`でCPU/GPU波形を共有、`race-events.ts`/`camera-director.ts`で観測と中継を分離、`fleet-replay.ts`で再生専用状態を構築。表示はsea-v3、物理・風の版は維持。新規依存・クラウドサービスを追加しない。詳細は[spectator-experience-plan.md](spectator-experience-plan.md)。
+
 [技術一覧](../../docs/tech-stack.md)に従う。React19/Vite8/MUI/Three.js0.180.0、純粋TypeScript30Hz、Python3.12/uv、固定revisionのStrands Decider0.1.0を再利用。
 ローカル接続はloopback専用の実験用サーバーとVite dev proxy。公開APIの代用ではない。正本OpenAPI・Connexion/Flask・Orvalはクラウド実装時にまとめて昇格する。
 実モデルは既存検証済みキャッシュを読み、ダウンロード・外部通信・AWS呼び出しを行わない。

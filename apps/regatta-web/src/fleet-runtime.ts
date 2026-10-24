@@ -13,7 +13,11 @@ import {
   stepFleetRace,
   windAt,
 } from "sailing-sim";
+import { CameraDirector } from "./camera-director";
+import { FleetReplay } from "./fleet-replay";
+import { RaceEvents } from "./race-events";
 import type { TrailPoint } from "./runtime";
+import { PRESENTATION_VERSION } from "./wave-field";
 
 export type DecisionRequest = {
   raceId: string;
@@ -45,6 +49,7 @@ export type DecisionLog = {
 };
 export type FleetRecording = {
   version: "fleet-replay-v1";
+  presentationVersion?: string;
   physicsVersion: typeof PHYSICS_VERSION;
   windVersion: "wind-v2";
   seed: number;
@@ -112,7 +117,53 @@ export class FleetRuntime {
   race: FleetRace;
   trails: TrailPoint[][] = FLEET.map(() => []);
   view: "follow" | "helm" | "overview" = "follow";
-  quality: "high" | "economy" = "high";
+  quality: "high" | "standard" | "economy" = "high";
+  tactics = false;
+  autoCamera = false;
+  cameraMotion = true;
+  events = new RaceEvents();
+  private director = new CameraDirector();
+  private replayCache: FleetReplay | null = null;
+  replayTick: number | null = null;
+  replayPlaying = false;
+  replaySpeed = 1;
+  get displayRace() {
+    return this.replayTick === null
+      ? this.race
+      : (this.replayCache?.at(this.replayTick) ?? this.race);
+  }
+  get displayTrails() {
+    const tick = this.replayTick;
+    return tick === null || !this.replayCache
+      ? this.trails
+      : this.replayCache.trails.map((trail) =>
+          trail.filter((p) => p.tick <= tick),
+        );
+  }
+  setReplay(tick: number | null) {
+    if (["running", "paused", "ready"].includes(this.race.status)) return;
+    if (tick !== null && !Number.isFinite(tick)) return;
+    if (tick !== null && !this.replayCache)
+      this.replayCache = new FleetReplay(this.recording());
+    this.replayTick =
+      tick === null ? null : Math.max(0, Math.min(this.race.tick, tick));
+    this.replayPlaying = false;
+    this.publish();
+  }
+  playReplay(speed = this.replaySpeed) {
+    if (this.replayTick === null || ![0.5, 1, 2].includes(speed)) return;
+    if (this.replayTick >= this.race.tick) this.replayTick = 0;
+    this.replaySpeed = speed;
+    this.replayPlaying = true;
+    this.publish();
+  }
+  setPresentation(
+    key: "tactics" | "autoCamera" | "cameraMotion",
+    value: boolean,
+  ) {
+    this[key] = value;
+    this.publish();
+  }
   focusIndex = 0;
   prediction: string | null = null;
   mode: "preview" | "decider" = "preview";
@@ -174,6 +225,14 @@ export class FleetRuntime {
     const boat = this.race.boats[this.focusIndex];
     return {
       race: this.race,
+      sceneRace: this.displayRace,
+      replayTick: this.replayTick,
+      replayPlaying: this.replayPlaying,
+      replaySpeed: this.replaySpeed,
+      tactics: this.tactics,
+      autoCamera: this.autoCamera,
+      cameraMotion: this.cameraMotion,
+      events: [...this.events.events],
       view: this.view,
       quality: this.quality,
       focusIndex: this.focusIndex,
@@ -208,6 +267,11 @@ export class FleetRuntime {
   configure(scenario: Scenario, seed = this.race.seed) {
     this.invalidate();
     this.raceId = crypto.randomUUID();
+    this.events = new RaceEvents();
+    this.director = new CameraDirector();
+    this.replayCache = null;
+    this.replayTick = null;
+    this.replayPlaying = false;
     this.race = createFleetRace(seed, scenario);
     this.trails = FLEET.map(() => []);
     this.logs = [];
@@ -232,6 +296,7 @@ export class FleetRuntime {
     }
   }
   setView(view: typeof this.view) {
+    this.director.manual(this.race.tick);
     this.view = view;
     this.publish();
   }
@@ -240,6 +305,7 @@ export class FleetRuntime {
     this.publish();
   }
   focus(id: string) {
+    this.director.manual(this.race.tick);
     const index = this.race.boats.findIndex((b) => b.id === id);
     if (index >= 0) {
       this.focusIndex = index;
@@ -253,6 +319,7 @@ export class FleetRuntime {
     }
   }
   pause() {
+    this.replayPlaying = false;
     if (this.race.status === "running") {
       this.invalidate();
       this.race = { ...this.race, status: "paused" };
@@ -432,6 +499,22 @@ export class FleetRuntime {
       });
   }
   advance(milliseconds: number) {
+    if (this.replayTick !== null) {
+      if (
+        this.replayPlaying &&
+        Number.isFinite(milliseconds) &&
+        milliseconds > 0
+      ) {
+        this.replayTick = Math.min(
+          this.race.tick,
+          this.replayTick +
+            (Math.min(milliseconds, 250) / 1000 / STEP) * this.replaySpeed,
+        );
+        if (this.replayTick >= this.race.tick) this.replayPlaying = false;
+        this.publish();
+      }
+      return;
+    }
     if (this.race.status !== "running") {
       this.accumulator = 0;
       return;
@@ -440,10 +523,24 @@ export class FleetRuntime {
     this.fps = this.fps * 0.9 + Math.min(144, 1000 / milliseconds) * 0.1;
     this.accumulator += Math.min(milliseconds, 250) / 1000;
     while (this.accumulator + 1e-9 >= STEP && this.race.status === "running") {
+      const before = this.race;
       this.applyInbox();
       if (this.race.status !== "running") break;
       this.decide();
       this.race = stepFleetRace(this.race);
+      this.events.update(before, this.race);
+      if (
+        this.autoCamera &&
+        this.cameraMotion &&
+        !(
+          typeof matchMedia === "function" &&
+          matchMedia("(prefers-reduced-motion: reduce)").matches
+        )
+      ) {
+        const focus = this.director.choose(this.events.events, this.race.tick);
+        if (focus)
+          this.focusIndex = this.race.boats.findIndex((b) => b.id === focus);
+      }
       this.accumulator -= STEP;
       if (this.race.tick % 3 === 0) {
         this.race.boats.forEach((boat, i) => {
@@ -466,6 +563,7 @@ export class FleetRuntime {
   recording(): FleetRecording {
     return {
       version: "fleet-replay-v1",
+      presentationVersion: PRESENTATION_VERSION,
       physicsVersion: PHYSICS_VERSION,
       windVersion: "wind-v2",
       seed: this.race.seed,

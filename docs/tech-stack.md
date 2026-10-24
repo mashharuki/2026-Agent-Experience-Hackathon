@@ -7,7 +7,7 @@
 | 領域 | 導入済みの構成 | 状態 |
 | --- | --- | --- |
 | 画面 | React 19 / Vite 8 / MUI / TypeScript、`apps/regatta-web/` | 勝者予想・日英表示・4艇・追従・判断ログ・結果・記録再生。CloudFrontで公開中 |
-| 海面と艇 | Three.js 0.180.0、命令型描画 | 独自の水面・空shader、曲面の帆・索具、ヒール・引き波、追従／艇上／俯瞰、DPRによる軽量設定 |
+| 海面と艇 | Three.js 0.180.0、命令型描画 | sea-v3: CPU/GPU共通波形、風連動、段階的画質、高画質の512px反射、帆・乗員・泡の補間。2026-10-24追加分はローカル検証、未再デプロイ |
 | 帆走と風 | 純粋TypeScript、`packages/sailing-sim/`、30Hz | `sailing-v2` / `wind-v2`。20秒周期の変化する海面 |
 | 戦術判断 | Strands Decider 2B（0.1.0、revision固定）、`apps/regatta-worker/` | 問い `choose_sailing_tactic`（`fleet-v4`）。ローカルはloopbackの橋渡し、AWSは `cloud_server.py`。期限はローカル3秒・AWS 6秒 |
 | Decider実行（AWS） | ECS on Fargate 16 vCPU / 32 GiB、VPC Link＋Cloud Map、ALB・NATなし | 2026-10-23に検証：p50 3.1秒・p95 3.7秒（モデル単体）、実レース47/47が期限内。既定0台、必要時に起動（約$0.99/時） |

@@ -21,6 +21,7 @@ import {
   type Scenario,
   STEP,
   visiblePressure,
+  windAt,
 } from "sailing-sim";
 import {
   type CloudConfig,
@@ -34,6 +35,16 @@ import {
   type Session,
   startSignIn,
 } from "./cloud";
+import {
+  Briefing,
+  experienceText,
+  type Language,
+  PredictionHistory,
+  ReplayControls,
+  Spotlight,
+  TurningPoints,
+  ViewingControls,
+} from "./Experience";
 import { FleetRuntime, replayFleet } from "./fleet-runtime";
 import { raceOutcome, standings, tacticKind } from "./presentation";
 import { mountScene } from "./scene";
@@ -289,9 +300,28 @@ function Chart({
         stroke="#e1efed"
         strokeDasharray="4 3"
       />
+      <path
+        d="M150 180 L150 108 M170 108 L170 180"
+        stroke="#c9dddc"
+        strokeDasharray="3 4"
+        fill="none"
+      />
+      <text x="143" y="143" fill="#ffffff" fontSize="14">
+        ↑
+      </text>
+      <text x="173" y="143" fill="#ffffff" fontSize="14">
+        ↓
+      </text>
+      <text x="130" y="215" fill="#ffffff" fontSize="11">
+        START / FINISH
+      </text>
       <circle cx="160" cy={195 - MARK.y} r="4" fill="#ee9a59" />
       {race.boats.map((boat, i) => (
         <g key={boat.id}>
+          <text x={167 + boat.x} y={193 - boat.y} fill="#ffffff" fontSize="12">
+            {i + 1}
+            {boat.id === runtime.prediction ? "★" : ""}
+          </text>
           <polyline
             fill="none"
             stroke={color(meta(boat.id).color)}
@@ -312,12 +342,29 @@ function Chart({
   );
 }
 
-function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
+function Sea({
+  runtime,
+  text,
+  language,
+  onResult,
+}: {
+  runtime: FleetRuntime;
+  text: Text;
+  language: Language;
+  onResult: () => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const [fallback, setFallback] = useState(false);
   const [chartOpen, setChartOpen] = useState(false);
   const snapshot = useSyncExternalStore(runtime.subscribe, runtime.getSnapshot);
-  const { race, wind } = snapshot;
+  const race = snapshot.sceneRace;
+  const wind = windAt(
+    race.scenario,
+    race.seed,
+    race.tick * STEP,
+    race.boats[snapshot.focusIndex].x,
+    race.boats[snapshot.focusIndex].y,
+  );
   const boat = race.boats[snapshot.focusIndex];
   useEffect(() => {
     if (!host.current) return;
@@ -346,10 +393,17 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
       document.removeEventListener("visibilitychange", hidden);
     };
   }, [runtime]);
-  const status = race.status === "ready" ? text.readyRace : text[race.status];
-  const pickRank = snapshot.prediction
-    ? standings(race, snapshot.prediction).find((row) => row.isPrediction)?.rank
-    : undefined;
+  const status =
+    snapshot.replayTick !== null
+      ? experienceText(language).replay
+      : race.status === "ready"
+        ? text.readyRace
+        : text[race.status];
+  const pickRank =
+    race.status !== "ready" && snapshot.prediction
+      ? standings(race, snapshot.prediction).find((row) => row.isPrediction)
+          ?.rank
+      : undefined;
   return (
     <section className="sea-shell" aria-label={text.practice}>
       <div
@@ -374,6 +428,12 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
           </div>
         )}
       </div>
+      <Spotlight runtime={runtime} language={language} />
+      <ReplayControls
+        runtime={runtime}
+        language={language}
+        onResult={onResult}
+      />
       <div className="sea-toolbar">
         <span className={`status status-${race.status}`}>
           <i />
@@ -399,6 +459,11 @@ function Sea({ runtime, text }: { runtime: FleetRuntime; text: Text }) {
         />{" "}
         {text.following}
         <span>{meta(boat.id).name}</span>
+        {snapshot.prediction && (
+          <small>
+            ★ {text.picked}: {meta(snapshot.prediction).name}
+          </small>
+        )}
       </div>
       <div
         className="wind-dial"
@@ -497,7 +562,25 @@ export default function ObserverApp() {
   >({ state: "idle" });
   const [resultOpen, setResultOpen] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [replayTick, setReplayTick] = useState<number | null>(null);
+  useEffect(() => {
+    if (countdown === null) return;
+    const timer = setTimeout(() => {
+      if (countdown <= 1) {
+        setCountdown(null);
+        runtime.start();
+      } else setCountdown(countdown - 1);
+    }, 1000);
+    const hidden = () => {
+      if (document.hidden) setCountdown(null);
+    };
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, [countdown, runtime]);
   const text = language === "ja" ? ja : en;
   const { race } = snapshot;
   const active = ["running", "paused"].includes(race.status);
@@ -632,7 +715,9 @@ export default function ObserverApp() {
   const replay =
     replayTick === null ? race : replayFleet(runtime.recording(), replayTick);
   return (
-    <div className="app-shell observer-app">
+    <div
+      className={`app-shell observer-app phase-${race.status}${snapshot.replayTick !== null ? " is-replaying" : ""}`}
+    >
       <header className="app-header">
         <div className="wordmark">
           <svg viewBox="0 0 40 40" aria-hidden="true">
@@ -650,10 +735,15 @@ export default function ObserverApp() {
             value={snapshot.quality}
             inputProps={{ "aria-label": text.quality }}
             onChange={(event) =>
-              runtime.setQuality(event.target.value as "high" | "economy")
+              runtime.setQuality(
+                event.target.value as "high" | "standard" | "economy",
+              )
             }
           >
             <MenuItem value="high">{text.high}</MenuItem>
+            <MenuItem value="standard">
+              {language === "ja" ? "標準" : "Standard"}
+            </MenuItem>
             <MenuItem value="economy">{text.low}</MenuItem>
           </Select>
           <Select
@@ -675,10 +765,14 @@ export default function ObserverApp() {
               <h1>{text.title}</h1>
             </div>
           )}
+          <Briefing runtime={runtime} language={language} />
           {race.status === "ready" ? (
-            <fieldset className="prediction-options">
+            <fieldset
+              className="prediction-options"
+              disabled={countdown !== null}
+            >
               <legend>{text.prediction}</legend>
-              {FLEET.map((boat) => (
+              {FLEET.map((boat, index) => (
                 <button
                   type="button"
                   key={boat.id}
@@ -690,8 +784,14 @@ export default function ObserverApp() {
                     style={{ background: color(boat.color) }}
                   />
                   <span>
-                    <strong>{boat.name}</strong>
+                    <strong>
+                      {index + 1} · {boat.name}
+                    </strong>
                     <small>{boat[language]}</small>
+                    <small>
+                      {language === "ja" ? "開始位置" : "Start position"}:{" "}
+                      {race.boats[index].x} m
+                    </small>
                   </span>
                   <span className="pick-check">
                     {snapshot.prediction === boat.id ? "✓" : "○"}
@@ -714,13 +814,24 @@ export default function ObserverApp() {
               fullWidth
               variant="contained"
               disabled={
+                countdown !== null ||
                 !snapshot.prediction ||
                 (snapshot.mode === "decider" && health !== "ready")
               }
-              onClick={() => runtime.start()}
+              onClick={() => setCountdown(3)}
             >
               {snapshot.prediction ? text.start : text.choose}
             </Button>
+          )}
+          {countdown !== null && (
+            <div className="countdown" role="status">
+              <strong>
+                {experienceText(language).countdown} {countdown}
+              </strong>
+              <Button onClick={() => setCountdown(null)}>
+                {experienceText(language).cancel}
+              </Button>
+            </div>
           )}
           {active && (
             <div className="race-actions">
@@ -777,7 +888,7 @@ export default function ObserverApp() {
                 size="small"
                 fullWidth
                 value={snapshot.mode}
-                disabled={active}
+                disabled={active || countdown !== null}
                 onChange={(event) =>
                   runtime.setMode(event.target.value as "preview" | "decider")
                 }
@@ -814,7 +925,7 @@ export default function ObserverApp() {
                 size="small"
                 fullWidth
                 value={race.scenario}
-                disabled={active}
+                disabled={active || countdown !== null}
                 onChange={(event) =>
                   runtime.configure(event.target.value as Scenario)
                 }
@@ -829,8 +940,14 @@ export default function ObserverApp() {
               </Select>
             </details>
           )}
+          <ViewingControls runtime={runtime} language={language} />
+          <PredictionHistory runtime={runtime} language={language} />
           <div className="fleet-standing">
-            <h2>{text.rank}</h2>
+            <h2>
+              {race.status === "ready"
+                ? experienceText(language).ready
+                : text.rank}
+            </h2>
             {standings(race, snapshot.prediction).map((row) => (
               <button
                 type="button"
@@ -839,7 +956,7 @@ export default function ObserverApp() {
                 aria-pressed={race.boats[snapshot.focusIndex].id === row.id}
                 onClick={() => runtime.focus(row.id)}
               >
-                <span>{row.rank}</span>
+                <span>{race.status === "ready" ? "—" : row.rank}</span>
                 <i
                   className="boat-dot"
                   style={{ background: color(meta(row.id).color) }}
@@ -849,13 +966,15 @@ export default function ObserverApp() {
                   <em className="pick-tag">{text.yourPick}</em>
                 )}
                 <small>
-                  {row.finishTime !== null
-                    ? clock(row.finishTime)
-                    : row.isLeader
-                      ? text.leader
-                      : row.gapMeters === null
-                        ? text.dns
-                        : `+${row.gapMeters} m`}
+                  {race.status === "ready"
+                    ? `${race.boats.find((b) => b.id === row.id)?.x} m`
+                    : row.finishTime !== null
+                      ? clock(row.finishTime)
+                      : row.isLeader
+                        ? text.leader
+                        : row.gapMeters === null
+                          ? text.dns
+                          : `+${row.gapMeters} m`}
                 </small>
               </button>
             ))}
@@ -863,53 +982,60 @@ export default function ObserverApp() {
           </div>
         </aside>
         <div className="sailing-stage">
-          <Sea runtime={runtime} text={text} />
+          <Sea
+            runtime={runtime}
+            text={text}
+            language={language}
+            onResult={() => setResultOpen(true)}
+          />
           <div className="keyboard-strip">{text.controls}</div>
           <p className="rules-note">{text.safety}</p>
         </div>
         <section className="decision-feed" aria-label={text.decisions}>
-          <h2>{text.decisions}</h2>
-          {snapshot.pending && (
-            <p className="pending-decision">
-              {meta(snapshot.pending).name} {text.pending}
-            </p>
-          )}
-          {snapshot.logs.length === 0 && <p>{text.noDecisions}</p>}
-          {snapshot.logs
-            .slice(-4)
-            .reverse()
-            .map((log) => (
-              <div
-                className={`decision-item${log.boatId === snapshot.prediction ? " is-prediction" : ""}`}
-                data-kind={tacticKind(log.selected)}
-                key={`${log.boatId}-${log.observedTick}-${log.source}`}
-              >
-                <span
-                  className="boat-dot"
-                  style={{ background: color(meta(log.boatId).color) }}
-                />
-                <div>
-                  <strong>{meta(log.boatId).name}</strong>
-                  <span>
-                    <i className="tactic-icon" aria-hidden="true">
-                      {TACTIC_ICON[tacticKind(log.selected)]}
-                    </i>
-                    {tactic(log.selected, text)}
-                  </span>
+          <details>
+            <summary>{text.decisions}</summary>
+            {snapshot.pending && (
+              <p className="pending-decision">
+                {meta(snapshot.pending).name} {text.pending}
+              </p>
+            )}
+            {snapshot.logs.length === 0 && <p>{text.noDecisions}</p>}
+            {snapshot.logs
+              .slice(-4)
+              .reverse()
+              .map((log) => (
+                <div
+                  className={`decision-item${log.boatId === snapshot.prediction ? " is-prediction" : ""}`}
+                  data-kind={tacticKind(log.selected)}
+                  key={`${log.boatId}-${log.observedTick}-${log.source}`}
+                >
+                  <span
+                    className="boat-dot"
+                    style={{ background: color(meta(log.boatId).color) }}
+                  />
+                  <div>
+                    <strong>{meta(log.boatId).name}</strong>
+                    <span>
+                      <i className="tactic-icon" aria-hidden="true">
+                        {TACTIC_ICON[tacticKind(log.selected)]}
+                      </i>
+                      {tactic(log.selected, text)}
+                    </span>
+                  </div>
+                  <small>
+                    <span>{clock(log.observedTick * STEP)}</span>
+                    <b className={`source-badge source-${log.source}`}>
+                      {log.source === "decider"
+                        ? text.real
+                        : log.source === "preview"
+                          ? text.rule
+                          : text.fallback}
+                    </b>
+                    <em>{text[log.status]}</em>
+                  </small>
                 </div>
-                <small>
-                  <span>{clock(log.observedTick * STEP)}</span>
-                  <b className={`source-badge source-${log.source}`}>
-                    {log.source === "decider"
-                      ? text.real
-                      : log.source === "preview"
-                        ? text.rule
-                        : text.fallback}
-                  </b>
-                  <em>{text[log.status]}</em>
-                </small>
-              </div>
-            ))}
+              ))}
+          </details>
         </section>
       </main>
       {snapshot.error && (
@@ -997,6 +1123,14 @@ export default function ObserverApp() {
               </div>
             </dl>
           </div>
+          <TurningPoints
+            runtime={runtime}
+            language={language}
+            onReplay={(tick) => {
+              runtime.setReplay(tick);
+              setResultOpen(false);
+            }}
+          />
           <div className="outcome-layout">
             <div className="result-track">
               <Chart runtime={runtime} race={replay} label={text.replay} />
@@ -1069,6 +1203,18 @@ export default function ObserverApp() {
         <DialogActions>
           <Button onClick={save}>{text.export}</Button>
           <Button onClick={() => setResultOpen(false)}>{text.close}</Button>
+          <Button
+            onClick={() => {
+              setResultOpen(false);
+              setDebrief({ state: "idle" });
+              setReplayTick(null);
+              runtime.configure(race.scenario, race.seed);
+            }}
+          >
+            {language === "ja"
+              ? "同じ条件で再挑戦"
+              : "Race the same conditions"}
+          </Button>
           <Button variant="contained" onClick={reset}>
             {text.again}
           </Button>

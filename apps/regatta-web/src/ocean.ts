@@ -1,26 +1,30 @@
 import type { Pressure } from "sailing-sim";
 import * as THREE from "three";
 
-// Presentation only: these waves never change the fixed-tick sailing model.
-export function waveHeight(x: number, z: number, time: number): number {
-  return (
-    Math.sin(x * 0.28 + z * 0.19 - time * 1.3) * 0.17 +
-    Math.sin(x * -0.38 + z * 0.41 - time * 1.7) * 0.08 +
-    Math.sin(x * 0.83 + z * 0.54 - time * 2.4) * 0.035
-  );
-}
-
-const waveGLSL = `
-float heightAt(vec2 p) {
-  return sin(dot(p,vec2(.28,.19))-uTime*1.3)*.17
-       + sin(dot(p,vec2(-.38,.41))-uTime*1.7)*.08
-       + sin(dot(p,vec2(.83,.54))-uTime*2.4)*.035;
-}`;
-
+import { Reflector } from "three/addons/objects/Reflector.js";
+import { type WaveEnvironment, waveGLSL } from "./wave-field";
 export function createOcean() {
+  const mirror = new Reflector(new THREE.PlaneGeometry(1, 1), {
+    textureWidth: 512,
+    textureHeight: 512,
+    clipBias: 0.003,
+    multisample: 0,
+  });
+  mirror.rotation.x = -Math.PI / 2;
+  mirror.updateMatrixWorld();
+  const mirrorMaterial = mirror.material as THREE.ShaderMaterial;
+  const meshes = [64, 128, 256].map(
+    (n) => new THREE.PlaneGeometry(700, 700, n, n),
+  );
+  let reflectionFrame = 0;
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
+      uWaveEnv: { value: new THREE.Vector2(0, 1) },
+      uReflection: { value: mirror.getRenderTarget().texture },
+      uReflectionMatrix: { value: new THREE.Matrix4() },
+      uReflect: { value: 0 },
+      uDetail: { value: 1 },
       uWind: { value: 5 },
       uSun: { value: new THREE.Vector3(-0.65, 0.43, -0.62).normalize() },
       uPatches: {
@@ -30,12 +34,15 @@ export function createOcean() {
     vertexShader: `
       uniform float uTime;
       varying vec3 vWorld;
+      varying vec4 vMirror;
+      uniform mat4 uReflectionMatrix;
       ${waveGLSL}
       void main() {
         vec3 p = position;
         vec4 world = modelMatrix * vec4(p,1.);
         world.y += heightAt(world.xz);
         vWorld = world.xyz;
+        vMirror = uReflectionMatrix * vec4(world.x,0.,world.z,1.);
         gl_Position = projectionMatrix * viewMatrix * world;
       }`,
     fragmentShader: `
@@ -43,6 +50,10 @@ export function createOcean() {
       uniform float uWind;
       uniform vec3 uSun;
       uniform vec4 uPatches[3];
+      uniform sampler2D uReflection;
+      uniform float uReflect;
+      uniform float uDetail;
+      varying vec4 vMirror;
       varying vec3 vWorld;
       ${waveGLSL}
       float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
@@ -65,7 +76,7 @@ export function createOcean() {
           sin(q.x*3.7+q.y*2.1-uTime*3.2)+sin(q.x*8.1-q.y*3.2+uTime*2.),
           cos(q.y*4.3-q.x*1.8-uTime*2.7)+sin(q.y*7.4+q.x*5.1-uTime*3.1));
         float dist=distance(cameraPosition,vWorld);
-        float detail=1.-smoothstep(35.,160.,dist);
+        float detail=(1.-smoothstep(35.,160.,dist))*uDetail;
         vec3 normal=normalize(vec3(-dx-ripple.x*.035*detail*(1.+gust*.7),1.,-dz-ripple.y*.035*detail*(1.+gust*.7)));
         vec3 eye=normalize(cameraPosition-vWorld);
         vec3 reflected=reflect(-eye,normal);
@@ -73,10 +84,13 @@ export function createOcean() {
         vec3 sky=mix(vec3(.55,.76,.85),vec3(.22,.46,.65),clamp(reflected.y,0.,1.));
         float skyCloud=noise(reflected.xz/max(.15,reflected.y)*2.3);
         sky=mix(sky,vec3(.8,.87,.9),smoothstep(.55,.85,skyCloud)*.3);
+        vec2 mirrorUv=vMirror.xy/max(vMirror.w,.001)+normal.xz*.006;
+        float inMirror=step(0.,mirrorUv.x)*step(mirrorUv.x,1.)*step(0.,mirrorUv.y)*step(mirrorUv.y,1.);
+        sky=mix(sky,texture2D(uReflection,clamp(mirrorUv,0.,1.)).rgb,uReflect*inMirror*.75);
         float sun=pow(max(0.,dot(reflected,uSun)),180.);
         float glitter=pow(max(0.,dot(normal,normalize(uSun+eye))),120.);
         float swell=heightAt(p);
-        vec3 water=mix(vec3(.018,.17,.23),vec3(.025,.31,.36),clamp(.5+swell*1.3,0.,1.));
+        vec3 water=mix(vec3(.012,.095,.14),vec3(.025,.24,.29),clamp(.5+swell*1.3,0.,1.));
         water*=1.-min(.28,gust*.1);
         vec3 color=mix(water,sky,fresnel*.78)+vec3(1.,.88,.65)*(sun*2.+glitter*.6);
         float foam=smoothstep(.22,.3,swell)*noise(p*3.+uTime*.3)*(.14+max(0.,uWind-5.)*.025);
@@ -89,10 +103,7 @@ export function createOcean() {
       }`,
   });
   const group = new THREE.Group();
-  const near = new THREE.Mesh(
-    new THREE.PlaneGeometry(700, 700, 256, 256),
-    material,
-  );
+  const near = new THREE.Mesh(meshes[2], material);
   near.rotation.x = -Math.PI / 2;
   group.add(near);
   const far = new THREE.Mesh(
@@ -104,13 +115,54 @@ export function createOcean() {
   group.add(far);
   return {
     group,
+    setQuality(quality: string) {
+      near.geometry =
+        meshes[quality === "high" ? 2 : quality === "standard" ? 1 : 0];
+      material.uniforms.uDetail.value = quality === "economy" ? 0.45 : 1;
+      material.uniforms.uReflect.value = 0;
+    },
+    reflect(
+      renderer: THREE.WebGLRenderer,
+      scene: THREE.Scene,
+      camera: THREE.Camera,
+      quality: string,
+    ) {
+      if (quality !== "high" || reflectionFrame++ % 3 !== 0) return;
+      group.visible = false;
+      try {
+        mirror.onBeforeRender(
+          renderer,
+          scene,
+          camera,
+          mirror.geometry,
+          mirror.material as THREE.Material,
+          null as unknown as THREE.Group,
+        );
+        material.uniforms.uReflectionMatrix.value
+          .copy(mirrorMaterial.uniforms.textureMatrix.value)
+          .multiply(new THREE.Matrix4().copy(mirror.matrixWorld).invert());
+        material.uniforms.uReflect.value = 1;
+      } finally {
+        group.visible = true;
+      }
+    },
+    dispose() {
+      mirror.dispose();
+      mirror.geometry.dispose();
+      for (const mesh of meshes) mesh.dispose();
+    },
     update(
       time: number,
       windSpeed: number,
       patches: Pressure[],
       x: number,
       z: number,
+      environment: WaveEnvironment,
     ) {
+      material.uniforms.uWaveEnv.value.set(
+        environment.angle,
+        environment.amplitude,
+      );
       material.uniforms.uTime.value = time;
       material.uniforms.uWind.value = windSpeed;
       // Keep the dense mesh near the player without resetting world-space waves.
